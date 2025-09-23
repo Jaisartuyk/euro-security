@@ -27,7 +27,7 @@ def employee_required(view_func):
         employee = get_employee_from_user(request.user)
         if not employee:
             messages.error(request, 'No se encontró tu perfil de empleado. Contacta al administrador.')
-            return redirect('dashboard')
+            return redirect('dashboard:home')
         
         return view_func(request, *args, **kwargs)
     return _wrapped_view
@@ -58,7 +58,7 @@ def permission_required(permission_level):
             employee = get_employee_from_user(request.user)
             if not employee:
                 messages.error(request, 'No tienes permisos para acceder a esta sección.')
-                return redirect('dashboard')
+                return redirect('dashboard:home')
             
             user_permission = employee.get_permission_level()
             
@@ -77,7 +77,7 @@ def permission_required(permission_level):
             
             if user_level < required_level:
                 messages.error(request, 'No tienes permisos suficientes para acceder a esta sección.')
-                return redirect('dashboard')
+                return redirect('dashboard:home')
             
             return view_func(request, *args, **kwargs)
         return wrapper
@@ -211,6 +211,6 @@ class EmployeePermissionMixin:
         employee = get_employee_from_user(request.user)
         if not employee and not request.user.is_superuser:
             messages.error(request, 'No tienes permisos para acceder a esta sección.')
-            return redirect('dashboard')
+            return redirect('dashboard:home')
         
         return super().dispatch(request, *args, **kwargs)
