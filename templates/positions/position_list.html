@@ -1,0 +1,310 @@
+{% extends 'base.html' %}
+
+{% block title %}Puestos de Trabajo - Sistema de Gestión de Personal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">
+        <i class="fas fa-briefcase text-primary me-2"></i>
+        Gestión de Puestos de Trabajo
+    </h1>
+    <a href="{% url 'positions:create' %}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>
+        Nuevo Puesto
+    </a>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label for="search" class="form-label">Buscar</label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       value="{{ search }}" placeholder="Título, código, descripción...">
+            </div>
+            <div class="col-md-3">
+                <label for="department" class="form-label">Departamento</label>
+                <select class="form-select" id="department" name="department">
+                    <option value="">Todos</option>
+                    {% for dept in departments %}
+                        <option value="{{ dept.id }}" {% if selected_department == dept.id|stringformat:"s" %}selected{% endif %}>
+                            {{ dept.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="level" class="form-label">Nivel</label>
+                <select class="form-select" id="level" name="level">
+                    <option value="">Todos</option>
+                    {% for value, label in position_levels %}
+                        <option value="{{ value }}" {% if selected_level == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="status" class="form-label">Estado</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">Todos</option>
+                    <option value="active" {% if selected_status == 'active' %}selected{% endif %}>Activos</option>
+                    <option value="inactive" {% if selected_status == 'inactive' %}selected{% endif %}>Inactivos</option>
+                </select>
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-search"></i>
+                </button>
+                <a href="{% url 'positions:list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Lista de Puestos -->
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-list me-1"></i>
+        Lista de Puestos de Trabajo
+        <span class="badge bg-secondary ms-2">{{ page_obj.paginator.count|default:0 }} total</span>
+    </div>
+    <div class="card-body">
+        {% if page_obj %}
+            <div class="row">
+                {% for position in page_obj %}
+                    <div class="col-lg-6 col-xl-4 mb-4">
+                        <div class="card h-100 position-card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span class="badge bg-primary">{{ position.get_level_display }}</span>
+                                <div>
+                                    {% if position.is_active %}
+                                        <span class="badge bg-success">Activo</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Inactivo</span>
+                                    {% endif %}
+                                    {% if position.is_hiring %}
+                                        <span class="badge bg-warning text-dark">Contratando</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <strong>{{ position.title }}</strong>
+                                    <br><small class="text-muted">{{ position.code }}</small>
+                                </h6>
+                                
+                                <p class="card-text">
+                                    <i class="fas fa-building text-info me-1"></i>
+                                    <strong>{{ position.department.name }}</strong>
+                                </p>
+                                
+                                <p class="card-text">
+                                    <i class="fas fa-dollar-sign text-success me-1"></i>
+                                    <strong>${{ position.min_salary|floatformat:0 }} - ${{ position.max_salary|floatformat:0 }}</strong>
+                                </p>
+                                
+                                <p class="card-text">
+                                    <i class="fas fa-users text-primary me-1"></i>
+                                    {{ position.current_employees|default:0 }}/{{ position.max_positions }} ocupado(s)
+                                </p>
+                                
+                                <p class="card-text">
+                                    <i class="fas fa-clock text-secondary me-1"></i>
+                                    {{ position.get_employment_type_display }}
+                                </p>
+                                
+                                {% if position.description %}
+                                    <p class="card-text small text-muted">
+                                        {{ position.description|truncatewords:15 }}
+                                    </p>
+                                {% endif %}
+                            </div>
+                            <div class="card-footer">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="progress flex-grow-1 me-3" style="height: 8px;">
+                                        <div class="progress-bar bg-primary" role="progressbar" style="width: 60%"></div>
+                                    </div>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'positions:detail' position.pk %}" 
+                                           class="btn btn-sm btn-outline-primary" title="Ver detalles">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'positions:edit' position.pk %}" 
+                                           class="btn btn-sm btn-outline-secondary" title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="col-12">
+                        <div class="text-center py-5">
+                            <i class="fas fa-briefcase fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No hay puestos de trabajo registrados</h5>
+                            <p class="text-muted">Comienza creando tu primer puesto de trabajo.</p>
+                            <a href="{% url 'positions:create' %}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>
+                                Crear Puesto de Trabajo
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Paginación -->
+            {% if page_obj.has_other_pages %}
+                <nav aria-label="Paginación de puestos" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-briefcase fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No se encontraron puestos</h5>
+                <p class="text-muted">No hay puestos que coincidan con los criterios de búsqueda.</p>
+                <a href="{% url 'positions:create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>
+                    Crear Primer Puesto
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Estadísticas rápidas -->
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-briefcase fa-2x text-primary mb-2"></i>
+                <h5>{{ page_obj.paginator.count|default:0 }}</h5>
+                <small class="text-muted">Total Puestos</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-user-plus fa-2x text-success mb-2"></i>
+                <h5 id="hiring-positions">-</h5>
+                <small class="text-muted">En Contratación</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-dollar-sign fa-2x text-warning mb-2"></i>
+                <h5 id="avg-salary">-</h5>
+                <small class="text-muted">Salario Promedio</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-building fa-2x text-info mb-2"></i>
+                <h5>{{ departments.count }}</h5>
+                <small class="text-muted">Departamentos</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .position-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: 1px solid #e3e6f0;
+    }
+    
+    .position-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-submit del formulario de filtros con delay
+    let searchTimeout;
+    const searchInput = document.getElementById('search');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                this.form.submit();
+            }, 500);
+        });
+    }
+    
+    // Cargar estadísticas vía API
+    fetch('{% url "positions:stats_api" %}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.general_stats) {
+                const stats = data.general_stats;
+                
+                if (stats.hiring_positions !== undefined) {
+                    document.getElementById('hiring-positions').textContent = stats.hiring_positions;
+                }
+                
+                if (stats.avg_min_salary && stats.avg_max_salary) {
+                    const avgSalary = (stats.avg_min_salary + stats.avg_max_salary) / 2;
+                    document.getElementById('avg-salary').textContent = 
+                        '$' + avgSalary.toLocaleString('es-MX', {
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 0
+                        });
+                }
+            }
+        })
+        .catch(error => console.log('Error loading stats:', error));
+</script>
+{% endblock %}

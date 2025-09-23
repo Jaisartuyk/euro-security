@@ -1,0 +1,416 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Sistema de Gestión de Personal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">
+        <i class="fas fa-briefcase text-primary me-2"></i>
+        {{ title }}
+    </h1>
+    <a href="{% url 'positions:list' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>
+        Volver a la Lista
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <form method="post">
+            {% csrf_token %}
+            
+            <!-- Información Básica -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Información Básica del Puesto
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label for="{{ form.title.id_for_label }}" class="form-label">
+                                <i class="fas fa-briefcase me-1"></i>
+                                {{ form.title.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.title }}
+                            {% if form.title.errors %}
+                                <div class="text-danger small">{{ form.title.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.code.id_for_label }}" class="form-label">
+                                <i class="fas fa-code me-1"></i>
+                                {{ form.code.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.code }}
+                            {% if form.code.errors %}
+                                <div class="text-danger small">{{ form.code.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text">Código único para identificar el puesto</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.department.id_for_label }}" class="form-label">
+                            <i class="fas fa-building me-1"></i>
+                            {{ form.department.label }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.department }}
+                        {% if form.department.errors %}
+                            <div class="text-danger small">{{ form.department.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">
+                            <i class="fas fa-align-left me-1"></i>
+                            {{ form.description.label }}
+                        </label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                            <div class="text-danger small">{{ form.description.errors.0 }}</div>
+                        {% endif %}
+                        <div class="form-text">Describe las responsabilidades, requisitos y funciones del puesto</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Información Salarial -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-dollar-sign me-1"></i>
+                    Información Salarial
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.min_salary.id_for_label }}" class="form-label">
+                                <i class="fas fa-arrow-down me-1"></i>
+                                {{ form.min_salary.label }} <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                {{ form.min_salary }}
+                            </div>
+                            {% if form.min_salary.errors %}
+                                <div class="text-danger small">{{ form.min_salary.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.max_salary.id_for_label }}" class="form-label">
+                                <i class="fas fa-arrow-up me-1"></i>
+                                {{ form.max_salary.label }} <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                {{ form.max_salary }}
+                            </div>
+                            {% if form.max_salary.errors %}
+                                <div class="text-danger small">{{ form.max_salary.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Rango Salarial:</strong> 
+                        <span id="salary-range">Ingresa los valores para ver el rango</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Clasificación y Configuración -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-cogs me-1"></i>
+                    Clasificación y Configuración
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.level.id_for_label }}" class="form-label">
+                                <i class="fas fa-layer-group me-1"></i>
+                                {{ form.level.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.level }}
+                            {% if form.level.errors %}
+                                <div class="text-danger small">{{ form.level.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.employment_type.id_for_label }}" class="form-label">
+                                <i class="fas fa-clock me-1"></i>
+                                {{ form.employment_type.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.employment_type }}
+                            {% if form.employment_type.errors %}
+                                <div class="text-danger small">{{ form.employment_type.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.max_positions.id_for_label }}" class="form-label">
+                                <i class="fas fa-users me-1"></i>
+                                {{ form.max_positions.label }}
+                            </label>
+                            {{ form.max_positions }}
+                            {% if form.max_positions.errors %}
+                                <div class="text-danger small">{{ form.max_positions.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text">Número máximo de personas que pueden ocupar este puesto</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3 d-flex align-items-end">
+                            <div class="me-4">
+                                <div class="form-check">
+                                    {{ form.is_active }}
+                                    <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                        <i class="fas fa-toggle-on me-1"></i>
+                                        {{ form.is_active.label }}
+                                    </label>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="form-check">
+                                    {{ form.is_hiring }}
+                                    <label class="form-check-label" for="{{ form.is_hiring.id_for_label }}">
+                                        <i class="fas fa-user-plus me-1"></i>
+                                        {{ form.is_hiring.label }}
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Errores generales del formulario -->
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}
+                        <i class="fas fa-exclamation-circle me-2"></i>{{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+            
+            <!-- Botones de acción -->
+            <div class="d-flex justify-content-between">
+                <a href="{% url 'positions:list' %}" class="btn btn-secondary">
+                    <i class="fas fa-times me-2"></i>
+                    Cancelar
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-2"></i>
+                    {% if position %}Actualizar{% else %}Crear{% endif %} Puesto
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Sidebar con información adicional -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-info-circle me-1"></i>
+                Información Adicional
+            </div>
+            <div class="card-body">
+                <h6><i class="fas fa-lightbulb text-warning me-2"></i>Consejos</h6>
+                <ul class="list-unstyled small">
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-1"></i>
+                        Todos los campos marcados con * son obligatorios
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-1"></i>
+                        El código debe ser único en el sistema
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-1"></i>
+                        El salario máximo debe ser mayor al mínimo
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-1"></i>
+                        Selecciona el departamento apropiado
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-1"></i>
+                        Define claramente las responsabilidades
+                    </li>
+                </ul>
+                
+                {% if position %}
+                    <hr>
+                    <h6><i class="fas fa-briefcase text-info me-2"></i>Información del Puesto</h6>
+                    <div class="text-center mb-3">
+                        <div class="badge bg-{{ position.level|lower }} fs-6 mb-2">
+                            {{ position.get_level_display }}
+                        </div>
+                        <p class="mb-1"><strong>{{ position.title }}</strong></p>
+                        <p class="text-muted small">Código: {{ position.code }}</p>
+                    </div>
+                    
+                    <div class="row text-center">
+                        <div class="col-6 mb-2">
+                            <div class="border rounded p-2">
+                                <strong class="text-primary">{{ position.get_current_employees_count }}</strong>
+                                <br><small class="text-muted">Empleados Actuales</small>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-2">
+                            <div class="border rounded p-2">
+                                <strong class="text-secondary">{{ position.get_available_positions }}</strong>
+                                <br><small class="text-muted">Vacantes</small>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Niveles de Puesto -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <i class="fas fa-layer-group me-1"></i>
+                Niveles de Puesto
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6 mb-2">
+                        <span class="badge bg-entry w-100">Nivel de Entrada</span>
+                    </div>
+                    <div class="col-6 mb-2">
+                        <span class="badge bg-junior w-100">Junior</span>
+                    </div>
+                    <div class="col-6 mb-2">
+                        <span class="badge bg-senior w-100 text-dark">Senior</span>
+                    </div>
+                    <div class="col-6 mb-2">
+                        <span class="badge bg-lead w-100">Líder</span>
+                    </div>
+                    <div class="col-6 mb-2">
+                        <span class="badge bg-manager w-100">Gerente</span>
+                    </div>
+                    <div class="col-6 mb-2">
+                        <span class="badge bg-director w-100">Director</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Información de EURO SECURITY -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <i class="fas fa-shield-alt me-1"></i>
+                EURO SECURITY
+            </div>
+            <div class="card-body">
+                <p class="small text-muted">
+                    Define puestos de trabajo claros y estructurados para una gestión eficiente del personal de seguridad.
+                </p>
+                <ul class="list-unstyled small">
+                    <li><i class="fas fa-shield-alt text-primary me-1"></i> Jerarquías claras</li>
+                    <li><i class="fas fa-dollar-sign text-success me-1"></i> Rangos salariales justos</li>
+                    <li><i class="fas fa-users text-info me-1"></i> Control de vacantes</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .badge.bg-entry { background-color: #28a745 !important; }
+    .badge.bg-junior { background-color: #17a2b8 !important; }
+    .badge.bg-senior { background-color: #ffc107 !important; }
+    .badge.bg-lead { background-color: #fd7e14 !important; }
+    .badge.bg-manager { background-color: #6f42c1 !important; }
+    .badge.bg-director { background-color: #dc3545 !important; }
+    
+    .form-label {
+        font-weight: 500;
+    }
+    
+    .text-danger {
+        color: #dc3545 !important;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-generar código basado en el título
+    document.getElementById('id_title').addEventListener('input', function() {
+        const codeField = document.getElementById('id_code');
+        if (!codeField.value) {
+            let code = this.value
+                .toUpperCase()
+                .replace(/[^A-Z0-9\s]/g, '')
+                .replace(/\s+/g, '-')
+                .substring(0, 15);
+            codeField.value = code;
+        }
+    });
+    
+    // Actualizar rango salarial en tiempo real
+    function updateSalaryRange() {
+        const minSalary = parseFloat(document.getElementById('id_min_salary').value) || 0;
+        const maxSalary = parseFloat(document.getElementById('id_max_salary').value) || 0;
+        const rangeElement = document.getElementById('salary-range');
+        
+        if (minSalary > 0 && maxSalary > 0) {
+            const formattedMin = minSalary.toLocaleString('es-MX', {
+                style: 'currency',
+                currency: 'MXN',
+                minimumFractionDigits: 2
+            });
+            const formattedMax = maxSalary.toLocaleString('es-MX', {
+                style: 'currency',
+                currency: 'MXN',
+                minimumFractionDigits: 2
+            });
+            rangeElement.textContent = `${formattedMin} - ${formattedMax}`;
+            
+            if (maxSalary <= minSalary) {
+                rangeElement.innerHTML = '<span class="text-danger">El salario máximo debe ser mayor al mínimo</span>';
+            }
+        } else {
+            rangeElement.textContent = 'Ingresa los valores para ver el rango';
+        }
+    }
+    
+    document.getElementById('id_min_salary').addEventListener('input', updateSalaryRange);
+    document.getElementById('id_max_salary').addEventListener('input', updateSalaryRange);
+    
+    // Inicializar el rango si hay valores
+    updateSalaryRange();
+    
+    // Validación de salarios
+    document.getElementById('id_min_salary').addEventListener('input', function() {
+        const value = parseFloat(this.value);
+        if (value < 0) {
+            this.setCustomValidity('El salario no puede ser negativo');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+    
+    document.getElementById('id_max_salary').addEventListener('input', function() {
+        const value = parseFloat(this.value);
+        const minValue = parseFloat(document.getElementById('id_min_salary').value);
+        if (value < 0) {
+            this.setCustomValidity('El salario no puede ser negativo');
+        } else if (minValue && value <= minValue) {
+            this.setCustomValidity('El salario máximo debe ser mayor al mínimo');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+</script>
+{% endblock %}

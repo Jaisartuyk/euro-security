@@ -1,0 +1,380 @@
+{% extends 'base.html' %}
+
+{% block title %}Reportes de Nómina - Sistema de Gestión de Personal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">
+        <i class="fas fa-calculator text-primary me-2"></i>
+        Reportes de Nómina
+    </h1>
+    <div>
+        <a href="{% url 'reports:dashboard' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>
+            Volver a Reportes
+        </a>
+        <button class="btn btn-success" onclick="exportPayroll()">
+            <i class="fas fa-file-excel me-2"></i>
+            Exportar Excel
+        </button>
+        <button class="btn btn-primary" onclick="window.print()">
+            <i class="fas fa-print me-2"></i>
+            Imprimir
+        </button>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="fas fa-filter me-1"></i>
+        Filtros de Nómina
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label for="department" class="form-label">Departamento</label>
+                <select class="form-select" id="department" name="department">
+                    <option value="">Todos los departamentos</option>
+                    {% for dept in departments %}
+                        <option value="{{ dept.id }}" {% if selected_department == dept.id|stringformat:"s" %}selected{% endif %}>
+                            {{ dept.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="month" class="form-label">Mes</label>
+                <select class="form-select" id="month" name="month">
+                    <option value="">Seleccionar mes</option>
+                    <option value="01" {% if selected_month == "01" %}selected{% endif %}>Enero</option>
+                    <option value="02" {% if selected_month == "02" %}selected{% endif %}>Febrero</option>
+                    <option value="03" {% if selected_month == "03" %}selected{% endif %}>Marzo</option>
+                    <option value="04" {% if selected_month == "04" %}selected{% endif %}>Abril</option>
+                    <option value="05" {% if selected_month == "05" %}selected{% endif %}>Mayo</option>
+                    <option value="06" {% if selected_month == "06" %}selected{% endif %}>Junio</option>
+                    <option value="07" {% if selected_month == "07" %}selected{% endif %}>Julio</option>
+                    <option value="08" {% if selected_month == "08" %}selected{% endif %}>Agosto</option>
+                    <option value="09" {% if selected_month == "09" %}selected{% endif %}>Septiembre</option>
+                    <option value="10" {% if selected_month == "10" %}selected{% endif %}>Octubre</option>
+                    <option value="11" {% if selected_month == "11" %}selected{% endif %}>Noviembre</option>
+                    <option value="12" {% if selected_month == "12" %}selected{% endif %}>Diciembre</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="year" class="form-label">Año</label>
+                <select class="form-select" id="year" name="year">
+                    <option value="">Seleccionar año</option>
+                    <option value="2024" {% if selected_year == "2024" %}selected{% endif %}>2024</option>
+                    <option value="2025" {% if selected_year == "2025" %}selected{% endif %}>2025</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="fas fa-search"></i> Filtrar
+                </button>
+                <a href="{% url 'reports:payroll' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Resumen de Nómina -->
+<div class="row mb-4">
+    <div class="col-md-2">
+        <div class="card text-center bg-primary text-white">
+            <div class="card-body">
+                <h5 class="mb-0">{{ summary.employee_count }}</h5>
+                <small>Empleados</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center bg-success text-white">
+            <div class="card-body">
+                <h6 class="mb-0">${{ summary.total_gross|floatformat:2 }}</h6>
+                <small>Salario Bruto</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center bg-warning text-white">
+            <div class="card-body">
+                <h6 class="mb-0">${{ summary.total_tax|floatformat:2 }}</h6>
+                <small>Impuestos</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center bg-info text-white">
+            <div class="card-body">
+                <h6 class="mb-0">${{ summary.total_social_security|floatformat:2 }}</h6>
+                <small>Seguro Social</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center bg-danger text-white">
+            <div class="card-body">
+                <h6 class="mb-0">${{ summary.total_deductions|floatformat:2 }}</h6>
+                <small>Deducciones</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center bg-dark text-white">
+            <div class="card-body">
+                <h6 class="mb-0">${{ summary.total_net|floatformat:2 }}</h6>
+                <small>Salario Neto</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla Detallada de Nómina -->
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-table me-1"></i>
+        Detalle de Nómina
+        <span class="badge bg-secondary ms-2">{{ summary.employee_count }} empleados</span>
+    </div>
+    <div class="card-body">
+        {% if payroll_data %}
+            <div class="table-responsive">
+                <table class="table table-hover table-sm">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Empleado</th>
+                            <th>Departamento</th>
+                            <th>Puesto</th>
+                            <th>Salario Bruto</th>
+                            <th>Impuestos (15%)</th>
+                            <th>Seg. Social (7.25%)</th>
+                            <th>Total Deducciones</th>
+                            <th>Salario Neto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in payroll_data %}
+                            <tr>
+                                <td><code>{{ item.employee.employee_id }}</code></td>
+                                <td>
+                                    <strong>{{ item.employee.get_full_name }}</strong>
+                                    <br><small class="text-muted">{{ item.employee.national_id }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ item.employee.department.name }}</span>
+                                </td>
+                                <td>{{ item.employee.position.title }}</td>
+                                <td class="text-success">
+                                    <strong>${{ item.gross_salary|floatformat:2 }}</strong>
+                                </td>
+                                <td class="text-warning">
+                                    ${{ item.tax_deduction|floatformat:2 }}
+                                </td>
+                                <td class="text-info">
+                                    ${{ item.social_security|floatformat:2 }}
+                                </td>
+                                <td class="text-danger">
+                                    ${{ item.total_deductions|floatformat:2 }}
+                                </td>
+                                <td class="text-dark">
+                                    <strong>${{ item.net_salary|floatformat:2 }}</strong>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="table-secondary">
+                        <tr>
+                            <th colspan="4">TOTALES</th>
+                            <th class="text-success">${{ summary.total_gross|floatformat:2 }}</th>
+                            <th class="text-warning">${{ summary.total_tax|floatformat:2 }}</th>
+                            <th class="text-info">${{ summary.total_social_security|floatformat:2 }}</th>
+                            <th class="text-danger">${{ summary.total_deductions|floatformat:2 }}</th>
+                            <th class="text-dark">${{ summary.total_net|floatformat:2 }}</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-calculator fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No hay datos de nómina</h5>
+                <p class="text-muted">No se encontraron empleados activos para generar la nómina.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Análisis de Nómina -->
+<div class="row mt-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-pie me-1"></i>
+                Distribución de Deducciones
+            </div>
+            <div class="card-body">
+                <canvas id="deductionsChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-bar me-1"></i>
+                Nómina por Departamento
+            </div>
+            <div class="card-body">
+                <canvas id="departmentPayrollChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Información Legal y Fiscal -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-gavel me-1"></i>
+                Información Legal y Fiscal
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6>Cálculos Aplicados</h6>
+                        <ul class="list-unstyled small">
+                            <li><strong>Impuestos:</strong> 15% del salario bruto</li>
+                            <li><strong>Seguro Social:</strong> 7.25% del salario bruto</li>
+                            <li><strong>Total Deducciones:</strong> Impuestos + Seguro Social</li>
+                            <li><strong>Salario Neto:</strong> Salario Bruto - Deducciones</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Resumen Fiscal</h6>
+                        <ul class="list-unstyled small">
+                            <li><strong>Total a pagar empleados:</strong> ${{ summary.total_net|floatformat:2 }}</li>
+                            <li><strong>Total impuestos retenidos:</strong> ${{ summary.total_tax|floatformat:2 }}</li>
+                            <li><strong>Total seguro social:</strong> ${{ summary.total_social_security|floatformat:2 }}</li>
+                            <li><strong>Costo total empresa:</strong> ${{ summary.total_gross|floatformat:2 }}</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Información del Reporte</h6>
+                        <ul class="list-unstyled small">
+                            <li><strong>Fecha de generación:</strong> {{ "now"|date:"d/m/Y H:i" }}</li>
+                            <li><strong>Usuario:</strong> {{ user.get_full_name|default:user.username }}</li>
+                            <li><strong>Período:</strong> 
+                                {% if selected_month and selected_year %}
+                                    {{ selected_month }}/{{ selected_year }}
+                                {% else %}
+                                    Actual
+                                {% endif %}
+                            </li>
+                            <li><strong>Sistema:</strong> EURO SECURITY</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    @media print {
+        .btn, .card-header, nav, .sidebar, .no-print {
+            display: none !important;
+        }
+        
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+        }
+        
+        .table {
+            font-size: 10px;
+        }
+        
+        .table th, .table td {
+            padding: 0.25rem;
+        }
+    }
+    
+    .table-responsive {
+        max-height: 600px;
+        overflow-y: auto;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Gráfico de distribución de deducciones
+    const deductionsCtx = document.getElementById('deductionsChart').getContext('2d');
+    const totalNet = {{ summary.total_net|default:0 }};
+    const totalTax = {{ summary.total_tax|default:0 }};
+    const totalSocial = {{ summary.total_social_security|default:0 }};
+    
+    new Chart(deductionsCtx, {
+        type: 'pie',
+        data: {
+            labels: ['Salario Neto', 'Impuestos', 'Seguro Social'],
+            datasets: [{
+                data: [totalNet, totalTax, totalSocial],
+                backgroundColor: ['#28a745', '#ffc107', '#17a2b8']
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                }
+            }
+        }
+    });
+    
+    // Gráfico de nómina por departamento
+    fetch('{% url "reports:api" %}?type=salary_by_department')
+        .then(response => response.json())
+        .then(data => {
+            const deptCtx = document.getElementById('departmentPayrollChart').getContext('2d');
+            new Chart(deptCtx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(item => item.name),
+                    datasets: [{
+                        label: 'Nómina Total',
+                        data: data.map(item => item.total_payroll || 0),
+                        backgroundColor: '#36A2EB'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => console.log('Error loading department payroll chart:', error));
+    
+    function exportPayroll() {
+        alert('Función de exportación a Excel en desarrollo');
+    }
+</script>
+{% endblock %}

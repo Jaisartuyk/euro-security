@@ -1,0 +1,265 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard Gerencial - {{ employee.get_full_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">
+        <i class="fas fa-user-tie text-danger me-2"></i>
+        Dashboard Gerencial
+    </h1>
+    <div>
+        <span class="badge bg-danger fs-6">
+            <i class="fas fa-crown me-1"></i>
+            Gerente
+        </span>
+    </div>
+</div>
+
+<!-- Estadísticas Departamentales -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center bg-primary text-white">
+            <div class="card-body">
+                <i class="fas fa-users fa-2x mb-2"></i>
+                <h4 class="mb-0">{{ dept_stats.total_staff }}</h4>
+                <small>Total Personal</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-warning text-dark">
+            <div class="card-body">
+                <i class="fas fa-user-tie fa-2x mb-2"></i>
+                <h4 class="mb-0">{{ dept_stats.supervisors }}</h4>
+                <small>Supervisores</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-success text-white">
+            <div class="card-body">
+                <i class="fas fa-star fa-2x mb-2"></i>
+                <h4 class="mb-0">{{ dept_stats.senior_guards }}</h4>
+                <small>Guardias Senior</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-info text-white">
+            <div class="card-body">
+                <i class="fas fa-shield-alt fa-2x mb-2"></i>
+                <h4 class="mb-0">{{ dept_stats.regular_guards }}</h4>
+                <small>Guardias Regulares</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Personal del Departamento -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-building me-1"></i>
+                Personal del Departamento - {{ employee.department.name }}
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Empleado</th>
+                                <th>Puesto</th>
+                                <th>Nivel</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for staff in department_staff %}
+                            <tr>
+                                <td>
+                                    <strong>{{ staff.get_full_name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ staff.employee_id }}</small>
+                                </td>
+                                <td>{{ staff.position.title }}</td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ staff.position.get_level_display }}</span>
+                                </td>
+                                <td>
+                                    {% if staff.is_active %}
+                                        <span class="badge bg-success">Activo</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Inactivo</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'employees:detail' staff.pk %}" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Métricas de Rendimiento -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-line me-1"></i>
+                Métricas de Rendimiento
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Tiempo de Respuesta</h6>
+                        <div class="progress mb-3">
+                            <div class="progress-bar bg-success" style="width: 85%">{{ performance_metrics.response_time }}</div>
+                        </div>
+                        
+                        <h6>Cobertura</h6>
+                        <div class="progress mb-3">
+                            <div class="progress-bar bg-info" style="width: 92%">{{ performance_metrics.coverage }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Satisfacción</h6>
+                        <div class="progress mb-3">
+                            <div class="progress-bar bg-warning" style="width: 92%">{{ performance_metrics.satisfaction }}</div>
+                        </div>
+                        
+                        <h6>Incidentes Prevenidos</h6>
+                        <div class="text-center">
+                            <h4 class="text-success">{{ performance_metrics.incidents_prevented }}</h4>
+                            <small class="text-muted">Este mes</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Reportes Mensuales -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-chart-bar me-1"></i>
+                Reportes Mensuales
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>Incidentes:</span>
+                    <span class="badge bg-primary">{{ monthly_reports.incidents }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>Resueltos:</span>
+                    <span class="badge bg-success">{{ monthly_reports.resolved }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span>Pendientes:</span>
+                    <span class="badge bg-warning">{{ monthly_reports.pending }}</span>
+                </div>
+                
+                <hr>
+                
+                <div class="text-center">
+                    <h5 class="text-success">{{ monthly_reports.efficiency }}%</h5>
+                    <small class="text-muted">Eficiencia General</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Información Presupuestaria -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-dollar-sign me-1"></i>
+                Presupuesto Departamental
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Asignado:</span>
+                        <strong>${{ budget_info.allocated|floatformat:0 }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Gastado:</span>
+                        <span class="text-danger">${{ budget_info.spent|floatformat:0 }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Restante:</span>
+                        <span class="text-success">${{ budget_info.remaining|floatformat:0 }}</span>
+                    </div>
+                </div>
+                
+                <div class="progress">
+                    <div class="progress-bar bg-info" style="width: {{ budget_info.percentage_used|default:'0' }}%">
+                        {{ budget_info.percentage_used }}%
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Acciones Gerenciales -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-cogs me-1"></i>
+                Acciones Gerenciales
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'employees:list' %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-users me-2"></i>
+                        Gestionar Personal
+                    </a>
+                    
+                    <a href="{% url 'reports:dashboard' %}" class="btn btn-info btn-sm">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        Ver Reportes
+                    </a>
+                    
+                    <button class="btn btn-warning btn-sm" onclick="generateReport()">
+                        <i class="fas fa-file-alt me-2"></i>
+                        Generar Reporte
+                    </button>
+                    
+                    <a href="{% url 'employees:profile' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-user me-2"></i>
+                        Mi Perfil
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+    
+    .progress {
+        height: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function generateReport() {
+        alert('Función de generación de reportes gerenciales en desarrollo.\n\nPronto podrás generar reportes completos del departamento.');
+    }
+</script>
+{% endblock %}

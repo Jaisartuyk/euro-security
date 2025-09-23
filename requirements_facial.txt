@@ -1,0 +1,29 @@
+# Bibliotecas para reconocimiento facial de producción
+# EURO SECURITY - Sistema Biométrico Avanzado
+
+# Procesamiento de imágenes y visión por computadora
+opencv-python==4.8.1.78
+opencv-contrib-python==4.8.1.78
+
+# Reconocimiento facial de alta precisión
+face-recognition==1.3.0
+dlib==19.24.2
+
+# Procesamiento numérico y científico
+numpy==1.24.3
+scipy==1.11.1
+
+# Procesamiento de imágenes adicional
+Pillow==10.0.0
+scikit-image==0.21.0
+
+# Machine Learning para detección avanzada
+scikit-learn==1.3.0
+tensorflow==2.13.0  # Opcional: para modelos de deep learning
+
+# Utilidades adicionales
+imutils==0.5.4
+cmake==3.27.0  # Requerido para compilar dlib
+
+# Nota: En Windows puede requerir Visual Studio Build Tools
+# Instalar con: pip install -r requirements_facial.txt

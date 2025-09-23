@@ -1,0 +1,271 @@
+{% extends 'base.html' %}
+
+{% block title %}Mi Asistencia - {{ employee.get_full_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">
+        <i class="fas fa-calendar-check text-success me-2"></i>
+        Mi Asistencia
+    </h1>
+    <div>
+        <a href="{% url 'attendance:clock' %}" class="btn btn-primary">
+            <i class="fas fa-clock me-2"></i>
+            Marcar Asistencia
+        </a>
+    </div>
+</div>
+
+<!-- Estadísticas del mes -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center bg-success text-white">
+            <div class="card-body">
+                <i class="fas fa-calendar-check fa-2x mb-2"></i>
+                <h4 class="mb-0">{{ month_stats.days_present }}</h4>
+                <small>Días Presente</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-warning text-dark">
+            <div class="card-body">
+                <i class="fas fa-clock fa-2x mb-2"></i>
+                <h4 class="mb-0">{{ month_stats.days_late }}</h4>
+                <small>Días Tarde</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-info text-white">
+            <div class="card-body">
+                <i class="fas fa-business-time fa-2x mb-2"></i>
+                <h4 class="mb-0">{{ month_stats.total_work_days }}</h4>
+                <small>Días Laborales</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-primary text-white">
+            <div class="card-body">
+                <i class="fas fa-hourglass-half fa-2x mb-2"></i>
+                <h4 class="mb-0">
+                    {% if month_stats.avg_work_hours %}
+                        {{ month_stats.avg_work_hours|floatformat:1 }}h
+                    {% else %}
+                        0h
+                    {% endif %}
+                </h4>
+                <small>Promedio Diario</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Registros del mes -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-list me-2"></i>
+                Registros de {{ current_month }}
+            </div>
+            <div class="card-body">
+                {% if monthly_summaries %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Primera Entrada</th>
+                                    <th>Última Salida</th>
+                                    <th>Horas Trabajadas</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for summary in monthly_summaries %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ summary.date|date:"d/m/Y" }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ summary.date|date:"l" }}</small>
+                                    </td>
+                                    <td>
+                                        {% if summary.first_entry %}
+                                            {{ summary.first_entry|time:"H:i" }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if summary.last_exit %}
+                                            {{ summary.last_exit|time:"H:i" }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <strong>{{ summary.get_work_hours_display }}</strong>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex flex-wrap gap-1">
+                                            {% if summary.is_present %}
+                                                <span class="badge bg-success">Presente</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Ausente</span>
+                                            {% endif %}
+                                            
+                                            {% if summary.is_late %}
+                                                <span class="badge bg-warning text-dark">Tarde</span>
+                                            {% endif %}
+                                            
+                                            {% if summary.is_early_exit %}
+                                                <span class="badge bg-info">Salida Temprana</span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-calendar-times fa-3x mb-3"></i>
+                        <p>No hay registros de asistencia este mes</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- Registros de hoy -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-today me-2"></i>
+                Registros de Hoy
+            </div>
+            <div class="card-body">
+                {% if today_records %}
+                    {% for record in today_records %}
+                    <div class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
+                        <div>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-{% if record.attendance_type == 'IN' %}sign-in-alt text-success{% elif record.attendance_type == 'OUT' %}sign-out-alt text-danger{% elif record.attendance_type == 'BREAK_OUT' %}coffee text-warning{% else %}undo text-info{% endif %} me-2"></i>
+                                <strong>{{ record.get_attendance_type_display }}</strong>
+                            </div>
+                            <small class="text-muted">{{ record.timestamp|time:"H:i:s" }}</small>
+                        </div>
+                        <div class="text-end">
+                            {% if record.facial_confidence %}
+                                <div class="badge bg-success">
+                                    {{ record.facial_confidence|floatformat:1 }}% confianza
+                                </div>
+                            {% endif %}
+                            {% if record.is_valid %}
+                                <div class="badge bg-success">Válido</div>
+                            {% else %}
+                                <div class="badge bg-warning">Pendiente</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted">
+                        <i class="fas fa-clock fa-2x mb-2"></i>
+                        <p>No hay registros hoy</p>
+                        <a href="{% url 'attendance:clock' %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus me-1"></i>
+                            Marcar Asistencia
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Información del empleado -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-user me-2"></i>
+                Mi Información
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <div class="employee-avatar mx-auto mb-2">
+                        <i class="fas fa-user fa-2x text-white"></i>
+                    </div>
+                    <h6>{{ employee.get_full_name }}</h6>
+                    <small class="text-muted">{{ employee.position.title }}</small>
+                </div>
+                
+                <hr>
+                
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small">Departamento:</span>
+                    <span class="badge bg-info">{{ employee.department.name }}</span>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small">ID Empleado:</span>
+                    <span class="badge bg-secondary">{{ employee.employee_id }}</span>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="small">Fecha Ingreso:</span>
+                    <span class="badge bg-primary">{{ employee.hire_date|date:"d/m/Y" }}</span>
+                </div>
+                
+                <hr>
+                
+                <div class="d-grid">
+                    <a href="{% url 'employees:profile' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-eye me-2"></i>
+                        Ver Mi Perfil Completo
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .employee-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #28a745, #20c997);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 123, 255, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Actualizar cada 30 segundos si hay registros de hoy
+    {% if today_records %}
+    setInterval(function() {
+        // Aquí se podría implementar actualización automática
+        console.log('Verificando nuevos registros...');
+    }, 30000);
+    {% endif %}
+</script>
+{% endblock %}

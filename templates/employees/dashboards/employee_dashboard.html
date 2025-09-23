@@ -1,0 +1,330 @@
+{% extends 'base.html' %}
+
+{% block title %}Mi Dashboard - {{ employee.get_full_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">
+        <i class="fas fa-tachometer-alt text-success me-2"></i>
+        Mi Dashboard Personal
+    </h1>
+    <div>
+        <span class="badge bg-success fs-6">
+            <i class="fas fa-user me-1"></i>
+            {{ employee.position.get_level_display }}
+        </span>
+    </div>
+</div>
+
+<!-- Bienvenida -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-success">
+            <h5 class="alert-heading">
+                <i class="fas fa-hand-wave me-2"></i>
+                ¡Bienvenido, {{ employee.get_full_name }}!
+            </h5>
+            <p class="mb-0">
+                Tienes nivel de permisos <strong>{{ permission_level|title }}</strong> como 
+                <strong>{{ employee.position.title }}</strong> en el departamento de 
+                <strong>{{ employee.department.name }}</strong>.
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Información Rápida -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center bg-primary text-white">
+            <div class="card-body">
+                <i class="fas fa-id-badge fa-2x mb-2"></i>
+                <h6 class="mb-0">{{ employee.employee_id }}</h6>
+                <small>ID de Empleado</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-success text-white">
+            <div class="card-body">
+                <i class="fas fa-calendar fa-2x mb-2"></i>
+                <h6 class="mb-0">{{ employee.hire_date|date:"d/m/Y" }}</h6>
+                <small>Fecha de Ingreso</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-info text-white">
+            <div class="card-body">
+                <i class="fas fa-building fa-2x mb-2"></i>
+                <h6 class="mb-0">{{ employee.department.name }}</h6>
+                <small>Departamento</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-warning text-white">
+            <div class="card-body">
+                <i class="fas fa-user-tie fa-2x mb-2"></i>
+                <h6 class="mb-0">{{ employee.position.get_level_display }}</h6>
+                <small>Nivel</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Contenido Principal -->
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Acciones Disponibles -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-tasks me-1"></i>
+                Acciones Disponibles
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- Acciones Básicas -->
+                    <div class="col-md-6 mb-3">
+                        <div class="card border-primary h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-user fa-3x text-primary mb-3"></i>
+                                <h5 class="card-title">Mi Información Personal</h5>
+                                <p class="card-text">Ver y gestionar tu información personal y de contacto.</p>
+                                <a href="{% url 'employees:profile' %}" class="btn btn-primary">
+                                    <i class="fas fa-eye me-2"></i>Ver Perfil
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <div class="card border-warning h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-key fa-3x text-warning mb-3"></i>
+                                <h5 class="card-title">Seguridad de Cuenta</h5>
+                                <p class="card-text">Cambiar tu contraseña y gestionar la seguridad de tu cuenta.</p>
+                                <a href="{% url 'employees:change_password' %}" class="btn btn-warning">
+                                    <i class="fas fa-key me-2"></i>Cambiar Contraseña
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Acciones Adicionales según Permisos -->
+                    {% if can_view_reports %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-info h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-chart-bar fa-3x text-info mb-3"></i>
+                                    <h5 class="card-title">Reportes</h5>
+                                    <p class="card-text">Acceder a reportes y estadísticas del sistema.</p>
+                                    <a href="{% url 'reports:dashboard' %}" class="btn btn-info">
+                                        <i class="fas fa-chart-bar me-2"></i>Ver Reportes
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if can_view_all_employees %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-secondary h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-users-cog fa-3x text-secondary mb-3"></i>
+                                    <h5 class="card-title">Gestión de Empleados</h5>
+                                    <p class="card-text">Administrar información de empleados del departamento.</p>
+                                    <a href="{% url 'employees:list' %}" class="btn btn-secondary">
+                                        <i class="fas fa-users me-2"></i>Ver Empleados
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Información del Departamento -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-building me-1"></i>
+                Mi Departamento - {{ employee.department.name }}
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Información General</h6>
+                        <p class="mb-2">
+                            <strong>Código:</strong> {{ employee.department.code }}
+                        </p>
+                        <p class="mb-2">
+                            <strong>Tipo:</strong> {{ employee.department.get_type_display }}
+                        </p>
+                        <p class="mb-0">
+                            <strong>Estado:</strong> 
+                            {% if employee.department.is_active %}
+                                <span class="badge bg-success">Activo</span>
+                            {% else %}
+                                <span class="badge bg-danger">Inactivo</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Mi Puesto</h6>
+                        <p class="mb-2">
+                            <strong>Título:</strong> {{ employee.position.title }}
+                        </p>
+                        <p class="mb-2">
+                            <strong>Código:</strong> {{ employee.position.code }}
+                        </p>
+                        <p class="mb-0">
+                            <strong>Tipo de Empleo:</strong> {{ employee.position.get_employment_type_display }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Información del Usuario -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-info-circle me-1"></i>
+                Tu Información
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <div class="employee-avatar mx-auto mb-2">
+                        <i class="fas fa-user fa-2x text-white"></i>
+                    </div>
+                    <h6>{{ employee.get_full_name }}</h6>
+                    <small class="text-muted">{{ employee.position.title }}</small>
+                </div>
+                
+                <hr>
+                
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small">Departamento:</span>
+                    <span class="badge bg-info">{{ employee.department.name }}</span>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small">Nivel:</span>
+                    <span class="badge bg-primary">{{ employee.position.get_level_display }}</span>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small">Estado:</span>
+                    {% if employee.is_active %}
+                        <span class="badge bg-success">Activo</span>
+                    {% else %}
+                        <span class="badge bg-danger">Inactivo</span>
+                    {% endif %}
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="small">Permisos:</span>
+                    <span class="badge bg-secondary">{{ permission_level|title }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Capacidades del Sistema -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-shield-alt me-1"></i>
+                Mis Capacidades
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2">
+                        <i class="fas fa-{{ can_view_all_employees|yesno:'check text-success,times text-danger' }} me-2"></i>
+                        Ver empleados del departamento
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-{{ can_edit_employees|yesno:'check text-success,times text-danger' }} me-2"></i>
+                        Editar información de empleados
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-{{ can_view_reports|yesno:'check text-success,times text-danger' }} me-2"></i>
+                        Ver reportes departamentales
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-{{ can_view_payroll|yesno:'check text-success,times text-danger' }} me-2"></i>
+                        Ver información de nómina
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Acceso Rápido -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-bolt me-1"></i>
+                Acceso Rápido
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'dashboard:home' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-home me-2"></i>
+                        Dashboard Principal
+                    </a>
+                    
+                    <a href="{% url 'departments:list' %}" class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-building me-2"></i>
+                        Departamentos
+                    </a>
+                    
+                    <a href="{% url 'positions:list' %}" class="btn btn-outline-warning btn-sm">
+                        <i class="fas fa-briefcase me-2"></i>
+                        Puestos de Trabajo
+                    </a>
+                    
+                    <button class="btn btn-outline-secondary btn-sm" onclick="showHelp()">
+                        <i class="fas fa-question-circle me-2"></i>
+                        Ayuda
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .employee-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #28a745, #20c997);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function showHelp() {
+        alert('Sistema de Gestión de Personal EURO SECURITY\n\n' +
+              'Para obtener ayuda adicional, contacta al administrador del sistema.\n\n' +
+              'Tu nivel de permisos: {{ permission_level|title }}\n' +
+              'Puesto: {{ employee.position.title }}\n' +
+              'Departamento: {{ employee.department.name }}');
+    }
+</script>
+{% endblock %}

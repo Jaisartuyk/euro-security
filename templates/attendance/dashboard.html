@@ -1,0 +1,553 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard de Asistencia - {{ employee.get_full_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">
+        <i class="fas fa-chart-line text-primary me-2"></i>
+        Dashboard de Asistencia
+    </h1>
+    <div>
+        <div class="text-muted small mb-2">
+            Última actualización: <span id="last-update">--:--:--</span>
+        </div>
+        <div>
+            <a href="{% url 'attendance:reports' %}" class="btn btn-info me-2">
+                <i class="fas fa-file-alt me-2"></i>
+                Reportes
+            </a>
+            <span class="badge bg-primary fs-6">
+                {{ employee.position.get_level_display }}
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- Estadísticas del día -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center bg-primary text-white">
+            <div class="card-body">
+                <i class="fas fa-users fa-2x mb-2"></i>
+                <h4 class="mb-0">{{ stats.total_employees }}</h4>
+                <small>Total Empleados</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-success text-white">
+            <div class="card-body">
+                <i class="fas fa-user-check fa-2x mb-2"></i>
+                <h4 class="mb-0">{{ stats.present_today }}</h4>
+                <small>Presentes Hoy</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-warning text-dark">
+            <div class="card-body">
+                <i class="fas fa-clock fa-2x mb-2"></i>
+                <h4 class="mb-0">{{ stats.late_today }}</h4>
+                <small>Llegadas Tarde</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-danger text-white">
+            <div class="card-body">
+                <i class="fas fa-sign-out-alt fa-2x mb-2"></i>
+                <h4 class="mb-0">{{ stats.early_exits }}</h4>
+                <small>Salidas Tempranas</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Registros recientes -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-history me-2"></i>
+                Registros Recientes de Hoy
+            </div>
+            <div class="card-body">
+                {% if recent_records %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Empleado</th>
+                                    <th>Tipo</th>
+                                    <th>Hora</th>
+                                    <th>Método</th>
+                                    <th>Ubicación</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in recent_records %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="employee-avatar-small me-2">
+                                                <i class="fas fa-user text-white"></i>
+                                            </div>
+                                            <div>
+                                                <strong>{{ record.employee.get_full_name }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ record.employee.position.title }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{% if record.attendance_type == 'IN' %}success{% elif record.attendance_type == 'OUT' %}danger{% else %}warning{% endif %}">
+                                            {{ record.get_attendance_type_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <strong>{{ record.timestamp|time:"H:i:s" }}</strong>
+                                    </td>
+                                    <td>
+                                        <i class="fas fa-{% if record.verification_method == 'FACIAL' %}user-check text-success{% else %}user text-secondary{% endif %} me-1"></i>
+                                        {{ record.get_verification_method_display }}
+                                    </td>
+                                    <td>
+                                        {% if record.latitude and record.longitude %}
+                                            <button class="btn btn-outline-info btn-sm location-btn" 
+                                                    data-lat="{{ record.latitude }}" 
+                                                    data-lng="{{ record.longitude }}" 
+                                                    data-employee="{{ record.employee.get_full_name }}">
+                                                <i class="fas fa-map-marker-alt"></i>
+                                            </button>
+                                        {% else %}
+                                            <span class="text-muted">Sin ubicación</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if record.is_valid %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check me-1"></i>Válido
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-exclamation-triangle me-1"></i>Pendiente
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-clock fa-3x mb-3"></i>
+                        <p>No hay registros recientes</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Resumen del día por empleado -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-calendar-day me-2"></i>
+                Resumen del Día por Empleado
+            </div>
+            <div class="card-body">
+                {% if today_summaries %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Empleado</th>
+                                    <th>Primera Entrada</th>
+                                    <th>Última Salida</th>
+                                    <th>Horas Trabajadas</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for summary in today_summaries %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="employee-avatar-small me-2">
+                                                <i class="fas fa-user text-white"></i>
+                                            </div>
+                                            <div>
+                                                <strong>{{ summary.employee.get_full_name }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ summary.employee.employee_id }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if summary.first_entry %}
+                                            <strong>{{ summary.first_entry|time:"H:i" }}</strong>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if summary.last_exit %}
+                                            <strong>{{ summary.last_exit|time:"H:i" }}</strong>
+                                        {% else %}
+                                            <span class="text-muted">En trabajo</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <strong>{{ summary.get_work_hours_display }}</strong>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex flex-wrap gap-1">
+                                            {% if summary.is_present %}
+                                                <span class="badge bg-success">Presente</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Ausente</span>
+                                            {% endif %}
+                                            
+                                            {% if summary.is_late %}
+                                                <span class="badge bg-warning text-dark">Tarde</span>
+                                            {% endif %}
+                                            
+                                            {% if summary.is_early_exit %}
+                                                <span class="badge bg-info">Salida Temprana</span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'employees:detail' summary.employee.pk %}" 
+                                               class="btn btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <button class="btn btn-outline-info view-attendance-btn" 
+                                                    data-employee-id="{{ summary.employee.pk }}" 
+                                                    data-employee-name="{{ summary.employee.get_full_name }}">
+                                                <i class="fas fa-calendar-alt"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-users fa-3x mb-3"></i>
+                        <p>No hay empleados con registros hoy</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- Acciones rápidas -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-bolt me-2"></i>
+                Acciones Rápidas
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'attendance:reports' %}" class="btn btn-primary">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        Reportes Avanzados
+                    </a>
+                    
+                    {% if can_view_all %}
+                        <button class="btn btn-info export-btn">
+                            <i class="fas fa-download me-2"></i>
+                            Exportar Asistencias
+                        </button>
+                        
+                        <button class="btn btn-warning validate-btn">
+                            <i class="fas fa-check-double me-2"></i>
+                            Validar Registros Pendientes
+                        </button>
+                    {% endif %}
+                    
+                    <a href="{% url 'employees:dashboard' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Volver a Mi Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Información del supervisor -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-user-tie me-2"></i>
+                Mi Información
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <div class="supervisor-avatar mx-auto mb-2">
+                        <i class="fas fa-user-tie fa-2x text-white"></i>
+                    </div>
+                    <h6>{{ employee.get_full_name }}</h6>
+                    <small class="text-muted">{{ employee.position.title }}</small>
+                </div>
+                
+                <hr>
+                
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small">Departamento:</span>
+                    <span class="badge bg-info">{{ employee.department.name }}</span>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small">Nivel de Acceso:</span>
+                    <span class="badge bg-warning text-dark">{{ employee.position.get_level_display }}</span>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="small">Empleados a Cargo:</span>
+                    <span class="badge bg-primary">{{ stats.total_employees }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Estadísticas adicionales -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-pie me-2"></i>
+                Estadísticas Adicionales
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="small">Tasa de Asistencia:</span>
+                        <strong>
+                            {% if stats.total_employees > 0 %}
+                                {% widthratio stats.present_today stats.total_employees 100 %}%
+                            {% else %}
+                                0%
+                            {% endif %}
+                        </strong>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        {% if stats.total_employees > 0 %}
+                            {% widthratio stats.present_today stats.total_employees 100 as attendance_percentage %}
+                            <div class="progress-bar bg-success" data-width="{{ attendance_percentage|default:'0' }}"></div>
+                        {% else %}
+                            <div class="progress-bar bg-success" data-width="0"></div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="small">Puntualidad:</span>
+                        <strong>
+                            {% if stats.present_today > 0 %}
+                                {% if stats.late_today > 0 %}
+                                    {% widthratio stats.late_today stats.present_today 100 %}% tarde
+                                {% else %}
+                                    100% puntual
+                                {% endif %}
+                            {% else %}
+                                0%
+                            {% endif %}
+                        </strong>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        {% if stats.present_today > 0 %}
+                            {% if stats.late_today > 0 %}
+                                {% widthratio stats.late_today stats.present_today 100 as late_percentage %}
+                                <div class="progress-bar bg-warning" data-width="{{ late_percentage|default:'0' }}"></div>
+                            {% else %}
+                                <div class="progress-bar bg-success" data-width="100"></div>
+                            {% endif %}
+                        {% else %}
+                            <div class="progress-bar bg-secondary" data-width="0"></div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="text-center">
+                    <small class="text-muted">
+                        <i class="fas fa-sync-alt me-1"></i>
+                        Datos actualizados automáticamente
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para mostrar ubicación -->
+<div class="modal fade" id="locationModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Ubicación de Marcación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="location-content">
+                    <!-- Contenido dinámico -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .employee-avatar-small {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #6c757d, #495057);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .supervisor-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 123, 255, 0.1);
+    }
+    
+    .progress {
+        height: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar tiempo
+        updateLastUpdateTime();
+        
+        // Inicializar progress bars
+        initializeProgressBars();
+        
+        // Actualizar tiempo cada 30 segundos
+        setInterval(function() {
+            updateLastUpdateTime();
+            // Aquí se podría implementar actualización automática de datos
+        }, 30000);
+        
+        // Event listeners para botones
+        document.addEventListener('click', function(e) {
+            // Botón de ubicación
+            if (e.target.closest('.location-btn')) {
+                const btn = e.target.closest('.location-btn');
+                const lat = btn.dataset.lat;
+                const lng = btn.dataset.lng;
+                const employee = btn.dataset.employee;
+                showLocation(lat, lng, employee);
+            }
+            
+            // Botón de exportar
+            if (e.target.closest('.export-btn')) {
+                exportAttendance();
+            }
+            
+            // Botón de validar
+            if (e.target.closest('.validate-btn')) {
+                validatePendingRecords();
+            }
+            
+            // Botón de ver asistencia de empleado
+            if (e.target.closest('.view-attendance-btn')) {
+                const btn = e.target.closest('.view-attendance-btn');
+                const employeeId = btn.dataset.employeeId;
+                const employeeName = btn.dataset.employeeName;
+                viewEmployeeAttendance(employeeId, employeeName);
+            }
+        });
+    });
+    
+    function initializeProgressBars() {
+        // Aplicar estilos a progress bars desde data attributes
+        document.querySelectorAll('.progress-bar[data-width]').forEach(function(bar) {
+            const width = bar.dataset.width;
+            bar.style.width = width + '%';
+        });
+    }
+    
+    function updateLastUpdateTime() {
+        const now = new Date();
+        document.getElementById('last-update').textContent = now.toLocaleTimeString('es-ES');
+    }
+    
+    function showLocation(lat, lng, employeeName) {
+        const modal = new bootstrap.Modal(document.getElementById('locationModal'));
+        const content = document.getElementById('location-content');
+        
+        content.innerHTML = `
+            <div class="text-center mb-3">
+                <h6>Ubicación de marcación de ${employeeName}</h6>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <strong>Coordenadas:</strong><br>
+                    Latitud: ${lat}<br>
+                    Longitud: ${lng}
+                </div>
+                <div class="col-md-6">
+                    <a href="https://maps.google.com/?q=${lat},${lng}" target="_blank" class="btn btn-primary">
+                        <i class="fas fa-map-marker-alt me-2"></i>
+                        Ver en Google Maps
+                    </a>
+                </div>
+            </div>
+            <hr>
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Nota:</strong> En un entorno de producción, aquí se mostraría un mapa interactivo con la ubicación exacta.
+            </div>
+        `;
+        
+        modal.show();
+    }
+    
+    function viewEmployeeAttendance(employeeId, employeeName) {
+        // Redirigir a reportes con filtro del empleado
+        window.location.href = `/asistencia/reportes/?employee_id=${employeeId}`;
+    }
+    
+    function exportAttendance() {
+        alert('Función de exportación en desarrollo.\n\nPronto podrás exportar los datos de asistencia en formato Excel/PDF.');
+    }
+    
+    function validatePendingRecords() {
+        alert('Función de validación masiva en desarrollo.\n\nPronto podrás validar múltiples registros pendientes de una vez.');
+    }
+</script>
+{% endblock %}

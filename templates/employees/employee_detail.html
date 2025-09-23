@@ -1,0 +1,393 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ employee.get_full_name }} - Empleado{% endblock %}
+
+{% block content %}
+<!-- Mostrar credenciales de usuario recién creado -->
+{% if new_credentials %}
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+    <h5 class="alert-heading">
+        <i class="fas fa-user-plus me-2"></i>
+        ¡Usuario Creado Exitosamente!
+    </h5>
+    <p class="mb-2">Se ha creado una cuenta de usuario para <strong>{{ employee.get_full_name }}</strong>:</p>
+    <div class="row">
+        <div class="col-md-6">
+            <strong>Usuario:</strong> <code class="fs-6">{{ new_credentials.username }}</code>
+        </div>
+        <div class="col-md-6">
+            <strong>Contraseña:</strong> <code class="fs-6">{{ new_credentials.password }}</code>
+        </div>
+    </div>
+    <hr>
+    <p class="mb-0">
+        <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+        <strong>Importante:</strong> Guarda estas credenciales de forma segura. La contraseña no se mostrará nuevamente.
+    </p>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+
+<!-- Mostrar credenciales de contraseña reseteada -->
+{% if reset_credentials %}
+<div class="alert alert-warning alert-dismissible fade show" role="alert">
+    <h5 class="alert-heading">
+        <i class="fas fa-key me-2"></i>
+        ¡Contraseña Reseteada Exitosamente!
+    </h5>
+    <p class="mb-2">Se ha reseteado la contraseña del usuario para <strong>{{ employee.get_full_name }}</strong>:</p>
+    <div class="row">
+        <div class="col-md-6">
+            <strong>Usuario:</strong> <code class="fs-6">{{ reset_credentials.username }}</code>
+        </div>
+        <div class="col-md-6">
+            <strong>Nueva Contraseña:</strong> <code class="fs-6">{{ reset_credentials.password }}</code>
+        </div>
+    </div>
+    <hr>
+    <p class="mb-0">
+        <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+        <strong>Importante:</strong> Guarda estas credenciales de forma segura. La contraseña anterior ya no es válida.
+    </p>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">
+        <i class="fas fa-user text-primary me-2"></i>
+        {{ employee.get_full_name }}
+        <span class="badge bg-{{ employee.is_active|yesno:'success,danger' }} ms-2">
+            {{ employee.is_active|yesno:'Activo,Inactivo' }}
+        </span>
+    </h1>
+    <div>
+        <a href="{% url 'employees:edit' employee.pk %}" class="btn btn-primary">
+            <i class="fas fa-edit me-2"></i>
+            Editar
+        </a>
+        <a href="{% url 'employees:list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>
+            Volver
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Información Principal -->
+    <div class="col-lg-8">
+        <!-- Información Personal -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-user me-1"></i>
+                Información Personal
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-id-badge text-primary me-2"></i>ID de Empleado</h6>
+                        <p class="mb-3"><code class="h5">{{ employee.employee_id }}</code></p>
+                        
+                        <h6><i class="fas fa-user text-info me-2"></i>Nombre Completo</h6>
+                        <p class="mb-3"><strong>{{ employee.get_full_name }}</strong></p>
+                        
+                        <h6><i class="fas fa-envelope text-success me-2"></i>Correo Electrónico</h6>
+                        <p class="mb-3">
+                            <a href="mailto:{{ employee.email }}">{{ employee.email }}</a>
+                        </p>
+                        
+                        <h6><i class="fas fa-phone text-warning me-2"></i>Teléfono</h6>
+                        <p class="mb-3">
+                            <a href="tel:{{ employee.phone }}">{{ employee.phone }}</a>
+                        </p>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-id-card text-secondary me-2"></i>Documento de Identidad</h6>
+                        <p class="mb-3"><strong>{{ employee.national_id }}</strong></p>
+                        
+                        <h6><i class="fas fa-birthday-cake text-danger me-2"></i>Fecha de Nacimiento</h6>
+                        <p class="mb-3">{{ employee.date_of_birth|date:"d/m/Y" }}</p>
+                        
+                        <h6><i class="fas fa-venus-mars text-info me-2"></i>Género</h6>
+                        <p class="mb-3">{{ employee.get_gender_display }}</p>
+                        
+                        <h6><i class="fas fa-heart text-danger me-2"></i>Estado Civil</h6>
+                        <p class="mb-3">{{ employee.get_marital_status_display }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Información de Ubicación -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-map-marker-alt me-1"></i>
+                Información de Ubicación
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h6><i class="fas fa-home text-primary me-2"></i>Dirección</h6>
+                        <p class="mb-3">{{ employee.address|linebreaks }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6><i class="fas fa-city text-info me-2"></i>Ciudad</h6>
+                        <p class="mb-2">{{ employee.city }}</p>
+                        
+                        <h6><i class="fas fa-flag text-success me-2"></i>País</h6>
+                        <p class="mb-3">{{ employee.country }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Información Laboral -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-briefcase me-1"></i>
+                Información Laboral
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-building text-primary me-2"></i>Departamento</h6>
+                        <p class="mb-3">
+                            <span class="badge bg-info fs-6">{{ employee.department.name }}</span>
+                            <br><small class="text-muted">Código: {{ employee.department.code }}</small>
+                        </p>
+                        
+                        <h6><i class="fas fa-user-tie text-secondary me-2"></i>Puesto</h6>
+                        <p class="mb-3">
+                            <strong>{{ employee.position.title }}</strong>
+                            <br><small class="text-muted">Código: {{ employee.position.code }}</small>
+                        </p>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-calendar-plus text-success me-2"></i>Fecha de Contratación</h6>
+                        <p class="mb-3">{{ employee.hire_date|date:"d/m/Y" }}</p>
+                        
+                        <h6><i class="fas fa-dollar-sign text-warning me-2"></i>Salario Actual</h6>
+                        <p class="mb-3">
+                            <strong class="h5 text-success">${{ employee.current_salary|floatformat:2 }}</strong>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Información del Sistema -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-cog me-1"></i>
+                Información del Sistema
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-calendar text-info me-2"></i>Fechas del Sistema</h6>
+                        <p class="mb-1"><small class="text-muted">Creado: {{ employee.created_at|date:"d/m/Y H:i" }}</small></p>
+                        <p class="mb-3"><small class="text-muted">Actualizado: {{ employee.updated_at|date:"d/m/Y H:i" }}</small></p>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        {% if employee.user %}
+                            <h6><i class="fas fa-user-cog text-primary me-2"></i>Usuario del Sistema</h6>
+                            <p class="mb-3">
+                                <strong>{{ employee.user.username }}</strong>
+                                <br><small class="text-muted">{{ employee.user.get_full_name }}</small>
+                            </p>
+                        {% else %}
+                            <h6><i class="fas fa-user-plus text-muted me-2"></i>Usuario del Sistema</h6>
+                            <p class="mb-3">
+                                <span class="text-muted">Sin usuario asignado</span>
+                                <br><small class="text-muted">Puede crear un usuario para acceso al sistema</small>
+                            </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Tarjeta de Empleado -->
+        <div class="card mb-4">
+            <div class="card-header text-center">
+                <i class="fas fa-id-badge me-1"></i>
+                Tarjeta de Empleado
+            </div>
+            <div class="card-body text-center">
+                <div class="avatar-circle mx-auto mb-3" style="width: 80px; height: 80px; font-size: 32px;">
+                    <i class="fas fa-user"></i>
+                </div>
+                <h5 class="card-title">{{ employee.get_full_name }}</h5>
+                <p class="card-text">
+                    <strong>{{ employee.position.title }}</strong>
+                    <br><span class="text-muted">{{ employee.department.name }}</span>
+                </p>
+                <p class="card-text">
+                    <code class="fs-6">{{ employee.employee_id }}</code>
+                </p>
+                
+                <div class="mt-3">
+                    {% if employee.is_active %}
+                        <span class="badge bg-success fs-6">
+                            <i class="fas fa-check-circle me-1"></i>Empleado Activo
+                        </span>
+                    {% else %}
+                        <span class="badge bg-danger fs-6">
+                            <i class="fas fa-times-circle me-1"></i>Empleado Inactivo
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Estadísticas del Empleado -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-chart-bar me-1"></i>
+                Estadísticas
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <div class="border rounded p-3">
+                            <i class="fas fa-calendar-alt fa-2x text-primary mb-2"></i>
+                            <h6 class="mb-0" id="days-employed">-</h6>
+                            <small class="text-muted">Días Empleado</small>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="border rounded p-3">
+                            <i class="fas fa-birthday-cake fa-2x text-info mb-2"></i>
+                            <h6 class="mb-0" id="employee-age">-</h6>
+                            <small class="text-muted">Años de Edad</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small">Salario Mensual</span>
+                    <strong class="text-success">${{ employee.current_salary|floatformat:2 }}</strong>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="small">Salario Anual (Estimado)</span>
+                    <strong class="text-info">$<span id="annual-salary">-</span></strong>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Acciones Rápidas -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-bolt me-1"></i>
+                Acciones Rápidas
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'employees:edit' employee.pk %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-edit me-2"></i>
+                        Editar Información
+                    </a>
+                    
+                    <button class="btn btn-outline-info btn-sm" onclick="window.print()">
+                        <i class="fas fa-print me-2"></i>
+                        Imprimir Perfil
+                    </button>
+                    
+                    <a href="mailto:{{ employee.email }}" class="btn btn-outline-success btn-sm">
+                        <i class="fas fa-envelope me-2"></i>
+                        Enviar Email
+                    </a>
+                    
+                    {% if not employee.user %}
+                        <a href="{% url 'employees:create_user' employee.pk %}" class="btn btn-outline-warning btn-sm">
+                            <i class="fas fa-user-plus me-2"></i>
+                            Crear Usuario
+                        </a>
+                    {% else %}
+                        <div class="alert alert-success alert-sm p-2 mb-2">
+                            <i class="fas fa-check-circle me-1"></i>
+                            <small>Usuario: <code>{{ employee.user.username }}</code></small>
+                        </div>
+                        
+                        <a href="{% url 'employees:reset_password' employee.pk %}" class="btn btn-outline-danger btn-sm">
+                            <i class="fas fa-key me-2"></i>
+                            Resetear Contraseña
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .avatar-circle {
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+    }
+    
+    @media print {
+        .btn, .card-header, nav, .sidebar {
+            display: none !important;
+        }
+        
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Variables Django para JavaScript -->
+<script>
+    // Variables desde Django
+    const employeeData = {
+        hireDate: '{{ employee.hire_date|date:"Y-m-d" }}',
+        birthDate: '{{ employee.birth_date|date:"Y-m-d" }}',
+        monthlySalary: parseFloat('{{ employee.current_salary|default:0 }}')
+    };
+</script>
+
+<script>
+    // Calcular días empleado
+    const hireDate = new Date(employeeData.hireDate);
+    const today = new Date();
+    const daysEmployed = Math.floor((today - hireDate) / (1000 * 60 * 60 * 24));
+    document.getElementById('days-employed').textContent = daysEmployed.toLocaleString();
+    
+    // Calcular edad
+    const birthDate = new Date(employeeData.birthDate);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    document.getElementById('employee-age').textContent = age;
+    
+    // Calcular salario anual
+    const monthlySalary = employeeData.monthlySalary;
+    const annualSalary = monthlySalary * 12;
+    const formattedSalary = annualSalary.toLocaleString('es-MX', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+    document.getElementById('annual-salary').textContent = formattedSalary;
+</script>
+{% endblock %}

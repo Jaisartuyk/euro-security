@@ -1,0 +1,125 @@
+# EURO SECURITY - Git Ignore File
+# Archivos y directorios que no deben subirse a Git
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+
+# Entorno virtual
+euro_security_env/
+venv/
+ENV/
+env/
+.venv/
+
+# Variables de entorno
+.env
+.env.local
+.env.production
+.env.staging
+
+# Archivos de configuración sensibles
+settings_production.py
+secrets.json
+
+# Archivos de base de datos
+*.db
+*.sqlite
+*.sqlite3
+
+# Archivos de cache
+.cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Sistema operativo
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Archivos de log
+logs/
+*.log
+
+# Archivos temporales
+tmp/
+temp/
+*.tmp
+
+# Archivos de backup
+*.bak
+*.backup
+
+# Archivos de certificados SSL (si los hay)
+*.pem
+*.key
+*.crt
+*.csr
+
+# Archivos de configuración de servidor
+nginx.conf
+apache.conf
+
+# Archivos de deployment específicos
+deploy.sh
+docker-compose.override.yml
+
+# Archivos de prueba
+test_data/
+test_uploads/
+
+# Archivos de reconocimiento facial (datos sensibles)
+facial_profiles/
+training_data/
+
+# Archivos de GPS de prueba
+gps_test_data/
+
+# Node modules (si se usan)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Archivos de configuración local
+local_config.py
+development_settings.py

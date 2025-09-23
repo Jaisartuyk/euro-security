@@ -1,0 +1,365 @@
+{% extends 'base.html' %}
+
+{% block title %}Reportes - Sistema de Gestión de Personal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">
+        <i class="fas fa-chart-bar text-primary me-2"></i>
+        Centro de Reportes
+    </h1>
+    <div class="btn-group" role="group">
+        <button type="button" class="btn btn-outline-primary" onclick="window.print()">
+            <i class="fas fa-print me-2"></i>
+            Imprimir
+        </button>
+        <button type="button" class="btn btn-outline-success" onclick="exportData()">
+            <i class="fas fa-file-excel me-2"></i>
+            Exportar
+        </button>
+    </div>
+</div>
+
+<!-- Estadísticas Generales -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0">{{ total_employees }}</h4>
+                        <p class="mb-0">Empleados Activos</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0">{{ total_departments }}</h4>
+                        <p class="mb-0">Departamentos</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-building fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0">{{ total_positions }}</h4>
+                        <p class="mb-0">Puestos de Trabajo</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-briefcase fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0" id="avg-salary">-</h4>
+                        <p class="mb-0">Salario Promedio</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-dollar-sign fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tipos de Reportes -->
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-line me-1"></i>
+                Tipos de Reportes Disponibles
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="card border-primary h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-users fa-3x text-primary mb-3"></i>
+                                <h5 class="card-title">Reportes de Empleados</h5>
+                                <p class="card-text">Información detallada de empleados, contrataciones, bajas y estadísticas.</p>
+                                <a href="{% url 'reports:employees' %}" class="btn btn-primary">
+                                    <i class="fas fa-eye me-2"></i>Ver Reporte
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <div class="card border-success h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-building fa-3x text-success mb-3"></i>
+                                <h5 class="card-title">Reportes de Departamentos</h5>
+                                <p class="card-text">Análisis por departamento, presupuestos y utilización de recursos.</p>
+                                <a href="{% url 'reports:departments' %}" class="btn btn-success">
+                                    <i class="fas fa-eye me-2"></i>Ver Reporte
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <div class="card border-warning h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-briefcase fa-3x text-warning mb-3"></i>
+                                <h5 class="card-title">Reportes de Puestos</h5>
+                                <p class="card-text">Análisis de puestos de trabajo, vacantes y distribución jerárquica.</p>
+                                <a href="{% url 'reports:positions' %}" class="btn btn-warning">
+                                    <i class="fas fa-eye me-2"></i>Ver Reporte
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <div class="card border-info h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-calculator fa-3x text-info mb-3"></i>
+                                <h5 class="card-title">Reportes de Nómina</h5>
+                                <p class="card-text">Cálculos de nómina, deducciones y resúmenes de pagos.</p>
+                                <a href="{% url 'reports:payroll' %}" class="btn btn-info">
+                                    <i class="fas fa-eye me-2"></i>Ver Reporte
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- Gráfico de Empleados por Departamento -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-chart-pie me-1"></i>
+                Empleados por Departamento
+            </div>
+            <div class="card-body">
+                <canvas id="departmentChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+        
+        <!-- Acciones Rápidas -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-bolt me-1"></i>
+                Acciones Rápidas
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'reports:analytics' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-chart-line me-2"></i>
+                        Reportes Analíticos
+                    </a>
+                    
+                    <button class="btn btn-outline-success btn-sm" onclick="generateMonthlyReport()">
+                        <i class="fas fa-file-pdf me-2"></i>
+                        Reporte Mensual
+                    </button>
+                    
+                    <button class="btn btn-outline-info btn-sm" onclick="generatePayrollReport()">
+                        <i class="fas fa-money-bill-wave me-2"></i>
+                        Reporte de Nómina
+                    </button>
+                    
+                    <button class="btn btn-outline-warning btn-sm" onclick="generateCustomReport()">
+                        <i class="fas fa-cog me-2"></i>
+                        Reporte Personalizado
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reportes Recientes -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-history me-1"></i>
+                Reportes Recientes
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Tipo de Reporte</th>
+                                <th>Fecha de Generación</th>
+                                <th>Usuario</th>
+                                <th>Registros</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <i class="fas fa-users text-primary me-2"></i>
+                                    Reporte de Empleados
+                                </td>
+                                <td>{{ "now"|date:"d/m/Y H:i" }}</td>
+                                <td>{{ user.get_full_name|default:user.username }}</td>
+                                <td>{{ total_employees }}</td>
+                                <td><span class="badge bg-success">Completado</span></td>
+                                <td>
+                                    <a href="{% url 'reports:employees' %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <i class="fas fa-building text-success me-2"></i>
+                                    Reporte de Departamentos
+                                </td>
+                                <td>{{ "now"|date:"d/m/Y H:i" }}</td>
+                                <td>{{ user.get_full_name|default:user.username }}</td>
+                                <td>{{ total_departments }}</td>
+                                <td><span class="badge bg-success">Completado</span></td>
+                                <td>
+                                    <a href="{% url 'reports:departments' %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <i class="fas fa-calculator text-info me-2"></i>
+                                    Reporte de Nómina
+                                </td>
+                                <td>{{ "now"|date:"d/m/Y H:i" }}</td>
+                                <td>{{ user.get_full_name|default:user.username }}</td>
+                                <td>{{ total_employees }}</td>
+                                <td><span class="badge bg-warning">En Proceso</span></td>
+                                <td>
+                                    <a href="{% url 'reports:payroll' %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+    
+    @media print {
+        .btn, .card-header, nav, .sidebar {
+            display: none !important;
+        }
+        
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Cargar estadísticas generales
+    fetch('{% url "reports:api" %}?type=general')
+        .then(response => response.json())
+        .then(data => {
+            if (data.avg_salary) {
+                document.getElementById('avg-salary').textContent = 
+                    '$' + data.avg_salary.toLocaleString('es-MX', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+            }
+        })
+        .catch(error => console.log('Error loading stats:', error));
+    
+    // Gráfico de empleados por departamento
+    fetch('{% url "reports:api" %}?type=employees_by_department')
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('departmentChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: data.map(item => item.name),
+                    datasets: [{
+                        data: data.map(item => item.employee_count),
+                        backgroundColor: [
+                            '#FF6384',
+                            '#36A2EB',
+                            '#FFCE56',
+                            '#4BC0C0',
+                            '#9966FF',
+                            '#FF9F40'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => console.log('Error loading chart:', error));
+    
+    // Funciones para acciones rápidas
+    function exportData() {
+        alert('Función de exportación en desarrollo');
+    }
+    
+    function generateMonthlyReport() {
+        alert('Generando reporte mensual...');
+    }
+    
+    function generatePayrollReport() {
+        window.location.href = '{% url "reports:payroll" %}';
+    }
+    
+    function generateCustomReport() {
+        alert('Configurador de reportes personalizados en desarrollo');
+    }
+</script>
+{% endblock %}

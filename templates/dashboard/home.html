@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Sistema de Gestión de Personal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">
+        <i class="fas fa-tachometer-alt text-primary me-2"></i>
+        Dashboard Principal
+    </h1>
+    <div class="text-muted">
+        <i class="fas fa-clock me-1"></i>
+        Última actualización: <span id="last-update">{{ "now"|date:"d/m/Y H:i" }}</span>
+    </div>
+</div>
+
+<!-- Estadísticas principales -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Total Empleados
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_employees }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-users fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Departamentos
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_departments }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-building fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Puestos de Trabajo
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_positions }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-briefcase fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Nuevos Este Mes
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ new_employees_this_month }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-user-plus fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Acciones Rápidas -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-bolt me-1"></i>
+                Acciones Rápidas
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <a href="/empleados/crear/" class="btn btn-primary w-100">
+                            <i class="fas fa-user-plus me-2"></i>
+                            Nuevo Empleado
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="/departamentos/crear/" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-building me-2"></i>
+                            Nuevo Departamento
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="/puestos/crear/" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-briefcase me-2"></i>
+                            Nuevo Puesto
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="/reportes/" class="btn btn-outline-secondary w-100">
+                            <i class="fas fa-file-pdf me-2"></i>
+                            Ver Reportes
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Información del Sistema -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-info-circle me-1"></i>
+                Información del Sistema
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-shield-alt text-primary me-2"></i>TV Services</h6>
+                        <p class="text-muted">Sistema de Gestión de Personal para Seguridad Física</p>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success me-2"></i>Gestión completa de empleados</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Control por departamentos</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Administración de puestos</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Reportes y análisis</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-cog text-secondary me-2"></i>Estado del Sistema</h6>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="text-center">
+                                    <i class="fas fa-database fa-2x text-success mb-2"></i>
+                                    <p class="small mb-0">Base de Datos</p>
+                                    <span class="badge bg-success">Conectada</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-center">
+                                    <i class="fas fa-server fa-2x text-success mb-2"></i>
+                                    <p class="small mb-0">Servidor</p>
+                                    <span class="badge bg-success">Activo</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Actualizar timestamp cada minuto
+    setInterval(function() {
+        const now = new Date();
+        const formatted = now.toLocaleDateString('es-MX') + ' ' + now.toLocaleTimeString('es-MX', {hour: '2-digit', minute:'2-digit'});
+        document.getElementById('last-update').textContent = formatted;
+    }, 60000);
+</script>
+{% endblock %}

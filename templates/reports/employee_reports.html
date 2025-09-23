@@ -1,0 +1,275 @@
+{% extends 'base.html' %}
+
+{% block title %}Reportes de Empleados - Sistema de Gestión de Personal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">
+        <i class="fas fa-users text-primary me-2"></i>
+        Reportes de Empleados
+    </h1>
+    <div>
+        <a href="{% url 'reports:dashboard' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>
+            Volver a Reportes
+        </a>
+        <button class="btn btn-primary" onclick="window.print()">
+            <i class="fas fa-print me-2"></i>
+            Imprimir
+        </button>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="fas fa-filter me-1"></i>
+        Filtros de Búsqueda
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="department" class="form-label">Departamento</label>
+                <select class="form-select" id="department" name="department">
+                    <option value="">Todos los departamentos</option>
+                    {% for dept in departments %}
+                        <option value="{{ dept.id }}" {% if selected_department == dept.id|stringformat:"s" %}selected{% endif %}>
+                            {{ dept.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="position" class="form-label">Puesto</label>
+                <select class="form-select" id="position" name="position">
+                    <option value="">Todos los puestos</option>
+                    {% for pos in positions %}
+                        <option value="{{ pos.id }}" {% if selected_position == pos.id|stringformat:"s" %}selected{% endif %}>
+                            {{ pos.title }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="date_from" class="form-label">Fecha Desde</label>
+                <input type="date" class="form-control" id="date_from" name="date_from" value="{{ date_from }}">
+            </div>
+            <div class="col-md-2">
+                <label for="date_to" class="form-label">Fecha Hasta</label>
+                <input type="date" class="form-control" id="date_to" name="date_to" value="{{ date_to }}">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="fas fa-search"></i> Filtrar
+                </button>
+                <a href="{% url 'reports:employees' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Estadísticas Resumidas -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center bg-primary text-white">
+            <div class="card-body">
+                <h4 class="mb-0">{{ stats.total }}</h4>
+                <small>Total Empleados</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-success text-white">
+            <div class="card-body">
+                <h4 class="mb-0">{{ stats.active }}</h4>
+                <small>Empleados Activos</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-warning text-white">
+            <div class="card-body">
+                <h4 class="mb-0">${{ stats.avg_salary|floatformat:2 }}</h4>
+                <small>Salario Promedio</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-info text-white">
+            <div class="card-body">
+                <h4 class="mb-0">${{ stats.total_payroll|floatformat:2 }}</h4>
+                <small>Nómina Total</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla de Empleados -->
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-table me-1"></i>
+        Listado de Empleados
+        <span class="badge bg-secondary ms-2">{{ stats.total }} registros</span>
+    </div>
+    <div class="card-body">
+        {% if employees %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Empleado</th>
+                            <th>Departamento</th>
+                            <th>Puesto</th>
+                            <th>Fecha Ingreso</th>
+                            <th>Salario</th>
+                            <th>Estado</th>
+                            <th>Contacto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for employee in employees %}
+                            <tr>
+                                <td><code>{{ employee.employee_id }}</code></td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-circle me-2">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                        <div>
+                                            <strong>{{ employee.get_full_name }}</strong>
+                                            <br><small class="text-muted">{{ employee.national_id }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ employee.department.name }}</span>
+                                    <br><small class="text-muted">{{ employee.department.code }}</small>
+                                </td>
+                                <td>
+                                    <strong>{{ employee.position.title }}</strong>
+                                    <br><small class="text-muted">{{ employee.position.code }}</small>
+                                </td>
+                                <td>{{ employee.hire_date|date:"d/m/Y" }}</td>
+                                <td class="text-success">
+                                    <strong>${{ employee.current_salary|floatformat:2 }}</strong>
+                                </td>
+                                <td>
+                                    {% if employee.is_active %}
+                                        <span class="badge bg-success">Activo</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Inactivo</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small>
+                                        <i class="fas fa-envelope me-1"></i>{{ employee.email|truncatechars:20 }}
+                                        <br><i class="fas fa-phone me-1"></i>{{ employee.phone }}
+                                    </small>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            {% if employees.count == 50 %}
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Nota:</strong> Se muestran los primeros 50 registros. Use los filtros para refinar la búsqueda.
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No se encontraron empleados</h5>
+                <p class="text-muted">No hay empleados que coincidan con los criterios de búsqueda.</p>
+                <a href="{% url 'employees:create' %}" class="btn btn-primary">
+                    <i class="fas fa-user-plus me-2"></i>
+                    Registrar Primer Empleado
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Resumen Estadístico -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-calculator me-1"></i>
+                Resumen Estadístico
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6>Información General</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Total de empleados:</strong> {{ stats.total }}</li>
+                            <li><strong>Empleados activos:</strong> {{ stats.active }}</li>
+                            <li><strong>Empleados inactivos:</strong> {{ stats.inactive }}</li>
+                            <li><strong>Tasa de actividad:</strong> 
+                                {% if stats.total > 0 %}
+                                    {% widthratio stats.active stats.total 100 %}%
+                                {% else %}
+                                    0%
+                                {% endif %}
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Información Salarial</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Salario promedio:</strong> ${{ stats.avg_salary|floatformat:2 }}</li>
+                            <li><strong>Nómina total:</strong> ${{ stats.total_payroll|floatformat:2 }}</li>
+                            <li><strong>Nómina anual estimada:</strong> ${{ stats.total_payroll|floatformat:2 }} x 12</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Fecha del Reporte</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Generado el:</strong> {{ "now"|date:"d/m/Y H:i" }}</li>
+                            <li><strong>Usuario:</strong> {{ user.get_full_name|default:user.username }}</li>
+                            <li><strong>Sistema:</strong> EURO SECURITY</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .avatar-circle {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 12px;
+    }
+    
+    @media print {
+        .btn, .card-header, nav, .sidebar, .no-print {
+            display: none !important;
+        }
+        
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+        }
+        
+        .table {
+            font-size: 12px;
+        }
+    }
+</style>
+{% endblock %}

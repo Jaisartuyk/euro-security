@@ -1,0 +1,338 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ position.title }} - Puesto de Trabajo{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">
+        <i class="fas fa-briefcase text-primary me-2"></i>
+        {{ position.title }}
+        <span class="badge bg-primary ms-2">{{ position.get_level_display }}</span>
+        {% if position.is_active %}
+            <span class="badge bg-success ms-1">Activo</span>
+        {% else %}
+            <span class="badge bg-danger ms-1">Inactivo</span>
+        {% endif %}
+        {% if position.is_hiring %}
+            <span class="badge bg-warning text-dark ms-1">Contratando</span>
+        {% endif %}
+    </h1>
+    <div>
+        <a href="{% url 'positions:edit' position.pk %}" class="btn btn-primary">
+            <i class="fas fa-edit me-2"></i>
+            Editar
+        </a>
+        <a href="{% url 'positions:list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>
+            Volver
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Información Principal -->
+    <div class="col-lg-8">
+        <!-- Información General -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-info-circle me-1"></i>
+                Información General
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-code text-primary me-2"></i>Código del Puesto</h6>
+                        <p class="mb-3"><code class="h5">{{ position.code }}</code></p>
+                        
+                        <h6><i class="fas fa-building text-info me-2"></i>Departamento</h6>
+                        <p class="mb-3">
+                            <span class="badge bg-info fs-6">{{ position.department.name }}</span>
+                            <br><small class="text-muted">Código: {{ position.department.code }}</small>
+                        </p>
+                        
+                        <h6><i class="fas fa-layer-group text-secondary me-2"></i>Nivel Jerárquico</h6>
+                        <p class="mb-3">
+                            <span class="badge bg-primary fs-6">{{ position.get_level_display }}</span>
+                        </p>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-clock text-warning me-2"></i>Tipo de Empleo</h6>
+                        <p class="mb-3">{{ position.get_employment_type_display }}</p>
+                        
+                        <h6><i class="fas fa-users text-success me-2"></i>Capacidad</h6>
+                        <p class="mb-3">
+                            <strong>{{ position.max_positions }}</strong> posición(es) máxima(s)
+                        </p>
+                        
+                        <h6><i class="fas fa-calendar text-secondary me-2"></i>Fechas del Sistema</h6>
+                        <p class="mb-1"><small class="text-muted">Creado: {{ position.created_at|date:"d/m/Y H:i" }}</small></p>
+                        <p class="mb-3"><small class="text-muted">Actualizado: {{ position.updated_at|date:"d/m/Y H:i" }}</small></p>
+                    </div>
+                </div>
+                
+                {% if position.description %}
+                    <hr>
+                    <h6><i class="fas fa-align-left text-dark me-2"></i>Descripción del Puesto</h6>
+                    <div class="bg-light p-3 rounded">
+                        <p class="mb-0">{{ position.description|linebreaks }}</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Información Salarial -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-dollar-sign me-1"></i>
+                Información Salarial
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 mb-3">
+                            <i class="fas fa-arrow-down fa-2x text-info mb-2"></i>
+                            <h5 class="text-info mb-1">${{ position.min_salary|floatformat:2 }}</h5>
+                            <small class="text-muted">Salario Mínimo</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 mb-3">
+                            <i class="fas fa-arrow-up fa-2x text-success mb-2"></i>
+                            <h5 class="text-success mb-1">${{ position.max_salary|floatformat:2 }}</h5>
+                            <small class="text-muted">Salario Máximo</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 mb-3">
+                            <i class="fas fa-chart-line fa-2x text-warning mb-2"></i>
+                            <h5 class="text-warning mb-1">${{ avg_salary|default:0|floatformat:2 }}</h5>
+                            <small class="text-muted">Promedio Actual</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Rango Salarial:</strong> ${{ position.min_salary|floatformat:2 }} - ${{ position.max_salary|floatformat:2 }}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Empleados Actuales -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>
+                    <i class="fas fa-users me-1"></i>
+                    Empleados en este Puesto
+                </span>
+                <span class="badge bg-primary">{{ total_employees }} de {{ position.max_positions }}</span>
+            </div>
+            <div class="card-body">
+                {% if current_employees %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Empleado</th>
+                                    <th>Email</th>
+                                    <th>Teléfono</th>
+                                    <th>Salario</th>
+                                    <th>Fecha Ingreso</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for employee in current_employees %}
+                                    <tr>
+                                        <td><code>{{ employee.employee_id }}</code></td>
+                                        <td>
+                                            <strong>{{ employee.get_full_name }}</strong>
+                                        </td>
+                                        <td>{{ employee.email }}</td>
+                                        <td>{{ employee.phone }}</td>
+                                        <td class="text-success">${{ employee.current_salary|floatformat:2 }}</td>
+                                        <td>{{ employee.hire_date|date:"d/m/Y" }}</td>
+                                        <td>
+                                            {% if employee.is_active %}
+                                                <span class="badge bg-success">Activo</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Inactivo</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-users fa-2x text-muted mb-2"></i>
+                        <p class="text-muted">No hay empleados asignados a este puesto</p>
+                        {% if position.is_hiring %}
+                            <a href="/empleados/crear/?position={{ position.pk }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-user-plus me-1"></i>
+                                Contratar Empleado
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Tarjeta del Puesto -->
+        <div class="card mb-4">
+            <div class="card-header text-center">
+                <i class="fas fa-id-badge me-1"></i>
+                Tarjeta del Puesto
+            </div>
+            <div class="card-body text-center">
+                <div class="position-icon mx-auto mb-3">
+                    <i class="fas fa-briefcase fa-3x text-primary"></i>
+                </div>
+                <h5 class="card-title">{{ position.title }}</h5>
+                <p class="card-text">
+                    <span class="text-muted">{{ position.department.name }}</span>
+                </p>
+                <p class="card-text">
+                    <code class="fs-6">{{ position.code }}</code>
+                </p>
+                
+                <div class="mt-3">
+                    <span class="badge bg-primary fs-6 me-1">{{ position.get_level_display }}</span>
+                    {% if position.is_active %}
+                        <span class="badge bg-success fs-6">
+                            <i class="fas fa-check-circle me-1"></i>Activo
+                        </span>
+                    {% else %}
+                        <span class="badge bg-danger fs-6">
+                            <i class="fas fa-times-circle me-1"></i>Inactivo
+                        </span>
+                    {% endif %}
+                </div>
+                
+                {% if position.is_hiring %}
+                    <div class="mt-2">
+                        <span class="badge bg-warning text-dark fs-6">
+                            <i class="fas fa-user-plus me-1"></i>En Proceso de Contratación
+                        </span>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Estadísticas del Puesto -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-chart-bar me-1"></i>
+                Estadísticas
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <div class="border rounded p-3">
+                            <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                            <h4 class="mb-0">{{ total_employees }}</h4>
+                            <small class="text-muted">Empleados Actuales</small>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="border rounded p-3">
+                            <i class="fas fa-user-plus fa-2x text-success mb-2"></i>
+                            <h4 class="mb-0">{{ available_positions }}</h4>
+                            <small class="text-muted">Vacantes</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Barra de progreso simple -->
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="small">Ocupación del Puesto</span>
+                        <span class="small">{{ total_employees }}/{{ position.max_positions }}</span>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: 70%"></div>
+                    </div>
+                    <small class="text-muted">{{ total_employees }}/{{ position.max_positions }} ocupado</small>
+                </div>
+                
+                <hr>
+                
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small">Rango Salarial</span>
+                    <strong class="text-primary">${{ position.min_salary|floatformat:0 }} - ${{ position.max_salary|floatformat:0 }}</strong>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="small">Salario Promedio</span>
+                    <strong class="text-success">${{ avg_salary|default:0|floatformat:2 }}</strong>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Acciones Rápidas -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-bolt me-1"></i>
+                Acciones Rápidas
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'positions:edit' position.pk %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-edit me-2"></i>
+                        Editar Puesto
+                    </a>
+                    
+                    {% if position.is_hiring and available_positions > 0 %}
+                        <a href="/empleados/crear/?position={{ position.pk }}" class="btn btn-outline-success btn-sm">
+                            <i class="fas fa-user-plus me-2"></i>
+                            Contratar Empleado
+                        </a>
+                    {% endif %}
+                    
+                    <button class="btn btn-outline-info btn-sm" onclick="window.print()">
+                        <i class="fas fa-print me-2"></i>
+                        Imprimir Información
+                    </button>
+                    
+                    <a href="/empleados/?position={{ position.pk }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-users me-2"></i>
+                        Ver Todos los Empleados
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .position-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+    }
+    
+    @media print {
+        .btn, .card-header, nav, .sidebar {
+            display: none !important;
+        }
+        
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+        }
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,267 @@
+{% extends 'base.html' %}
+
+{% block title %}Departamentos - Sistema de Gestión de Personal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">
+        <i class="fas fa-building text-primary me-2"></i>
+        Gestión de Departamentos
+    </h1>
+    <a href="{% url 'departments:create' %}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>
+        Nuevo Departamento
+    </a>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label for="search" class="form-label">Buscar</label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       value="{{ search }}" placeholder="Nombre, código o descripción...">
+            </div>
+            <div class="col-md-3">
+                <label for="type" class="form-label">Tipo de Departamento</label>
+                <select class="form-select" id="type" name="type">
+                    <option value="">Todos los tipos</option>
+                    {% for value, label in department_types %}
+                        <option value="{{ value }}" {% if selected_type == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="status" class="form-label">Estado</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">Todos</option>
+                    <option value="active" {% if selected_status == 'active' %}selected{% endif %}>Activos</option>
+                    <option value="inactive" {% if selected_status == 'inactive' %}selected{% endif %}>Inactivos</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-search"></i>
+                </button>
+                <a href="{% url 'departments:list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Lista de Departamentos -->
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-list me-1"></i>
+        Lista de Departamentos
+        <span class="badge bg-secondary ms-2">{{ page_obj.paginator.count|default:0 }} total</span>
+    </div>
+    <div class="card-body">
+        {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Nombre</th>
+                            <th>Tipo</th>
+                            <th>Jefe</th>
+                            <th>Empleados</th>
+                            <th>Puestos</th>
+                            <th>Presupuesto</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for department in page_obj %}
+                            <tr>
+                                <td>
+                                    <strong class="text-primary">{{ department.code }}</strong>
+                                </td>
+                                <td>
+                                    <div>
+                                        <strong>{{ department.name }}</strong>
+                                        {% if department.description %}
+                                            <br><small class="text-muted">{{ department.description|truncatewords:8 }}</small>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ department.get_department_type_display }}</span>
+                                </td>
+                                <td>
+                                    {% if department.manager %}
+                                        <div>
+                                            <strong>{{ department.manager.get_full_name }}</strong>
+                                            <br><small class="text-muted">{{ department.manager.username }}</small>
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted">Sin asignar</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary">{{ department.employee_count|default:0 }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ department.position_count|default:0 }}</span>
+                                </td>
+                                <td>
+                                    <strong>${{ department.budget|floatformat:2 }}</strong>
+                                </td>
+                                <td>
+                                    {% if department.is_active %}
+                                        <span class="badge bg-success">Activo</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Inactivo</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'departments:detail' department.pk %}" 
+                                           class="btn btn-sm btn-outline-primary" title="Ver detalles">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'departments:edit' department.pk %}" 
+                                           class="btn btn-sm btn-outline-secondary" title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="9" class="text-center py-4">
+                                    <i class="fas fa-building fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">No hay departamentos registrados</h5>
+                                    <p class="text-muted">Comienza creando tu primer departamento.</p>
+                                    <a href="{% url 'departments:create' %}" class="btn btn-primary">
+                                        <i class="fas fa-plus me-2"></i>
+                                        Crear Departamento
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginación -->
+            {% if page_obj.has_other_pages %}
+                <nav aria-label="Paginación de departamentos" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if search %}&search={{ search }}{% endif %}{% if selected_type %}&type={{ selected_type }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if selected_type %}&type={{ selected_type }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if search %}&search={{ search }}{% endif %}{% if selected_type %}&type={{ selected_type }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if selected_type %}&type={{ selected_type }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}{% if selected_type %}&type={{ selected_type }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-building fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No se encontraron departamentos</h5>
+                <p class="text-muted">No hay departamentos que coincidan con los criterios de búsqueda.</p>
+                <a href="{% url 'departments:create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>
+                    Crear Primer Departamento
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Estadísticas rápidas -->
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-building fa-2x text-primary mb-2"></i>
+                <h5>{{ page_obj.paginator.count|default:0 }}</h5>
+                <small class="text-muted">Total Departamentos</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-users fa-2x text-success mb-2"></i>
+                <h5 id="total-employees">-</h5>
+                <small class="text-muted">Total Empleados</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-dollar-sign fa-2x text-warning mb-2"></i>
+                <h5 id="total-budget">-</h5>
+                <small class="text-muted">Presupuesto Total</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-chart-line fa-2x text-info mb-2"></i>
+                <h5 id="avg-employees">-</h5>
+                <small class="text-muted">Promedio Empleados</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-submit del formulario de filtros con delay
+    let searchTimeout;
+    const searchInput = document.getElementById('search');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                this.form.submit();
+            }, 500);
+        });
+    }
+</script>
+{% endblock %}

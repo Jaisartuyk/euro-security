@@ -1,0 +1,23 @@
+# Bibliotecas compatibles con Python 3.13
+# EURO SECURITY - Sistema Biométrico Alternativo
+
+# Procesamiento de imágenes básico (compatible)
+Pillow==10.0.0
+numpy==1.24.3
+
+# OpenCV básico (más compatible)
+opencv-python-headless==4.8.1.78
+
+# Bibliotecas de machine learning compatibles
+scikit-learn==1.3.0
+scipy==1.11.1
+
+# Utilidades de imagen
+imageio==2.31.1
+matplotlib==3.7.2
+
+# Procesamiento adicional
+requests==2.31.0
+
+# NOTA: face-recognition y dlib tienen problemas con Python 3.13
+# Usaremos implementación alternativa compatible

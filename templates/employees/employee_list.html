@@ -1,0 +1,309 @@
+{% extends 'base.html' %}
+
+{% block title %}Empleados - Sistema de Gestión de Personal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">
+        <i class="fas fa-users text-primary me-2"></i>
+        Gestión de Empleados
+    </h1>
+    <a href="{% url 'employees:create' %}" class="btn btn-primary">
+        <i class="fas fa-user-plus me-2"></i>
+        Nuevo Empleado
+    </a>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="search" class="form-label">Buscar</label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       value="{{ search }}" placeholder="Nombre, ID, email, documento...">
+            </div>
+            <div class="col-md-3">
+                <label for="department" class="form-label">Departamento</label>
+                <select class="form-select" id="department" name="department">
+                    <option value="">Todos los departamentos</option>
+                    {% for dept in departments %}
+                        <option value="{{ dept.id }}" {% if selected_department == dept.id|stringformat:"s" %}selected{% endif %}>
+                            {{ dept.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="position" class="form-label">Puesto</label>
+                <select class="form-select" id="position" name="position">
+                    <option value="">Todos los puestos</option>
+                    {% for pos in positions %}
+                        <option value="{{ pos.id }}" {% if selected_position == pos.id|stringformat:"s" %}selected{% endif %}>
+                            {{ pos.title }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="status" class="form-label">Estado</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">Todos</option>
+                    <option value="active" {% if selected_status == 'active' %}selected{% endif %}>Activos</option>
+                    <option value="inactive" {% if selected_status == 'inactive' %}selected{% endif %}>Inactivos</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-search"></i>
+                </button>
+                <a href="{% url 'employees:list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Lista de Empleados -->
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-list me-1"></i>
+        Lista de Empleados
+        <span class="badge bg-secondary ms-2">{{ page_obj.paginator.count|default:0 }} total</span>
+    </div>
+    <div class="card-body">
+        {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Empleado</th>
+                            <th>Departamento</th>
+                            <th>Puesto</th>
+                            <th>Contacto</th>
+                            <th>Salario</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for employee in page_obj %}
+                            <tr>
+                                <td>
+                                    <code class="text-primary">{{ employee.employee_id }}</code>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-circle me-2">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                        <div>
+                                            <strong>{{ employee.get_full_name }}</strong>
+                                            <br><small class="text-muted">{{ employee.national_id }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ employee.department.name }}</span>
+                                    <br><small class="text-muted">{{ employee.department.code }}</small>
+                                </td>
+                                <td>
+                                    <strong>{{ employee.position.title }}</strong>
+                                    <br><small class="text-muted">{{ employee.position.code }}</small>
+                                </td>
+                                <td>
+                                    <div>
+                                        <i class="fas fa-envelope me-1"></i>{{ employee.email }}
+                                        <br><i class="fas fa-phone me-1"></i>{{ employee.phone }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <strong class="text-success">${{ employee.current_salary|floatformat:2 }}</strong>
+                                </td>
+                                <td>
+                                    {% if employee.is_active %}
+                                        <span class="badge bg-success">Activo</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Inactivo</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'employees:detail' employee.pk %}" 
+                                           class="btn btn-sm btn-outline-primary" title="Ver detalles">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'employees:edit' employee.pk %}" 
+                                           class="btn btn-sm btn-outline-secondary" title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center py-4">
+                                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">No hay empleados registrados</h5>
+                                    <p class="text-muted">Comienza registrando tu primer empleado.</p>
+                                    <a href="{% url 'employees:create' %}" class="btn btn-primary">
+                                        <i class="fas fa-user-plus me-2"></i>
+                                        Registrar Empleado
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginación -->
+            {% if page_obj.has_other_pages %}
+                <nav aria-label="Paginación de empleados" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if search %}&search={{ search }}{% endif %}{% if selected_department %}&department={{ selected_department }}{% endif %}{% if selected_position %}&position={{ selected_position }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if selected_department %}&department={{ selected_department }}{% endif %}{% if selected_position %}&position={{ selected_position }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if search %}&search={{ search }}{% endif %}{% if selected_department %}&department={{ selected_department }}{% endif %}{% if selected_position %}&position={{ selected_position }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if selected_department %}&department={{ selected_department }}{% endif %}{% if selected_position %}&position={{ selected_position }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}{% if selected_department %}&department={{ selected_department }}{% endif %}{% if selected_position %}&position={{ selected_position }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No se encontraron empleados</h5>
+                <p class="text-muted">No hay empleados que coincidan con los criterios de búsqueda.</p>
+                <a href="{% url 'employees:create' %}" class="btn btn-primary">
+                    <i class="fas fa-user-plus me-2"></i>
+                    Registrar Primer Empleado
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Estadísticas rápidas -->
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                <h5>{{ page_obj.paginator.count|default:0 }}</h5>
+                <small class="text-muted">Total Empleados</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-building fa-2x text-success mb-2"></i>
+                <h5 id="active-departments">{{ departments.count }}</h5>
+                <small class="text-muted">Departamentos Activos</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-briefcase fa-2x text-warning mb-2"></i>
+                <h5 id="active-positions">{{ positions.count }}</h5>
+                <small class="text-muted">Puestos Disponibles</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-dollar-sign fa-2x text-info mb-2"></i>
+                <h5 id="avg-salary">-</h5>
+                <small class="text-muted">Salario Promedio</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .avatar-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 14px;
+    }
+    
+    .table td {
+        vertical-align: middle;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-submit del formulario de filtros con delay
+    let searchTimeout;
+    const searchInput = document.getElementById('search');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                this.form.submit();
+            }, 500);
+        });
+    }
+    
+    // Cargar estadísticas vía API
+    fetch('{% url "employees:stats_api" %}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.general_stats && data.general_stats.avg_salary) {
+                document.getElementById('avg-salary').textContent = 
+                    '$' + parseFloat(data.general_stats.avg_salary).toLocaleString('es-MX', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+            }
+        })
+        .catch(error => console.log('Error loading stats:', error));
+</script>
+{% endblock %}

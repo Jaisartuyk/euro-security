@@ -1,0 +1,321 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard Operativo - {{ employee.get_full_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">
+        <i class="fas fa-shield-alt text-primary me-2"></i>
+        Dashboard Operativo
+    </h1>
+    <div>
+        <span class="badge bg-success fs-6">
+            <i class="fas fa-circle me-1"></i>
+            En Servicio
+        </span>
+    </div>
+</div>
+
+<!-- Información Personal y de Turno -->
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <!-- Tarjeta de Bienvenida -->
+        <div class="card mb-4 border-primary">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h5 class="card-title text-primary mb-1">
+                            <i class="fas fa-hand-wave me-2"></i>
+                            ¡Bienvenido, {{ employee.first_name }}!
+                        </h5>
+                        <p class="card-text mb-2">
+                            <strong>{{ employee.position.title }}</strong> - {{ employee.department.name }}
+                        </p>
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <small class="text-muted">
+                                    <i class="fas fa-map-marker-alt me-1"></i>
+                                    Zona: <strong>{{ zone_info.zone }}</strong>
+                                </small>
+                            </div>
+                            <div class="col-sm-6">
+                                <small class="text-muted">
+                                    <i class="fas fa-clock me-1"></i>
+                                    Turno: <strong>{{ zone_info.shift }}</strong>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <div class="employee-avatar-large mx-auto mb-2">
+                            <i class="fas fa-user-shield fa-3x text-white"></i>
+                        </div>
+                        <small class="text-muted">ID: {{ employee.employee_id }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Información de Turno Actual -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-calendar-check me-1"></i>
+                Mi Turno Actual
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-clock text-primary me-2"></i>Horario</h6>
+                        <p class="mb-3">
+                            <span class="badge bg-primary fs-6">{{ shift_schedule.current_shift }}</span>
+                        </p>
+                        
+                        <h6><i class="fas fa-calendar-alt text-info me-2"></i>Próximo Turno</h6>
+                        <p class="mb-0">{{ shift_schedule.next_shift }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-calendar-times text-warning me-2"></i>Días Libres</h6>
+                        <p class="mb-3">
+                            {% for day in shift_schedule.days_off %}
+                                <span class="badge bg-warning text-dark">{{ day }}</span>
+                            {% endfor %}
+                        </p>
+                        
+                        <h6><i class="fas fa-plus-circle text-success me-2"></i>Horas Extra</h6>
+                        <p class="mb-0">{{ shift_schedule.overtime_hours }} horas este mes</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alertas y Notificaciones -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-bell me-1"></i>
+                Alertas y Notificaciones
+            </div>
+            <div class="card-body">
+                {% for alert in recent_alerts %}
+                <div class="alert alert-{{ alert.type }} alert-dismissible fade show" role="alert">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>{{ alert.time }}</strong> - {{ alert.message }}
+                        </div>
+                        <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center text-muted">
+                    <i class="fas fa-check-circle fa-2x mb-2"></i>
+                    <p>No hay alertas pendientes</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Contactos de Emergencia -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-phone me-1"></i>
+                Contactos de Emergencia
+            </div>
+            <div class="card-body">
+                {% if emergency_contacts.supervisor %}
+                <div class="mb-3">
+                    <h6 class="mb-1">
+                        <i class="fas fa-user-tie text-primary me-2"></i>
+                        Supervisor Directo
+                    </h6>
+                    <p class="mb-1"><strong>{{ emergency_contacts.supervisor.get_full_name }}</strong></p>
+                    <small class="text-muted">{{ emergency_contacts.supervisor.phone }}</small>
+                </div>
+                <hr>
+                {% endif %}
+                
+                <div class="mb-2">
+                    <strong><i class="fas fa-headset text-info me-2"></i>Central:</strong>
+                    <span class="float-end">{{ emergency_contacts.central }}</span>
+                </div>
+                
+                <div class="mb-2">
+                    <strong><i class="fas fa-exclamation-triangle text-danger me-2"></i>Emergencia:</strong>
+                    <span class="float-end">{{ emergency_contacts.emergencia }}</span>
+                </div>
+                
+                <div class="mb-0">
+                    <strong><i class="fas fa-tools text-warning me-2"></i>Soporte Técnico:</strong>
+                    <span class="float-end">{{ emergency_contacts.soporte_tecnico }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Compañeros de Turno -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-users me-1"></i>
+                Compañeros de Turno
+            </div>
+            <div class="card-body">
+                {% for teammate in teammates %}
+                <div class="d-flex align-items-center mb-2">
+                    <div class="employee-avatar-small me-2">
+                        <i class="fas fa-user text-white"></i>
+                    </div>
+                    <div>
+                        <small class="fw-bold">{{ teammate.get_full_name }}</small>
+                        <br>
+                        <small class="text-muted">{{ teammate.position.title }}</small>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-muted text-center">No hay compañeros asignados</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Acciones Rápidas -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-bolt me-1"></i>
+                Acciones Rápidas
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'employees:profile' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-user me-2"></i>
+                        Mi Perfil
+                    </a>
+                    
+                    <!-- Los guardias básicos no pueden cambiar su contraseña por seguridad -->
+                    <!-- Solo RRHH o administradores pueden gestionar sus credenciales -->
+                    
+                    <button class="btn btn-outline-info btn-sm" onclick="reportIncident()">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        Reportar Incidente
+                    </button>
+                    
+                    <button class="btn btn-outline-success btn-sm" onclick="requestSupport()">
+                        <i class="fas fa-headset me-2"></i>
+                        Solicitar Apoyo
+                    </button>
+                    
+                    <a href="{% url 'dashboard:home' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-home me-2"></i>
+                        Dashboard Principal
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Información Adicional -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-info-circle me-1"></i>
+                Información Importante
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6><i class="fas fa-shield-alt text-primary me-2"></i>Protocolo de Seguridad</h6>
+                        <ul class="small">
+                            <li>Mantener comunicación constante con central</li>
+                            <li>Reportar cualquier anomalía inmediatamente</li>
+                            <li>Seguir rutas de patrullaje establecidas</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h6><i class="fas fa-clipboard-check text-success me-2"></i>Tareas del Turno</h6>
+                        <ul class="small">
+                            <li>Verificar accesos y salidas</li>
+                            <li>Monitorear cámaras de seguridad</li>
+                            <li>Completar rondas programadas</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h6><i class="fas fa-exclamation-triangle text-warning me-2"></i>En Caso de Emergencia</h6>
+                        <ul class="small">
+                            <li>Contactar inmediatamente al 911</li>
+                            <li>Notificar a supervisor directo</li>
+                            <li>Seguir protocolos de evacuación</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .employee-avatar-large {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .employee-avatar-small {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #6c757d, #495057);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+    
+    .alert {
+        border-left: 4px solid;
+    }
+    
+    .alert-info {
+        border-left-color: #0dcaf0;
+    }
+    
+    .alert-warning {
+        border-left-color: #ffc107;
+    }
+    
+    .alert-success {
+        border-left-color: #198754;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function reportIncident() {
+        alert('Función de reporte de incidentes en desarrollo.\n\nPor ahora, contacta a tu supervisor directo:\n{{ emergency_contacts.supervisor.get_full_name|default:"Central" }}');
+    }
+    
+    function requestSupport() {
+        alert('Solicitud de apoyo enviada.\n\nCentral: {{ emergency_contacts.central }}\nSoporte Técnico: {{ emergency_contacts.soporte_tecnico }}');
+    }
+    
+    // Actualizar estado cada 30 segundos
+    setInterval(function() {
+        // Aquí se podría implementar actualización en tiempo real
+        console.log('Actualizando estado del dashboard...');
+    }, 30000);
+</script>
+{% endblock %}

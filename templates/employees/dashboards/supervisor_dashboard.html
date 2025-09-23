@@ -1,0 +1,405 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard de Supervisión - {{ employee.get_full_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">
+        <i class="fas fa-users-cog text-warning me-2"></i>
+        Dashboard de Supervisión
+    </h1>
+    <div>
+        <span class="badge bg-warning text-dark fs-6">
+            <i class="fas fa-crown me-1"></i>
+            Supervisor
+        </span>
+    </div>
+</div>
+
+<!-- Estadísticas del Equipo -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center bg-primary text-white">
+            <div class="card-body">
+                <i class="fas fa-users fa-2x mb-2"></i>
+                <h4 class="mb-0">{{ team_stats.total_guards }}</h4>
+                <small>Total Guardias</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-success text-white">
+            <div class="card-body">
+                <i class="fas fa-check-circle fa-2x mb-2"></i>
+                <h4 class="mb-0">{{ team_stats.active_today }}</h4>
+                <small>Activos Hoy</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-info text-white">
+            <div class="card-body">
+                <i class="fas fa-route fa-2x mb-2"></i>
+                <h4 class="mb-0">{{ team_stats.on_patrol }}</h4>
+                <small>En Patrullaje</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-warning text-dark">
+            <div class="card-body">
+                <i class="fas fa-video fa-2x mb-2"></i>
+                <h4 class="mb-0">{{ team_stats.on_cctv }}</h4>
+                <small>En CCTV</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Mi Equipo -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-users me-1"></i>
+                Mi Equipo - {{ employee.department.name }}
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Empleado</th>
+                                <th>Puesto</th>
+                                <th>Estado</th>
+                                <th>Zona Asignada</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for member in team_members %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="employee-avatar-small me-2">
+                                            <i class="fas fa-user text-white"></i>
+                                        </div>
+                                        <div>
+                                            <strong>{{ member.get_full_name }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ member.employee_id }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ member.position.title }}</span>
+                                </td>
+                                <td>
+                                    {% if member.is_active %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-circle me-1"></i>Activo
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-circle me-1"></i>Inactivo
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        {% if 'ACC' in member.position.code %}
+                                            Acceso Principal
+                                        {% elif 'PAT' in member.position.code %}
+                                            Patrullaje
+                                        {% elif 'CCTV' in member.position.code %}
+                                            Centro de Monitoreo
+                                        {% else %}
+                                            Zona General
+                                        {% endif %}
+                                    </small>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'employees:detail' member.pk %}" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <button class="btn btn-outline-info btn-sm" onclick="contactEmployee('{{ member.get_full_name }}', '{{ member.phone }}')">
+                                            <i class="fas fa-phone"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">
+                                    No hay miembros del equipo asignados
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Incidentes Recientes -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-exclamation-triangle me-1"></i>
+                Incidentes Recientes
+            </div>
+            <div class="card-body">
+                {% for incident in recent_incidents %}
+                <div class="alert alert-{% if incident.type == 'Menor' %}warning{% elif incident.type == 'Rutina' %}info{% else %}success{% endif %} d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>{{ incident.time }}</strong> - {{ incident.zone }}
+                        <br>
+                        <small>Tipo: {{ incident.type }} | Estado: {{ incident.status }}</small>
+                    </div>
+                    <div>
+                        <span class="badge bg-{% if incident.status == 'Resuelto' %}success{% elif incident.status == 'En proceso' %}warning{% else %}secondary{% endif %}">
+                            {{ incident.status }}
+                        </span>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center text-muted">
+                    <i class="fas fa-check-circle fa-2x mb-2"></i>
+                    <p>No hay incidentes recientes</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Asignaciones de Turno -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-calendar-alt me-1"></i>
+                Asignaciones de Turno
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6 class="text-primary">
+                            <i class="fas fa-sun me-2"></i>Turno Mañana (06:00-14:00)
+                        </h6>
+                        <ul class="list-unstyled">
+                            {% for guard in shift_assignments.morning %}
+                            <li class="mb-1">
+                                <i class="fas fa-user-circle me-2"></i>{{ guard }}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h6 class="text-warning">
+                            <i class="fas fa-cloud-sun me-2"></i>Turno Tarde (14:00-22:00)
+                        </h6>
+                        <ul class="list-unstyled">
+                            {% for guard in shift_assignments.afternoon %}
+                            <li class="mb-1">
+                                <i class="fas fa-user-circle me-2"></i>{{ guard }}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h6 class="text-info">
+                            <i class="fas fa-moon me-2"></i>Turno Noche (22:00-06:00)
+                        </h6>
+                        <ul class="list-unstyled">
+                            {% for guard in shift_assignments.night %}
+                            <li class="mb-1">
+                                <i class="fas fa-user-circle me-2"></i>{{ guard }}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Cobertura de Zonas -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-map me-1"></i>
+                Cobertura de Zonas
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Total de Zonas:</span>
+                        <span class="badge bg-primary">{{ zones_coverage.total_zones }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Cubiertas:</span>
+                        <span class="badge bg-success">{{ zones_coverage.covered }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>Descubiertas:</span>
+                        <span class="badge bg-danger">{{ zones_coverage.uncovered }}</span>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <h6>Estado por Zona:</h6>
+                {% for zone in zones_coverage.zones %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <small>{{ zone.name }}</small>
+                    {% if zone.status == 'Cubierto' %}
+                        <span class="badge bg-success">
+                            <i class="fas fa-check me-1"></i>{{ zone.status }}
+                        </span>
+                    {% else %}
+                        <span class="badge bg-danger">
+                            <i class="fas fa-times me-1"></i>{{ zone.status }}
+                        </span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Acciones de Supervisor -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-cogs me-1"></i>
+                Acciones de Supervisor
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'attendance:dashboard' %}" class="btn btn-success btn-sm">
+                        <i class="fas fa-clock me-2"></i>
+                        Control de Asistencia
+                    </a>
+                    
+                    <button class="btn btn-primary btn-sm" onclick="assignShift()">
+                        <i class="fas fa-calendar-plus me-2"></i>
+                        Asignar Turno
+                    </button>
+                    
+                    <button class="btn btn-warning btn-sm" onclick="reportIncident()">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Reportar Incidente
+                    </button>
+                    
+                    <button class="btn btn-info btn-sm" onclick="generateReport()">
+                        <i class="fas fa-file-alt me-2"></i>
+                        Generar Reporte
+                    </button>
+                    
+                    <a href="{% url 'employees:team' %}" class="btn btn-success btn-sm">
+                        <i class="fas fa-users me-2"></i>
+                        Gestionar Equipo
+                    </a>
+                    
+                    <a href="{% url 'employees:profile' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-user me-2"></i>
+                        Mi Perfil
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Información del Supervisor -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-info-circle me-1"></i>
+                Mi Información
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <div class="employee-avatar-large mx-auto mb-2">
+                        <i class="fas fa-user-tie fa-2x text-white"></i>
+                    </div>
+                    <h6>{{ employee.get_full_name }}</h6>
+                    <small class="text-muted">{{ employee.position.title }}</small>
+                </div>
+                
+                <hr>
+                
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small">Departamento:</span>
+                    <span class="badge bg-info">{{ employee.department.name }}</span>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small">Nivel:</span>
+                    <span class="badge bg-warning text-dark">{{ employee.position.get_level_display }}</span>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="small">Equipo a Cargo:</span>
+                    <span class="badge bg-primary">{{ team_stats.total_guards }} personas</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .employee-avatar-large {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #ffc107, #e0a800);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .employee-avatar-small {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #6c757d, #495057);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 123, 255, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function contactEmployee(name, phone) {
+        alert(`Contactar a ${name}\nTeléfono: ${phone}`);
+    }
+    
+    function assignShift() {
+        alert('Función de asignación de turnos en desarrollo.\n\nPor ahora, contacta al departamento de RRHH para cambios de turno.');
+    }
+    
+    function reportIncident() {
+        alert('Función de reporte de incidentes en desarrollo.\n\nPor ahora, usa los canales de comunicación establecidos.');
+    }
+    
+    function generateReport() {
+        alert('Función de generación de reportes en desarrollo.\n\nPronto podrás generar reportes automáticos de tu equipo.');
+    }
+    
+    // Actualizar estadísticas cada minuto
+    setInterval(function() {
+        console.log('Actualizando estadísticas del equipo...');
+    }, 60000);
+</script>
+{% endblock %}

@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+
+{% block title %}Reportes de Departamentos - Sistema de Gestión de Personal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">
+        <i class="fas fa-building text-primary me-2"></i>
+        Reportes de Departamentos
+    </h1>
+    <div>
+        <a href="{% url 'reports:dashboard' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>
+            Volver a Reportes
+        </a>
+        <button class="btn btn-primary" onclick="window.print()">
+            <i class="fas fa-print me-2"></i>
+            Imprimir
+        </button>
+    </div>
+</div>
+
+<!-- Resumen General -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-center bg-primary text-white">
+            <div class="card-body">
+                <h4 class="mb-0">{{ departments.count }}</h4>
+                <small>Departamentos Activos</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center bg-success text-white">
+            <div class="card-body">
+                <h4 class="mb-0">${{ total_budget|floatformat:2 }}</h4>
+                <small>Presupuesto Total</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center bg-warning text-white">
+            <div class="card-body">
+                <h4 class="mb-0">{{ budget_utilization|floatformat:1 }}%</h4>
+                <small>Utilización Presupuestal</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla de Departamentos -->
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-table me-1"></i>
+        Análisis por Departamento
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Departamento</th>
+                        <th>Código</th>
+                        <th>Empleados</th>
+                        <th>Presupuesto</th>
+                        <th>Nómina Actual</th>
+                        <th>Utilización</th>
+                        <th>Salario Promedio</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dept in departments %}
+                        <tr>
+                            <td>
+                                <strong>{{ dept.name }}</strong>
+                                <br><small class="text-muted">{{ dept.department_type }}</small>
+                            </td>
+                            <td><code>{{ dept.code }}</code></td>
+                            <td>
+                                <span class="badge bg-primary">{{ dept.employee_count }}</span>
+                            </td>
+                            <td class="text-success">
+                                <strong>${{ dept.budget|floatformat:2 }}</strong>
+                            </td>
+                            <td class="text-info">
+                                ${{ dept.total_payroll|default:0|floatformat:2 }}
+                            </td>
+                            <td>
+                                {% if dept.budget > 0 and dept.total_payroll %}
+                                    {% widthratio dept.total_payroll dept.budget 100 as utilization %}
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar bg-{% if utilization < 70 %}success{% elif utilization < 90 %}warning{% else %}danger{% endif %}" 
+                                             role="progressbar" style="width: {{ utilization }}%">
+                                            {{ utilization }}%
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-warning">
+                                ${{ dept.avg_salary|default:0|floatformat:2 }}
+                            </td>
+                            <td>
+                                {% if dept.is_active %}
+                                    <span class="badge bg-success">Activo</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inactivo</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficos de Análisis -->
+<div class="row mt-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-pie me-1"></i>
+                Distribución de Empleados
+            </div>
+            <div class="card-body">
+                <canvas id="employeeDistributionChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-bar me-1"></i>
+                Presupuesto vs Nómina
+            </div>
+            <div class="card-body">
+                <canvas id="budgetChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Gráfico de distribución de empleados
+    const employeeCtx = document.getElementById('employeeDistributionChart').getContext('2d');
+    new Chart(employeeCtx, {
+        type: 'pie',
+        data: {
+            labels: [{% for dept in departments %}'{{ dept.name }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+            datasets: [{
+                data: [{% for dept in departments %}{{ dept.employee_count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+                backgroundColor: [
+                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                }
+            }
+        }
+    });
+    
+    // Gráfico de presupuesto vs nómina
+    const budgetCtx = document.getElementById('budgetChart').getContext('2d');
+    new Chart(budgetCtx, {
+        type: 'bar',
+        data: {
+            labels: [{% for dept in departments %}'{{ dept.name }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+            datasets: [{
+                label: 'Presupuesto',
+                data: [{% for dept in departments %}{{ dept.budget }}{% if not forloop.last %},{% endif %}{% endfor %}],
+                backgroundColor: '#36A2EB'
+            }, {
+                label: 'Nómina Actual',
+                data: [{% for dept in departments %}{{ dept.total_payroll|default:0 }}{% if not forloop.last %},{% endif %}{% endfor %}],
+                backgroundColor: '#FF6384'
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

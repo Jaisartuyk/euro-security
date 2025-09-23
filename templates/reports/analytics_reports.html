@@ -1,0 +1,235 @@
+{% extends 'base.html' %}
+
+{% block title %}Reportes Analíticos - Sistema de Gestión de Personal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">
+        <i class="fas fa-chart-line text-primary me-2"></i>
+        Reportes Analíticos
+    </h1>
+    <div>
+        <a href="{% url 'reports:dashboard' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>
+            Volver a Reportes
+        </a>
+        <button class="btn btn-primary" onclick="window.print()">
+            <i class="fas fa-print me-2"></i>
+            Imprimir
+        </button>
+    </div>
+</div>
+
+<!-- Gráficos Analíticos -->
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-line me-1"></i>
+                Tendencias de Contratación
+            </div>
+            <div class="card-body">
+                <canvas id="hiringTrendsChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-pie me-1"></i>
+                Empleados por Departamento
+            </div>
+            <div class="card-body">
+                <canvas id="departmentPieChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-bar me-1"></i>
+                Top 10 Puestos con Más Empleados
+            </div>
+            <div class="card-body">
+                <canvas id="topPositionsChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-dollar-sign me-1"></i>
+                Salarios por Departamento
+            </div>
+            <div class="card-body">
+                <canvas id="salaryByDeptChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Métricas Clave -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-tachometer-alt me-1"></i>
+                Métricas Clave de EURO SECURITY
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <h4 id="total-employees" class="text-primary">-</h4>
+                        <p class="mb-0">Total Empleados</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h4 id="avg-salary" class="text-success">-</h4>
+                        <p class="mb-0">Salario Promedio</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h4 id="total-departments" class="text-info">-</h4>
+                        <p class="mb-0">Departamentos</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h4 id="total-positions" class="text-warning">-</h4>
+                        <p class="mb-0">Puestos de Trabajo</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Cargar estadísticas generales
+    fetch('{% url "reports:api" %}?type=general')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('total-employees').textContent = data.total_employees;
+            document.getElementById('total-departments').textContent = data.total_departments;
+            document.getElementById('total-positions').textContent = data.total_positions;
+            document.getElementById('avg-salary').textContent = '$' + data.avg_salary.toLocaleString('es-MX', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        });
+    
+    // Gráfico de tendencias de contratación
+    fetch('{% url "reports:api" %}?type=hiring_trends')
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('hiringTrendsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(item => item.month),
+                    datasets: [{
+                        label: 'Contrataciones',
+                        data: data.map(item => item.count),
+                        borderColor: '#36A2EB',
+                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        });
+    
+    // Gráfico de empleados por departamento
+    fetch('{% url "reports:api" %}?type=employees_by_department')
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('departmentPieChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: data.map(item => item.name),
+                    datasets: [{
+                        data: data.map(item => item.employee_count),
+                        backgroundColor: [
+                            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        }
+                    }
+                }
+            });
+        });
+    
+    // Gráfico de top puestos
+    fetch('{% url "reports:api" %}?type=employees_by_position')
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('topPositionsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(item => item.title),
+                    datasets: [{
+                        label: 'Empleados',
+                        data: data.map(item => item.employee_count),
+                        backgroundColor: '#36A2EB'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        });
+    
+    // Gráfico de salarios por departamento
+    fetch('{% url "reports:api" %}?type=salary_by_department')
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('salaryByDeptChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(item => item.name),
+                    datasets: [{
+                        label: 'Salario Promedio',
+                        data: data.map(item => item.avg_salary || 0),
+                        backgroundColor: '#FF6384'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        });
+</script>
+{% endblock %}

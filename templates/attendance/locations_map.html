@@ -1,0 +1,372 @@
+{% extends 'base.html' %}
+
+{% block title %}Mapa de Ubicaciones - EURO SECURITY{% endblock %}
+
+{% block extra_css %}
+<style>
+    #map {
+        height: 600px;
+        width: 100%;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .location-info {
+        max-width: 300px;
+    }
+    
+    .marker-info {
+        font-size: 12px;
+        line-height: 1.4;
+    }
+    
+    .attendance-marker {
+        background: #007bff;
+        color: white;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 10px;
+        font-weight: bold;
+    }
+    
+    .attendance-marker.entry {
+        background: #28a745;
+    }
+    
+    .attendance-marker.exit {
+        background: #dc3545;
+    }
+    
+    .loading-map {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 600px;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">
+        <i class="fas fa-map-marker-alt text-primary me-2"></i>
+        Mapa de Ubicaciones de Asistencia
+    </h1>
+    <div>
+        <span class="badge bg-info fs-6">
+            {{ total_locations }} ubicaciones encontradas
+        </span>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="fas fa-filter me-2"></i>
+        Filtros
+    </div>
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-4">
+                <label for="date" class="form-label">Fecha</label>
+                <input type="date" class="form-control" id="date" name="date" value="{{ selected_date|date:'Y-m-d' }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">&nbsp;</label>
+                <div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-2"></i>Actualizar Mapa
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="refreshMap()">
+                        <i class="fas fa-sync-alt me-2"></i>Refrescar
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="text-end">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Mostrando marcaciones del {{ selected_date|date:'d/m/Y' }}
+                    </small>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Leyenda -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <span class="attendance-marker entry">ENTRADA</span>
+                        <small class="d-block text-muted">Marcaciones de entrada</small>
+                    </div>
+                    <div class="col-md-3">
+                        <span class="attendance-marker exit">SALIDA</span>
+                        <small class="d-block text-muted">Marcaciones de salida</small>
+                    </div>
+                    <div class="col-md-3">
+                        <span class="attendance-marker">DESCANSO</span>
+                        <small class="d-block text-muted">Marcaciones de descanso</small>
+                    </div>
+                    <div class="col-md-3">
+                        <i class="fas fa-map-marker-alt text-primary"></i>
+                        <small class="d-block text-muted">Ubicación exacta</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mapa -->
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-globe me-2"></i>
+        Mapa Interactivo
+    </div>
+    <div class="card-body p-0">
+        <div id="loading" class="loading-map">
+            <div class="text-center">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Cargando mapa...</span>
+                </div>
+                <p class="text-muted">Cargando mapa de Google Maps...</p>
+            </div>
+        </div>
+        <div id="map" style="display: none;"></div>
+    </div>
+</div>
+
+<!-- Lista de ubicaciones -->
+{% if records %}
+<div class="card mt-4">
+    <div class="card-header">
+        <i class="fas fa-list me-2"></i>
+        Detalle de Ubicaciones
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Empleado</th>
+                        <th>Departamento</th>
+                        <th>Tipo</th>
+                        <th>Hora</th>
+                        <th>Ubicación</th>
+                        <th>Precisión</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in records %}
+                        <tr>
+                            <td>
+                                <strong>{{ record.employee.get_full_name }}</strong>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">
+                                    {{ record.employee.department.name|default:'Sin departamento' }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="attendance-marker {% if record.attendance_type == 'IN' %}entry{% elif record.attendance_type == 'OUT' %}exit{% endif %}">
+                                    {{ record.get_attendance_type_display }}
+                                </span>
+                            </td>
+                            <td>{{ record.timestamp|time:'H:i:s' }}</td>
+                            <td>
+                                <small class="text-muted">
+                                    {{ record.address|default:'Ubicación no disponible' }}
+                                </small>
+                            </td>
+                            <td>
+                                {% if record.location_accuracy %}
+                                    <span class="badge bg-info">±{{ record.location_accuracy|floatformat:0 }}m</span>
+                                {% else %}
+                                    <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary focus-marker-btn" 
+                                        data-lat="{{ record.latitude }}" 
+                                        data-lng="{{ record.longitude }}">
+                                    <i class="fas fa-crosshairs"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<!-- Configuración desde Django -->
+<script id="map-config" type="application/json">
+{
+    "apiKey": "{{ google_maps_api_key }}",
+    "selectedDate": "{{ selected_date|date:'Y-m-d' }}",
+    "locationsApiUrl": "{% url 'attendance:locations_api' %}"
+}
+</script>
+
+<script>
+    // Configuración desde Django
+    const mapConfig = JSON.parse(document.getElementById('map-config').textContent);
+    
+    let map;
+    let markers = [];
+    let infoWindow;
+    
+    function initMap() {
+        // Ocultar loading y mostrar mapa
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('map').style.display = 'block';
+        
+        // Inicializar mapa centrado en Guayaquil, Ecuador
+        map = new google.maps.Map(document.getElementById('map'), {
+            zoom: 12,
+            center: { lat: -2.1894, lng: -79.8890 }, // Guayaquil, Ecuador
+            mapTypeId: 'roadmap',
+            mapId: 'euro-security-map' // ID requerido para marcadores avanzados
+        });
+        
+        infoWindow = new google.maps.InfoWindow();
+        
+        // Cargar ubicaciones
+        loadLocations();
+    }
+    
+    function loadLocations() {
+        fetch(`${mapConfig.locationsApiUrl}?date=${mapConfig.selectedDate}`)
+            .then(response => response.json())
+            .then(data => {
+                clearMarkers();
+                
+                if (data.locations.length === 0) {
+                    alert('No se encontraron ubicaciones para la fecha seleccionada');
+                    return;
+                }
+                
+                const bounds = new google.maps.LatLngBounds();
+                
+                data.locations.forEach(location => {
+                    const position = { lat: location.latitude, lng: location.longitude };
+                    
+                    // Usar siempre Marker clásico para evitar problemas de compatibilidad
+                    const marker = new google.maps.Marker({
+                        position: position,
+                        map: map,
+                        title: `${location.employee_name} - ${location.attendance_type}`,
+                        icon: getMarkerIcon(location.attendance_type)
+                    });
+                    
+                    const infoContent = `
+                        <div class="location-info">
+                            <h6>${location.employee_name}</h6>
+                            <div class="marker-info">
+                                <strong>Departamento:</strong> ${location.department}<br>
+                                <strong>Tipo:</strong> ${location.attendance_type}<br>
+                                <strong>Hora:</strong> ${location.timestamp}<br>
+                                <strong>Confianza:</strong> ${location.confidence}%<br>
+                                <strong>Método:</strong> ${location.verification_method}<br>
+                                <strong>Precisión:</strong> ±${location.accuracy || 'N/A'}m<br>
+                                <strong>Dirección:</strong> ${location.address || 'No disponible'}
+                            </div>
+                        </div>
+                    `;
+                    
+                    marker.addListener('click', () => {
+                        infoWindow.setContent(infoContent);
+                        infoWindow.open(map, marker);
+                    });
+                    
+                    markers.push(marker);
+                    bounds.extend(position); // Usar position directamente
+                });
+                
+                // Ajustar vista para mostrar todos los marcadores
+                if (markers.length > 0) {
+                    map.fitBounds(bounds);
+                    if (markers.length === 1) {
+                        map.setZoom(16);
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error cargando ubicaciones:', error);
+                alert('Error cargando las ubicaciones del mapa');
+            });
+    }
+    
+    function getMarkerIcon(attendanceType) {
+        const colors = {
+            'Entrada': '#28a745',
+            'Salida': '#dc3545',
+            'Salida a Descanso': '#007bff',
+            'Regreso de Descanso': '#007bff'
+        };
+        
+        const color = colors[attendanceType] || '#6c757d';
+        
+        return {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 8,
+            fillColor: color,
+            fillOpacity: 0.8,
+            strokeColor: '#ffffff',
+            strokeWeight: 2
+        };
+    }
+    
+    function clearMarkers() {
+        markers.forEach(marker => marker.setMap(null));
+        markers = [];
+    }
+    
+    function focusOnMarker(lat, lng) {
+        map.setCenter({ lat: lat, lng: lng });
+        map.setZoom(18);
+    }
+    
+    function refreshMap() {
+        loadLocations();
+    }
+    
+    // Event listener para botones de enfoque
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.focus-marker-btn')) {
+            const btn = e.target.closest('.focus-marker-btn');
+            const lat = parseFloat(btn.dataset.lat);
+            const lng = parseFloat(btn.dataset.lng);
+            focusOnMarker(lat, lng);
+        }
+    });
+    
+    // Manejar errores de carga de Google Maps
+    window.gm_authFailure = function() {
+        document.getElementById('loading').innerHTML = `
+            <div class="text-center text-danger">
+                <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                <h5>Error de Autenticación</h5>
+                <p>No se pudo cargar Google Maps. Verifica la API Key.</p>
+            </div>
+        `;
+    };
+</script>
+
+<!-- Cargar Google Maps API con librerías avanzadas -->
+<script async defer 
+        src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&libraries=marker&callback=initMap">
+</script>
+{% endblock %}

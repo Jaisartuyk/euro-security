@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block title %}Reportes de Puestos - Sistema de Gestión de Personal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">
+        <i class="fas fa-briefcase text-primary me-2"></i>
+        Reportes de Puestos de Trabajo
+    </h1>
+    <div>
+        <a href="{% url 'reports:dashboard' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>
+            Volver a Reportes
+        </a>
+        <button class="btn btn-primary" onclick="window.print()">
+            <i class="fas fa-print me-2"></i>
+            Imprimir
+        </button>
+    </div>
+</div>
+
+<!-- Estadísticas por Nivel -->
+<div class="row mb-4">
+    {% for level in level_stats %}
+        <div class="col-md-2">
+            <div class="card text-center bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="mb-0">{{ level.employee_count }}</h5>
+                    <small>{{ level.get_level_display|default:level.level }}</small>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+<!-- Tabla de Puestos -->
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-table me-1"></i>
+        Análisis por Puesto de Trabajo
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Puesto</th>
+                        <th>Código</th>
+                        <th>Departamento</th>
+                        <th>Nivel</th>
+                        <th>Empleados</th>
+                        <th>Rango Salarial</th>
+                        <th>Salario Promedio</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for position in positions %}
+                        <tr>
+                            <td>
+                                <strong>{{ position.title }}</strong>
+                                <br><small class="text-muted">{{ position.get_employment_type_display }}</small>
+                            </td>
+                            <td><code>{{ position.code }}</code></td>
+                            <td>
+                                <span class="badge bg-info">{{ position.department.name }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">{{ position.get_level_display }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-success">{{ position.employee_count }}</span>
+                                / {{ position.max_positions }}
+                            </td>
+                            <td class="text-success">
+                                ${{ position.min_salary|floatformat:0 }} - ${{ position.max_salary|floatformat:0 }}
+                            </td>
+                            <td class="text-warning">
+                                ${{ position.avg_salary|default:0|floatformat:2 }}
+                            </td>
+                            <td>
+                                {% if position.is_active %}
+                                    <span class="badge bg-success">Activo</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inactivo</span>
+                                {% endif %}
+                                {% if position.is_hiring %}
+                                    <span class="badge bg-warning text-dark">Contratando</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

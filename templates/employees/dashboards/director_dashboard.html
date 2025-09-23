@@ -1,0 +1,290 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard Ejecutivo - {{ employee.get_full_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">
+        <i class="fas fa-crown text-warning me-2"></i>
+        Dashboard Ejecutivo
+    </h1>
+    <div>
+        <span class="badge bg-warning text-dark fs-6">
+            <i class="fas fa-star me-1"></i>
+            Director
+        </span>
+    </div>
+</div>
+
+<!-- Métricas Ejecutivas -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center bg-success text-white">
+            <div class="card-body">
+                <i class="fas fa-dollar-sign fa-2x mb-2"></i>
+                <h4 class="mb-0">${{ executive_reports.monthly_revenue|floatformat:0 }}</h4>
+                <small>Ingresos Mensuales</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-info text-white">
+            <div class="card-body">
+                <i class="fas fa-handshake fa-2x mb-2"></i>
+                <h4 class="mb-0">{{ executive_reports.client_retention }}%</h4>
+                <small>Retención de Clientes</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-primary text-white">
+            <div class="card-body">
+                <i class="fas fa-file-contract fa-2x mb-2"></i>
+                <h4 class="mb-0">{{ executive_reports.new_contracts }}</h4>
+                <small>Nuevos Contratos</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center bg-warning text-dark">
+            <div class="card-body">
+                <i class="fas fa-smile fa-2x mb-2"></i>
+                <h4 class="mb-0">{{ executive_reports.employee_satisfaction }}/5</h4>
+                <small>Satisfacción Empleados</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Estadísticas Globales -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-chart-pie me-1"></i>
+                Estadísticas Globales de EURO SECURITY
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Personal por Departamento</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                {% for dept in global_stats.by_department %}
+                                <tr>
+                                    <td>{{ dept.department__name }}</td>
+                                    <td><span class="badge bg-primary">{{ dept.count }}</span></td>
+                                </tr>
+                                {% endfor %}
+                            </table>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Personal por Nivel</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                {% for level in global_stats.by_level %}
+                                <tr>
+                                    <td>{{ level.position__level }}</td>
+                                    <td><span class="badge bg-secondary">{{ level.count }}</span></td>
+                                </tr>
+                                {% endfor %}
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resumen Financiero -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-line me-1"></i>
+                Resumen Financiero
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <h6>Ingresos Totales</h6>
+                            <h4 class="text-success">${{ financial_summary.total_revenue|floatformat:0 }}</h4>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <h6>Gastos Totales</h6>
+                            <h4 class="text-danger">${{ financial_summary.total_expenses|floatformat:0 }}</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <h6>Margen de Ganancia</h6>
+                            <h4 class="text-info">{{ financial_summary.profit_margin }}%</h4>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <h6>Tasa de Crecimiento</h6>
+                            <h4 class="text-warning">{{ financial_summary.growth_rate }}%</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Métricas Estratégicas -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-bullseye me-1"></i>
+                Métricas Estratégicas
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="small">Participación de Mercado:</span>
+                        <strong>{{ strategic_metrics.market_share }}%</strong>
+                    </div>
+                    <div class="progress mb-3">
+                        <div class="progress-bar bg-success" style="width: {{ strategic_metrics.market_share|default:'0' }}%"></div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="small">Satisfacción del Cliente:</span>
+                        <strong>{{ strategic_metrics.client_satisfaction }}/5</strong>
+                    </div>
+                    <div class="progress mb-3">
+                        <div class="progress-bar bg-info" style="width: {{ strategic_metrics.client_satisfaction|floatformat:0|default:'0' }}%"></div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="small">Rotación de Personal:</span>
+                        <strong>{{ strategic_metrics.employee_turnover }}%</strong>
+                    </div>
+                    <div class="progress mb-3">
+                        <div class="progress-bar bg-warning" style="width: {{ strategic_metrics.employee_turnover|default:'0' }}%"></div>
+                    </div>
+                </div>
+                
+                <div class="text-center">
+                    <h6>Eficiencia Operacional</h6>
+                    <h4 class="text-success">{{ strategic_metrics.operational_efficiency }}%</h4>
+                </div>
+            </div>
+        </div>
+
+        <!-- Acciones Ejecutivas -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-cogs me-1"></i>
+                Acciones Ejecutivas
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'employees:list' %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-users me-2"></i>
+                        Gestión Global de Personal
+                    </a>
+                    
+                    <a href="{% url 'departments:list' %}" class="btn btn-info btn-sm">
+                        <i class="fas fa-building me-2"></i>
+                        Gestión de Departamentos
+                    </a>
+                    
+                    <a href="{% url 'reports:dashboard' %}" class="btn btn-success btn-sm">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        Reportes Ejecutivos
+                    </a>
+                    
+                    <button class="btn btn-warning btn-sm" onclick="strategicPlanning()">
+                        <i class="fas fa-chess me-2"></i>
+                        Planificación Estratégica
+                    </button>
+                    
+                    <button class="btn btn-danger btn-sm" onclick="executiveReport()">
+                        <i class="fas fa-file-pdf me-2"></i>
+                        Reporte Ejecutivo
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Información del Director -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-user-crown me-1"></i>
+                Información Ejecutiva
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <div class="executive-avatar mx-auto mb-2">
+                        <i class="fas fa-crown fa-2x text-white"></i>
+                    </div>
+                    <h6>{{ employee.get_full_name }}</h6>
+                    <small class="text-muted">{{ employee.position.title }}</small>
+                </div>
+                
+                <hr>
+                
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small">Empleados Totales:</span>
+                    <span class="badge bg-primary">{{ global_stats.total_employees }}</span>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small">Departamentos:</span>
+                    <span class="badge bg-info">{{ global_stats.by_department|length }}</span>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="small">Acceso:</span>
+                    <span class="badge bg-warning text-dark">Completo</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .executive-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #ffc107, #e0a800);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+    
+    .progress {
+        height: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function strategicPlanning() {
+        alert('Módulo de Planificación Estratégica en desarrollo.\n\nPronto tendrás acceso a herramientas avanzadas de planificación.');
+    }
+    
+    function executiveReport() {
+        alert('Generación de Reportes Ejecutivos en desarrollo.\n\nPronto podrás generar reportes PDF completos.');
+    }
+</script>
+{% endblock %}

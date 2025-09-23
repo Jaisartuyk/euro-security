@@ -1,0 +1,46 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Google Maps - EURO SECURITY</title>
+    <style>
+        #map { height: 400px; width: 100%; }
+        .info { padding: 20px; font-family: Arial; }
+    </style>
+</head>
+<body>
+    <div class="info">
+        <h2>🗺️ Test Google Maps API</h2>
+        <p><strong>API Key:</strong> AIzaSyAtEPZgbPBwnJGr...Fbr0tmbnyQ</p>
+        <p><strong>Estado:</strong> <span id="status">Cargando...</span></p>
+    </div>
+    <div id="map"></div>
+    
+    <script>
+        function initMap() {
+            document.getElementById('status').innerHTML = '✅ API Key funcionando';
+            
+            var map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 10,
+                center: {lat: 4.7110, lng: -74.0721} // Bogotá
+            });
+            
+            var marker = new google.maps.Marker({
+                position: {lat: 4.7110, lng: -74.0721},
+                map: map,
+                title: 'EURO SECURITY - Oficina Principal'
+            });
+        }
+        
+        window.gm_authFailure = function() {
+            document.getElementById('status').innerHTML = '❌ Error de autenticación';
+            document.getElementById('map').innerHTML = '<div style="padding:20px;text-align:center;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;">Error: Verifica la API Key de Google Maps</div>';
+        };
+    </script>
+    
+    <script async defer 
+            src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAtEPZgbPBwnJGrvIuwplRJDFbr0tmbnyQ&callback=initMap">
+    </script>
+</body>
+</html>
+        

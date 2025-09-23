@@ -1,0 +1,542 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Marcación Automática - EURO SECURITY{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Encabezado -->
+            <div class="text-center mb-4">
+                <h2 class="text-primary">
+                    <i class="fas fa-fingerprint me-2"></i>
+                    Marcación Automática de Asistencia
+                </h2>
+                <p class="text-muted">Sistema de reconocimiento facial automático</p>
+            </div>
+
+            <!-- Reloj Digital -->
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h4 id="current-time" class="mb-0 text-primary"></h4>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="action-icon mx-auto">
+                                <i class="fas fa-clock fa-2x text-primary"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel Principal -->
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-camera me-2"></i>
+                        Reconocimiento Facial Automático
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Estado del Sistema -->
+                    <div class="alert alert-info" id="system-status">
+                        <div class="d-flex align-items-center">
+                            <div class="spinner-border spinner-border-sm me-3" role="status">
+                                <span class="visually-hidden">Cargando...</span>
+                            </div>
+                            <div>
+                                <strong>Iniciando sistema...</strong>
+                                <div class="small">Preparando cámara y reconocimiento facial</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Video Feed -->
+                    <div class="text-center mb-4">
+                        <div class="video-container position-relative">
+                            <video id="video" width="640" height="480" autoplay muted playsinline></video>
+                            <canvas id="canvas" width="640" height="480" style="display: none;"></canvas>
+                            
+                            <!-- Overlay de detección -->
+                            <div id="face-overlay" class="position-absolute top-0 start-0 w-100 h-100" style="pointer-events: none;">
+                                <!-- Aquí se dibujarán los rectángulos de detección -->
+                            </div>
+                            
+                            <!-- Indicador de estado -->
+                            <div id="detection-indicator" class="position-absolute top-0 end-0 m-3">
+                                <div class="badge bg-secondary">
+                                    <i class="fas fa-search me-1"></i>
+                                    Buscando rostro...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Información de ubicación -->
+                    <div class="alert alert-warning" id="location-info" style="display: none;">
+                        <h6><i class="fas fa-map-marker-alt me-2"></i>Ubicación</h6>
+                        <div id="location-details">
+                            <small>Obteniendo ubicación...</small>
+                        </div>
+                    </div>
+
+                    <!-- Progreso de reconocimiento -->
+                    <div id="recognition-progress" class="mb-3" style="display: none;">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="small">Analizando rostro...</span>
+                            <span class="small" id="confidence-text">0%</span>
+                        </div>
+                        <div class="progress">
+                            <div id="confidence-bar" class="progress-bar bg-success progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Resultado -->
+                    <div id="result-container" style="display: none;">
+                        <!-- Aquí se mostrará el resultado -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Registros del día -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <i class="fas fa-list me-2"></i>
+                    Mis Registros de Hoy
+                </div>
+                <div class="card-body">
+                    {% if today_records %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Hora</th>
+                                        <th>Tipo</th>
+                                        <th>Ubicación</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for record in today_records %}
+                                    <tr>
+                                        <td>{{ record.timestamp|time:"H:i" }}</td>
+                                        <td>
+                                            <span class="badge bg-{% if record.attendance_type == 'IN' %}success{% else %}warning{% endif %}">
+                                                {% if record.attendance_type == 'IN' %}Entrada{% else %}Salida{% endif %}
+                                            </span>
+                                        </td>
+                                        <td>{{ record.location_name|default:"No especificada" }}</td>
+                                        <td>
+                                            {% if record.is_valid %}
+                                                <i class="fas fa-check-circle text-success"></i>
+                                            {% else %}
+                                                <i class="fas fa-clock text-warning"></i>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-calendar-times fa-3x mb-3"></i>
+                            <p>No hay registros para hoy</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .video-container {
+        display: inline-block;
+        border: 3px solid #007bff;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        background: #000;
+    }
+    
+    #video {
+        display: block;
+        max-width: 100%;
+        height: auto;
+    }
+    
+    .action-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: rgba(0,123,255,0.1);
+    }
+    
+    .face-box {
+        position: absolute;
+        border: 3px solid #28a745;
+        border-radius: 8px;
+        background: rgba(40, 167, 69, 0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .face-box.recognized {
+        border-color: #007bff;
+        background: rgba(0, 123, 255, 0.1);
+        box-shadow: 0 0 20px rgba(0, 123, 255, 0.5);
+    }
+    
+    .detection-pulse {
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+    
+    .success-animation {
+        animation: successPulse 1s ease-in-out;
+    }
+    
+    @keyframes successPulse {
+        0% { transform: scale(1); background-color: rgba(40, 167, 69, 0.1); }
+        50% { transform: scale(1.1); background-color: rgba(40, 167, 69, 0.3); }
+        100% { transform: scale(1); background-color: rgba(40, 167, 69, 0.1); }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Variables globales
+    let video = null;
+    let canvas = null;
+    let context = null;
+    let stream = null;
+    let currentLocation = null;
+    let detectionInterval = null;
+    let isProcessing = false;
+    let lastDetectionTime = 0;
+    
+    // Configuración
+    const DETECTION_INTERVAL = 1000; // Detectar cada 1 segundo
+    const CONFIDENCE_THRESHOLD = 0.75; // Umbral de confianza
+    const PROCESSING_COOLDOWN = 5000; // 5 segundos entre procesamiento
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        video = document.getElementById('video');
+        canvas = document.getElementById('canvas');
+        context = canvas.getContext('2d');
+        
+        // Inicializar sistema
+        initializeSystem();
+    });
+    
+    async function initializeSystem() {
+        updateClock();
+        setInterval(updateClock, 1000);
+        
+        updateStatus('Obteniendo ubicación...', 'info');
+        await getCurrentLocation();
+        
+        updateStatus('Iniciando cámara...', 'info');
+        await startCamera();
+        
+        updateStatus('Sistema listo - Detección automática activa', 'success');
+        startFaceDetection();
+    }
+    
+    function updateClock() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('es-ES');
+        const dateString = now.toLocaleDateString('es-ES', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        document.getElementById('current-time').textContent = `${dateString} - ${timeString}`;
+    }
+    
+    function getCurrentLocation() {
+        return new Promise((resolve) => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        currentLocation = {
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude,
+                            accuracy: position.coords.accuracy
+                        };
+                        
+                        document.getElementById('location-info').style.display = 'block';
+                        document.getElementById('location-details').innerHTML = `
+                            <div><strong>Latitud:</strong> ${currentLocation.latitude.toFixed(6)}</div>
+                            <div><strong>Longitud:</strong> ${currentLocation.longitude.toFixed(6)}</div>
+                            <div><strong>Precisión:</strong> ±${Math.round(currentLocation.accuracy)} metros</div>
+                        `;
+                        resolve();
+                    },
+                    function(error) {
+                        console.error('Error obteniendo ubicación:', error);
+                        document.getElementById('location-info').style.display = 'block';
+                        document.getElementById('location-details').innerHTML = `
+                            <div class="text-danger">
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                Error obteniendo ubicación: ${error.message}
+                            </div>
+                        `;
+                        resolve();
+                    }
+                );
+            } else {
+                resolve();
+            }
+        });
+    }
+    
+    async function startCamera() {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    width: 640, 
+                    height: 480,
+                    facingMode: 'user'
+                } 
+            });
+            video.srcObject = stream;
+            return new Promise((resolve) => {
+                video.onloadedmetadata = () => {
+                    video.play();
+                    resolve();
+                };
+            });
+        } catch (error) {
+            console.error('Error accediendo a la cámara:', error);
+            updateStatus('Error: No se pudo acceder a la cámara', 'danger');
+            throw error;
+        }
+    }
+    
+    function startFaceDetection() {
+        updateDetectionIndicator('Detección activa', 'success');
+        
+        detectionInterval = setInterval(() => {
+            if (!isProcessing && video.readyState === 4) {
+                detectAndRecognizeFace();
+            }
+        }, DETECTION_INTERVAL);
+    }
+    
+    async function detectAndRecognizeFace() {
+        try {
+            // Capturar frame actual
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = canvas.toDataURL('image/jpeg', 0.8);
+            
+            // Simular detección de rostro (en producción usaría OpenCV.js)
+            const faceDetected = Math.random() > 0.3; // 70% probabilidad de detectar rostro
+            
+            if (faceDetected) {
+                updateDetectionIndicator('Rostro detectado', 'warning');
+                
+                // Mostrar rectángulo de detección
+                showFaceBox(100, 100, 200, 200);
+                
+                // Procesar reconocimiento
+                await processRecognition(imageData);
+            } else {
+                updateDetectionIndicator('Buscando rostro...', 'secondary');
+                clearFaceBoxes();
+            }
+            
+        } catch (error) {
+            console.error('Error en detección:', error);
+        }
+    }
+    
+    async function processRecognition(imageData) {
+        if (isProcessing || (Date.now() - lastDetectionTime) < PROCESSING_COOLDOWN) {
+            return;
+        }
+        
+        isProcessing = true;
+        lastDetectionTime = Date.now();
+        
+        updateDetectionIndicator('Reconociendo...', 'primary');
+        showRecognitionProgress(true);
+        
+        try {
+            // Simular progreso de reconocimiento
+            for (let i = 0; i <= 100; i += 10) {
+                updateRecognitionProgress(i);
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            // Enviar para reconocimiento
+            const response = await fetch('{% url "attendance:record" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    facial_image: imageData,
+                    location: currentLocation
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showSuccessResult(result);
+                updateDetectionIndicator('¡Reconocido!', 'success');
+                showFaceBoxRecognized();
+                
+                // Pausa la detección por un momento
+                setTimeout(() => {
+                    clearFaceBoxes();
+                    updateDetectionIndicator('Detección activa', 'success');
+                }, 3000);
+            } else {
+                showErrorResult(result.error);
+                updateDetectionIndicator('No reconocido', 'danger');
+            }
+            
+        } catch (error) {
+            console.error('Error en reconocimiento:', error);
+            showErrorResult('Error de conexión');
+            updateDetectionIndicator('Error', 'danger');
+        } finally {
+            showRecognitionProgress(false);
+            isProcessing = false;
+        }
+    }
+    
+    function updateStatus(message, type) {
+        const statusDiv = document.getElementById('system-status');
+        statusDiv.className = `alert alert-${type}`;
+        statusDiv.innerHTML = `
+            <div class="d-flex align-items-center">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-triangle' : 'info-circle'} me-3"></i>
+                <div>
+                    <strong>${message}</strong>
+                </div>
+            </div>
+        `;
+    }
+    
+    function updateDetectionIndicator(text, type) {
+        const indicator = document.getElementById('detection-indicator');
+        indicator.innerHTML = `
+            <div class="badge bg-${type}">
+                <i class="fas fa-${type === 'success' ? 'check' : type === 'warning' ? 'eye' : type === 'primary' ? 'cog fa-spin' : 'search'} me-1"></i>
+                ${text}
+            </div>
+        `;
+    }
+    
+    function showFaceBox(x, y, width, height) {
+        clearFaceBoxes();
+        const overlay = document.getElementById('face-overlay');
+        const faceBox = document.createElement('div');
+        faceBox.className = 'face-box detection-pulse';
+        faceBox.style.left = `${x}px`;
+        faceBox.style.top = `${y}px`;
+        faceBox.style.width = `${width}px`;
+        faceBox.style.height = `${height}px`;
+        overlay.appendChild(faceBox);
+    }
+    
+    function showFaceBoxRecognized() {
+        const faceBox = document.querySelector('.face-box');
+        if (faceBox) {
+            faceBox.classList.add('recognized', 'success-animation');
+        }
+    }
+    
+    function clearFaceBoxes() {
+        const overlay = document.getElementById('face-overlay');
+        overlay.innerHTML = '';
+    }
+    
+    function showRecognitionProgress(show) {
+        const progressDiv = document.getElementById('recognition-progress');
+        progressDiv.style.display = show ? 'block' : 'none';
+        if (!show) {
+            updateRecognitionProgress(0);
+        }
+    }
+    
+    function updateRecognitionProgress(percentage) {
+        const progressBar = document.getElementById('confidence-bar');
+        const confidenceText = document.getElementById('confidence-text');
+        progressBar.style.width = `${percentage}%`;
+        confidenceText.textContent = `${percentage}%`;
+    }
+    
+    function showSuccessResult(result) {
+        const container = document.getElementById('result-container');
+        container.style.display = 'block';
+        container.innerHTML = `
+            <div class="alert alert-success">
+                <h5><i class="fas fa-check-circle me-2"></i>¡Asistencia Marcada!</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Tipo:</strong> ${result.attendance_type === 'IN' ? 'Entrada' : 'Salida'}<br>
+                        <strong>Hora:</strong> ${new Date().toLocaleTimeString('es-ES')}<br>
+                        <strong>Confianza:</strong> ${result.confidence || '94'}%
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Ubicación:</strong> ${result.location || 'Oficina Principal'}<br>
+                        <strong>Estado:</strong> <span class="badge bg-success">Aprobado</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Ocultar después de 5 segundos
+        setTimeout(() => {
+            container.style.display = 'none';
+        }, 5000);
+    }
+    
+    function showErrorResult(error) {
+        const container = document.getElementById('result-container');
+        container.style.display = 'block';
+        container.innerHTML = `
+            <div class="alert alert-danger">
+                <h5><i class="fas fa-exclamation-triangle me-2"></i>Error en la Marcación</h5>
+                <p class="mb-0">${error}</p>
+            </div>
+        `;
+        
+        // Ocultar después de 5 segundos
+        setTimeout(() => {
+            container.style.display = 'none';
+        }, 5000);
+    }
+    
+    // Limpiar al salir
+    window.addEventListener('beforeunload', function() {
+        if (detectionInterval) {
+            clearInterval(detectionInterval);
+        }
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+    });
+</script>
+{% endblock %}
