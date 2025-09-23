@@ -75,13 +75,17 @@ class Command(BaseCommand):
             dept = departments[dept_name]
             
             # Generar código único para el puesto
-            code = f"{dept.code}_{pos_data['name'].replace(' ', '_').upper()[:10]}"
+            import hashlib
+            name_clean = pos_data['name'].replace(' ', '_').upper()
+            # Usar hash para garantizar unicidad
+            name_hash = hashlib.md5(f"{dept.code}_{pos_data['name']}".encode()).hexdigest()[:4]
+            code = f"{dept.code}_{name_clean[:6]}_{name_hash}"
             
             position, created = Position.objects.get_or_create(
-                title=pos_data['name'],
-                department=dept,
+                code=code,
                 defaults={
-                    'code': code,
+                    'title': pos_data['name'],
+                    'department': dept,
                     'description': pos_data['description'],
                     'min_salary': pos_data['salary_min'],
                     'max_salary': pos_data['salary_max'],
