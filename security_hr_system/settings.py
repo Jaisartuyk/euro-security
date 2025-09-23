@@ -163,9 +163,7 @@ LOGIN_REDIRECT_URL = '/'
 # CSRF Configuration for Railway
 CSRF_TRUSTED_ORIGINS = [
     'https://euro-security-production.up.railway.app',
-    'https://high-pitched-fuel-production.up.railway.app',
-    'https://*.up.railway.app',
-    'https://*.railway.app'
+    'https://high-pitched-fuel-production.up.railway.app'
 ]
 
 # Add Railway domains from environment
