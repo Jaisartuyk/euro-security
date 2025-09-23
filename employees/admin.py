@@ -14,11 +14,14 @@ class EmployeeAdmin(admin.ModelAdmin):
         ('Información Personal', {
             'fields': ('user', 'employee_id', 'first_name', 'last_name', 'email', 'phone')
         }),
-        ('Información Laboral', {
-            'fields': ('department', 'position', 'hire_date', 'salary', 'is_active')
+        ('Documentos', {
+            'fields': ('national_id', 'date_of_birth', 'gender', 'marital_status')
         }),
-        ('Información Adicional', {
-            'fields': ('address', 'emergency_contact', 'emergency_phone', 'notes')
+        ('Dirección', {
+            'fields': ('address', 'city', 'country')
+        }),
+        ('Información Laboral', {
+            'fields': ('department', 'position', 'hire_date', 'current_salary', 'is_active')
         }),
     )
     
@@ -61,7 +64,7 @@ class EmployeeInline(admin.StackedInline):
     verbose_name_plural = 'Perfil de Empleado'
     fk_name = 'user'
     
-    fields = ('employee_id', 'department', 'position', 'phone', 'hire_date', 'is_active')
+    fields = ('employee_id', 'first_name', 'last_name', 'department', 'position', 'hire_date', 'is_active')
 
 class CustomUserAdmin(BaseUserAdmin):
     inlines = (EmployeeInline,)
