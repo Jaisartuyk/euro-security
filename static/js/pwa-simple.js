@@ -18,6 +18,9 @@ class EuroSecurityPWASimple {
         // Registrar Service Worker (solo en HTTPS o localhost)
         await this.registerServiceWorker();
         
+        // Configurar PWA Install
+        this.setupPWAInstall();
+        
         // Configurar GPS tracking básico
         this.setupGPSTracking();
         
@@ -46,6 +49,112 @@ class EuroSecurityPWASimple {
                 console.warn('⚠️ Service Worker no disponible:', error.message);
             }
         }
+    }
+    
+    setupPWAInstall() {
+        let deferredPrompt;
+        const installBanner = document.getElementById('pwa-install-banner');
+        const installBtn = document.getElementById('pwa-install-btn');
+        const dismissBtn = document.getElementById('pwa-dismiss-btn');
+        
+        // Escuchar evento beforeinstallprompt
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('📱 PWA instalable detectada');
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Mostrar banner de instalación
+            if (installBanner) {
+                installBanner.classList.remove('d-none');
+            }
+        });
+        
+        // Botón de instalación
+        if (installBtn) {
+            installBtn.addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log(`📱 Resultado de instalación: ${outcome}`);
+                    deferredPrompt = null;
+                    
+                    if (installBanner) {
+                        installBanner.classList.add('d-none');
+                    }
+                }
+            });
+        }
+        
+        // Botón de descartar
+        if (dismissBtn) {
+            dismissBtn.addEventListener('click', () => {
+                if (installBanner) {
+                    installBanner.classList.add('d-none');
+                }
+            });
+        }
+        
+        // Detectar si ya está instalada
+        window.addEventListener('appinstalled', () => {
+            console.log('✅ PWA instalada exitosamente');
+            if (installBanner) {
+                installBanner.classList.add('d-none');
+            }
+        });
+        
+        // Mostrar banner después de un tiempo si no se detectó beforeinstallprompt
+        setTimeout(() => {
+            if (!deferredPrompt && installBanner && !this.isPWAInstalled()) {
+                console.log('📱 Mostrando banner de instalación manual');
+                installBanner.classList.remove('d-none');
+                
+                // Cambiar texto del botón para instalación manual
+                if (installBtn) {
+                    installBtn.textContent = 'Agregar a Inicio';
+                    installBtn.onclick = () => {
+                        this.showManualInstallInstructions();
+                    };
+                }
+            }
+        }, 3000);
+    }
+    
+    isPWAInstalled() {
+        // Detectar si la PWA ya está instalada
+        return window.matchMedia('(display-mode: standalone)').matches || 
+               window.navigator.standalone === true;
+    }
+    
+    showManualInstallInstructions() {
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const isAndroid = /Android/.test(navigator.userAgent);
+        
+        let instructions = '';
+        
+        if (isIOS) {
+            instructions = `
+                Para instalar EURO SECURITY en iOS:
+                1. Toca el botón Compartir 📎
+                2. Selecciona "Agregar a pantalla de inicio"
+                3. Toca "Agregar" para confirmar
+            `;
+        } else if (isAndroid) {
+            instructions = `
+                Para instalar EURO SECURITY en Android:
+                1. Toca el menú ⋮ del navegador
+                2. Selecciona "Agregar a pantalla de inicio"
+                3. Toca "Agregar" para confirmar
+            `;
+        } else {
+            instructions = `
+                Para instalar EURO SECURITY:
+                1. Busca el ícono de instalación en la barra de direcciones
+                2. Haz clic en "Instalar"
+                3. Confirma la instalación
+            `;
+        }
+        
+        alert(instructions);
     }
     
     setupGPSTracking() {
