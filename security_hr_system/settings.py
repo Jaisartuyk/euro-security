@@ -102,15 +102,24 @@ WSGI_APPLICATION = 'security_hr_system.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-import dj_database_url
-
-# Usar PostgreSQL si DATABASE_URL está disponible, sino SQLite
+# Configuración de base de datos
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
     # Configuración para Railway PostgreSQL
+    # Parsear URL manualmente: postgresql://user:password@host:port/dbname
+    import urllib.parse as urlparse
+    url = urlparse.urlparse(DATABASE_URL)
+    
     DATABASES = {
-        'default': dj_database_url.parse(DATABASE_URL)
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': url.path[1:],  # Remover el '/' inicial
+            'USER': url.username,
+            'PASSWORD': url.password,
+            'HOST': url.hostname,
+            'PORT': url.port,
+        }
     }
 else:
     # Configuración local SQLite
