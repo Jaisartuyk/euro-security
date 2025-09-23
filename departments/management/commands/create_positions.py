@@ -74,23 +74,29 @@ class Command(BaseCommand):
                 
             dept = departments[dept_name]
             
+            # Generar código único para el puesto
+            code = f"{dept.code}_{pos_data['name'].replace(' ', '_').upper()[:10]}"
+            
             position, created = Position.objects.get_or_create(
-                name=pos_data['name'],
+                title=pos_data['name'],
                 department=dept,
                 defaults={
+                    'code': code,
                     'description': pos_data['description'],
-                    'salary_min': pos_data['salary_min'],
-                    'salary_max': pos_data['salary_max'],
+                    'min_salary': pos_data['salary_min'],
+                    'max_salary': pos_data['salary_max'],
+                    'level': 'SENIOR',  # Nivel por defecto
+                    'employment_type': 'FULL_TIME',  # Tiempo completo por defecto
                     'is_active': True
                 }
             )
             
             if created:
                 created_count += 1
-                self.stdout.write(f'✅ {dept.name} → {position.name}')
+                self.stdout.write(f'✅ {dept.name} → {position.title}')
             else:
                 existed_count += 1
-                self.stdout.write(f'📋 {dept.name} → {position.name} (ya existe)')
+                self.stdout.write(f'📋 {dept.name} → {position.title} (ya existe)')
         
         self.stdout.write('\n📊 RESUMEN:')
         self.stdout.write(f'   🏢 Departamentos: {Department.objects.count()}')
