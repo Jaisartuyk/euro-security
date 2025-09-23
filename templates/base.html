@@ -155,6 +155,78 @@
             width: 20px;
             text-align: center;
         }
+        
+        /* Responsive Sidebar para Móviles */
+        @media (max-width: 991.98px) {
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: -100%;
+                height: 100vh;
+                width: 280px;
+                background: white;
+                z-index: 1050;
+                transition: left 0.3s ease;
+                box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+                overflow-y: auto;
+            }
+            
+            .sidebar.show {
+                left: 0;
+            }
+            
+            .sidebar-content {
+                padding-top: 1rem;
+            }
+            
+            .main-content {
+                margin-left: 0 !important;
+                padding: 1rem;
+            }
+            
+            /* Overlay para cerrar sidebar */
+            .sidebar-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                z-index: 1040;
+                display: none;
+            }
+            
+            .sidebar-overlay.show {
+                display: block;
+            }
+            
+            /* Botón de cerrar en sidebar */
+            .sidebar-close {
+                position: absolute;
+                top: 1rem;
+                right: 1rem;
+                background: none;
+                border: none;
+                font-size: 1.5rem;
+                color: #6c757d;
+                cursor: pointer;
+            }
+        }
+        
+        /* Ajustes para pantallas pequeñas */
+        @media (max-width: 576px) {
+            .navbar-brand {
+                font-size: 1rem;
+            }
+            
+            .main-content {
+                padding: 0.5rem;
+            }
+            
+            .card {
+                margin-bottom: 1rem;
+            }
+        }
     </style>
 
     {% block extra_css %}{% endblock %}
@@ -163,9 +235,15 @@
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-custom">
         <div class="container-fluid">
+            <!-- Botón hamburguesa para móviles -->
+            <button class="navbar-toggler d-lg-none" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar" aria-controls="sidebar" aria-expanded="false" aria-label="Toggle navigation">
+                <i class="fas fa-bars text-white"></i>
+            </button>
+            
             <a class="navbar-brand" href="/">
                 <i class="fas fa-shield-alt me-2"></i>
-                EURO SECURITY - Gestión de Personal
+                <span class="d-none d-sm-inline">EURO SECURITY - Gestión de Personal</span>
+                <span class="d-sm-none">EURO SECURITY</span>
             </a>
             
             <div class="navbar-nav ms-auto">
@@ -198,9 +276,17 @@
 
     <div class="container-fluid">
         <div class="row">
+            <!-- Overlay para cerrar sidebar en móviles -->
+            <div class="sidebar-overlay" id="sidebar-overlay"></div>
+            
             <!-- Sidebar -->
-            <nav class="col-lg-2 d-lg-block sidebar collapse" id="sidebar">
-                <div class="position-sticky pt-3">
+            <nav class="col-lg-2 sidebar collapse d-lg-block" id="sidebar">
+                <!-- Botón de cerrar para móviles -->
+                <button class="sidebar-close d-lg-none" id="sidebar-close">
+                    <i class="fas fa-times"></i>
+                </button>
+                
+                <div class="position-sticky pt-3 sidebar-content">
                     <ul class="nav flex-column">
                         <li class="nav-item">
                             {% if user.is_superuser or user.is_staff %}
@@ -501,5 +587,65 @@
     {% endif %}
     
     {% block extra_js %}{% endblock %}
+    
+    <!-- JavaScript para Sidebar Responsive -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const sidebarOverlay = document.getElementById('sidebar-overlay');
+            const sidebarClose = document.getElementById('sidebar-close');
+            const navbarToggler = document.querySelector('.navbar-toggler');
+            
+            // Abrir sidebar
+            if (navbarToggler) {
+                navbarToggler.addEventListener('click', function() {
+                    sidebar.classList.add('show');
+                    sidebarOverlay.classList.add('show');
+                    document.body.style.overflow = 'hidden';
+                });
+            }
+            
+            // Cerrar sidebar
+            function closeSidebar() {
+                sidebar.classList.remove('show');
+                sidebarOverlay.classList.remove('show');
+                document.body.style.overflow = '';
+            }
+            
+            // Cerrar con botón X
+            if (sidebarClose) {
+                sidebarClose.addEventListener('click', closeSidebar);
+            }
+            
+            // Cerrar con overlay
+            if (sidebarOverlay) {
+                sidebarOverlay.addEventListener('click', closeSidebar);
+            }
+            
+            // Cerrar con tecla Escape
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && sidebar.classList.contains('show')) {
+                    closeSidebar();
+                }
+            });
+            
+            // Cerrar sidebar al hacer clic en un enlace (en móviles)
+            const sidebarLinks = sidebar.querySelectorAll('.nav-link');
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    if (window.innerWidth < 992) {
+                        setTimeout(closeSidebar, 300);
+                    }
+                });
+            });
+            
+            // Ajustar al cambiar tamaño de ventana
+            window.addEventListener('resize', function() {
+                if (window.innerWidth >= 992) {
+                    closeSidebar();
+                }
+            });
+        });
+    </script>
 </body>
 </html>
