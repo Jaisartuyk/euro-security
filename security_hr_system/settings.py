@@ -19,22 +19,28 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-tvservices-hr-system-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
-# ALLOWED_HOSTS configuration for Railway
-ALLOWED_HOSTS_ENV = os.environ.get('ALLOWED_HOSTS', 'euro-security-production.up.railway.app,localhost,127.0.0.1')
-ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS_ENV.split(',') if host.strip()]
-
-# Add Railway domains automatically
-RAILWAY_STATIC_URL = os.environ.get('RAILWAY_STATIC_URL', '')
-RAILWAY_PUBLIC_DOMAIN = os.environ.get('RAILWAY_PUBLIC_DOMAIN', '')
-
-if RAILWAY_STATIC_URL and RAILWAY_STATIC_URL not in ALLOWED_HOSTS:
-    ALLOWED_HOSTS.append(RAILWAY_STATIC_URL)
-if RAILWAY_PUBLIC_DOMAIN and RAILWAY_PUBLIC_DOMAIN not in ALLOWED_HOSTS:
-    ALLOWED_HOSTS.append(RAILWAY_PUBLIC_DOMAIN)
-
-# Add wildcard for Railway subdomains
-if not any('railway.app' in host for host in ALLOWED_HOSTS):
-    ALLOWED_HOSTS.extend(['*.up.railway.app', '*.railway.app'])
+# ALLOWED_HOSTS - Permitir todos los hosts para Railway
+if DEBUG:
+    ALLOWED_HOSTS = ['*']  # En desarrollo, permitir todos
+else:
+    # En producción, permitir dominios específicos y Railway
+    ALLOWED_HOSTS = [
+        'euro-security-production.up.railway.app',
+        'high-pitched-fuel-production.up.railway.app',
+        '*.up.railway.app',
+        '*.railway.app',
+        'localhost',
+        '127.0.0.1'
+    ]
+    
+    # Agregar dominios de variables de entorno
+    railway_static = os.environ.get('RAILWAY_STATIC_URL')
+    railway_public = os.environ.get('RAILWAY_PUBLIC_DOMAIN')
+    
+    if railway_static:
+        ALLOWED_HOSTS.append(railway_static)
+    if railway_public:
+        ALLOWED_HOSTS.append(railway_public)
 
 
 # Application definition
