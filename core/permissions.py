@@ -24,6 +24,10 @@ def employee_required(view_func):
             messages.error(request, 'Debes iniciar sesión para acceder a esta página.')
             return redirect('login')
         
+        # SUPERUSUARIOS: Acceso automático sin restricciones
+        if request.user.is_superuser or request.user.is_staff:
+            return view_func(request, *args, **kwargs)
+        
         employee = get_employee_from_user(request.user)
         if not employee:
             messages.error(request, 'No se encontró tu perfil de empleado. Contacta al administrador.')
