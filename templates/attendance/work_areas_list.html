@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Áreas de Trabajo - EURO SECURITY{% endblock %}
+
+{% block extra_css %}
+<style>
+    .work-area-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        margin-bottom: 20px;
+    }
+    
+    .work-area-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .area-type-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 50px;
+    }
+    
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .map-preview {
+        height: 150px;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="fas fa-map-marked-alt me-3"></i>
+                    Áreas de Trabajo GPS
+                </h2>
+                <a href="{% url 'attendance:work_area_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>
+                    Nueva Área
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Estadísticas -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="stats-card">
+                <h3>{{ stats.total_areas }}</h3>
+                <p><i class="fas fa-map-marker-alt me-2"></i>Total de Áreas</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stats-card">
+                <h3>{{ stats.active_areas }}</h3>
+                <p><i class="fas fa-check-circle me-2"></i>Áreas Activas</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stats-card">
+                <h3>{{ stats.total_assignments }}</h3>
+                <p><i class="fas fa-users me-2"></i>Empleados Asignados</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Lista de Áreas -->
+    <div class="row">
+        {% for area in work_areas %}
+        <div class="col-lg-6 col-xl-4">
+            <div class="card work-area-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h5 class="card-title mb-0">{{ area.name }}</h5>
+                        <span class="badge area-type-badge {% if area.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                            {% if area.is_active %}Activa{% else %}Inactiva{% endif %}
+                        </span>
+                    </div>
+                    
+                    <p class="text-muted small mb-2">
+                        <i class="fas fa-tag me-1"></i>
+                        {{ area.get_area_type_display }}
+                    </p>
+                    
+                    {% if area.description %}
+                    <p class="card-text text-muted">{{ area.description|truncatewords:15 }}</p>
+                    {% endif %}
+                    
+                    <div class="row text-center mb-3">
+                        <div class="col-6">
+                            <small class="text-muted">Radio</small>
+                            <div><strong>{{ area.radius_meters }}m</strong></div>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Empleados</small>
+                            <div><strong>{{ area.assigned_employees.count }}</strong></div>
+                        </div>
+                    </div>
+                    
+                    {% if area.address %}
+                    <p class="small text-muted mb-3">
+                        <i class="fas fa-map-marker-alt me-1"></i>
+                        {{ area.address|truncatewords:10 }}
+                    </p>
+                    {% endif %}
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'attendance:work_area_detail' area.pk %}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-eye me-1"></i>
+                            Ver Detalles
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-map-marked-alt fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">No hay áreas de trabajo</h4>
+                <p class="text-muted">Crea la primera área de trabajo para comenzar el rastreo GPS</p>
+                <a href="{% url 'attendance:work_area_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>
+                    Crear Primera Área
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Animaciones y efectos
+    document.addEventListener('DOMContentLoaded', function() {
+        // Animación de entrada para las tarjetas
+        const cards = document.querySelectorAll('.work-area-card');
+        cards.forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                card.style.transition = 'all 0.5s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 100);
+        });
+    });
+</script>
+{% endblock %}

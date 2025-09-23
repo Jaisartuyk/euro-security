@@ -1,0 +1,289 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Crear Área de Trabajo - EURO SECURITY{% endblock %}
+
+{% block extra_css %}
+<style>
+    .map-container {
+        height: 400px;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .form-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        padding: 30px;
+    }
+    
+    .coordinates-display {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 15px;
+        margin: 10px 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="fas fa-map-marked-alt me-3"></i>
+                    Crear Nueva Área de Trabajo
+                </h2>
+                <a href="{% url 'attendance:work_areas_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    Volver a Lista
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Mapa -->
+        <div class="col-lg-8">
+            <div class="card form-card">
+                <h5 class="mb-3">
+                    <i class="fas fa-map me-2"></i>
+                    Seleccionar Ubicación en el Mapa
+                </h5>
+                <div id="map" class="map-container"></div>
+                <div class="coordinates-display">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Latitud:</strong> <span id="selected-lat">-2.1709979</span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Longitud:</strong> <span id="selected-lng">-79.9224019</span>
+                        </div>
+                    </div>
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Haz clic en el mapa para seleccionar la ubicación del área de trabajo
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Formulario -->
+        <div class="col-lg-4">
+            <div class="card form-card">
+                <h5 class="mb-3">
+                    <i class="fas fa-cog me-2"></i>
+                    Configuración del Área
+                </h5>
+                
+                <form method="post" id="work-area-form">
+                    {% csrf_token %}
+                    
+                    <!-- Información Básica -->
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Nombre del Área *</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="area_type" class="form-label">Tipo de Área *</label>
+                        <select class="form-select" id="area_type" name="area_type" required>
+                            {% for value, label in area_types %}
+                            <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Descripción</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    
+                    <!-- Coordenadas (ocultas) -->
+                    <input type="hidden" id="latitude" name="latitude" value="-2.1709979">
+                    <input type="hidden" id="longitude" name="longitude" value="-79.9224019">
+                    
+                    <!-- Configuración GPS -->
+                    <div class="mb-3">
+                        <label for="radius_meters" class="form-label">Radio de Cobertura (metros)</label>
+                        <input type="number" class="form-control" id="radius_meters" name="radius_meters" value="50" min="10" max="1000">
+                        <small class="text-muted">Radio en metros para considerar que un empleado está en el área</small>
+                    </div>
+                    
+                    <!-- Información de Contacto -->
+                    <div class="mb-3">
+                        <label for="address" class="form-label">Dirección</label>
+                        <input type="text" class="form-control" id="address" name="address">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="contact_person" class="form-label">Persona de Contacto</label>
+                        <input type="text" class="form-control" id="contact_person" name="contact_person">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="contact_phone" class="form-label">Teléfono de Contacto</label>
+                        <input type="tel" class="form-control" id="contact_phone" name="contact_phone">
+                    </div>
+                    
+                    <!-- Horarios -->
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label for="start_time" class="form-label">Hora Inicio</label>
+                            <input type="time" class="form-control" id="start_time" name="start_time">
+                        </div>
+                        <div class="col-6">
+                            <label for="end_time" class="form-label">Hora Fin</label>
+                            <input type="time" class="form-control" id="end_time" name="end_time">
+                        </div>
+                    </div>
+                    
+                    <!-- Opciones -->
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="requires_attendance" name="requires_attendance" checked>
+                            <label class="form-check-label" for="requires_attendance">
+                                Requiere marcación de asistencia
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>
+                            Crear Área de Trabajo
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let map;
+    let marker;
+    
+    function initMap() {
+        // Coordenadas por defecto (Guayaquil, Ecuador)
+        const defaultLocation = { lat: -2.1709979, lng: -79.9224019 };
+        
+        // Crear mapa
+        map = new google.maps.Map(document.getElementById("map"), {
+            zoom: 15,
+            center: defaultLocation,
+            mapTypeId: google.maps.MapTypeId.ROADMAP,
+        });
+        
+        // Marcador inicial
+        marker = new google.maps.Marker({
+            position: defaultLocation,
+            map: map,
+            title: "Ubicación del Área de Trabajo",
+            draggable: true
+        });
+        
+        // Círculo para mostrar el radio
+        const circle = new google.maps.Circle({
+            map: map,
+            radius: 50, // metros
+            fillColor: '#3b82f6',
+            fillOpacity: 0.2,
+            strokeColor: '#3b82f6',
+            strokeOpacity: 0.8,
+            strokeWeight: 2,
+            center: defaultLocation
+        });
+        
+        // Actualizar círculo cuando cambie el radio
+        document.getElementById('radius_meters').addEventListener('input', function() {
+            circle.setRadius(parseInt(this.value));
+        });
+        
+        // Evento de clic en el mapa
+        map.addListener("click", (event) => {
+            const lat = event.latLng.lat();
+            const lng = event.latLng.lng();
+            
+            // Actualizar marcador
+            marker.setPosition(event.latLng);
+            circle.setCenter(event.latLng);
+            
+            // Actualizar coordenadas
+            updateCoordinates(lat, lng);
+        });
+        
+        // Evento de arrastrar marcador
+        marker.addListener("dragend", (event) => {
+            const lat = event.latLng.lat();
+            const lng = event.latLng.lng();
+            
+            circle.setCenter(event.latLng);
+            updateCoordinates(lat, lng);
+        });
+        
+        // Geocodificación inversa al hacer clic
+        const geocoder = new google.maps.Geocoder();
+        map.addListener("click", (event) => {
+            geocoder.geocode({ location: event.latLng }, (results, status) => {
+                if (status === "OK" && results[0]) {
+                    document.getElementById('address').value = results[0].formatted_address;
+                }
+            });
+        });
+    }
+    
+    function updateCoordinates(lat, lng) {
+        // Actualizar display
+        document.getElementById('selected-lat').textContent = lat.toFixed(8);
+        document.getElementById('selected-lng').textContent = lng.toFixed(8);
+        
+        // Actualizar campos ocultos
+        document.getElementById('latitude').value = lat;
+        document.getElementById('longitude').value = lng;
+    }
+    
+    // Validación del formulario
+    document.getElementById('work-area-form').addEventListener('submit', function(e) {
+        const name = document.getElementById('name').value.trim();
+        const lat = document.getElementById('latitude').value;
+        const lng = document.getElementById('longitude').value;
+        
+        if (!name) {
+            e.preventDefault();
+            alert('Por favor ingresa el nombre del área de trabajo');
+            return;
+        }
+        
+        if (!lat || !lng) {
+            e.preventDefault();
+            alert('Por favor selecciona una ubicación en el mapa');
+            return;
+        }
+    });
+    
+    // Manejar errores de Google Maps
+    function gm_authFailure() {
+        document.getElementById('map').innerHTML = `
+            <div class="d-flex justify-content-center align-items-center h-100">
+                <div class="text-center">
+                    <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                    <h5>Error de Google Maps</h5>
+                    <p class="text-muted">No se pudo cargar el mapa. Verifica la API Key.</p>
+                </div>
+            </div>
+        `;
+    }
+</script>
+
+<!-- Cargar Google Maps API -->
+<script async defer 
+        src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&callback=initMap">
+</script>
+{% endblock %}
