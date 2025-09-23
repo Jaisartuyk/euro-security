@@ -159,6 +159,28 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Login URLs
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
+
+# CSRF Configuration for Railway
+CSRF_TRUSTED_ORIGINS = [
+    'https://euro-security-production.up.railway.app',
+    'https://high-pitched-fuel-production.up.railway.app',
+    'https://*.up.railway.app',
+    'https://*.railway.app'
+]
+
+# Add Railway domains from environment
+railway_static = os.environ.get('RAILWAY_STATIC_URL')
+railway_public = os.environ.get('RAILWAY_PUBLIC_DOMAIN')
+
+if railway_static:
+    CSRF_TRUSTED_ORIGINS.append(f'https://{railway_static}')
+if railway_public:
+    CSRF_TRUSTED_ORIGINS.append(f'https://{railway_public}')
+
+# CSRF Cookie settings
+CSRF_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_HTTPONLY = False  # Permitir acceso desde JavaScript
+CSRF_COOKIE_SAMESITE = 'Lax'
 LOGOUT_REDIRECT_URL = '/login/'
 
 # Google Maps API
