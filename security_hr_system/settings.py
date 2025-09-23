@@ -103,7 +103,8 @@ WSGI_APPLICATION = 'security_hr_system.wsgi.application'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 # Configuración de base de datos
-DATABASE_URL = os.environ.get('DATABASE_URL')
+# Usar URL pública de PostgreSQL que funciona desde Railway CLI
+DATABASE_URL = os.environ.get('DATABASE_PUBLIC_URL') or os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
     try:
