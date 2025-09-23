@@ -1,0 +1,7 @@
+SECRET_KEY=^@o*8&1_ou%em9$_#(8e37in^h=n05ki75kl_dgjozut^lr2do
+DEBUG=False
+ALLOWED_HOSTS=euro-security-production.up.railway.app,high-pitched-fuel-production.up.railway.app,localhost,127.0.0.1
+DATABASE_URL=${{Postgres.DATABASE_URL}}
+GOOGLE_MAPS_API_KEY=AIzaSyAtEPZgbPBwnJGrvIuwplRJDFbr0tmbnyQ
+TIME_ZONE=America/Guayaquil
+LANGUAGE_CODE=es-ec
