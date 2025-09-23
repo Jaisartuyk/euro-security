@@ -216,7 +216,7 @@
                 {% if total_employees > 0 %}
                     <div class="d-flex justify-content-between align-items-center">
                         <span class="small">Promedio por Empleado</span>
-                        <strong class="text-info">${{ department.budget|div:total_employees|floatformat:2 }}</strong>
+                        <strong class="text-info">${{ budget_per_employee|floatformat:2 }}</strong>
                     </div>
                 {% endif %}
             </div>

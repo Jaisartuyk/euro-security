@@ -71,18 +71,26 @@ def department_detail(request, pk):
     """Vista para ver detalles de un departamento"""
     department = get_object_or_404(Department, pk=pk)
     
-    # Obtener datos relacionados (simulado por ahora ya que no hay empleados)
-    employees = []
-    positions = []
-    budgets = []
+    # Obtener empleados reales del departamento
+    from employees.models import Employee
+    employees = Employee.objects.filter(department=department, is_active=True)
+    positions = department.positions.all()
+    budgets = []  # Por implementar sistema de presupuestos
+    
+    # Calcular promedio por empleado
+    total_employees = employees.count()
+    budget_per_employee = 0
+    if total_employees > 0 and department.budget:
+        budget_per_employee = department.budget / total_employees
     
     context = {
         'department': department,
         'employees': employees,
         'positions': positions,
         'budgets': budgets,
-        'total_employees': len(employees),
-        'total_positions': len(positions),
+        'total_employees': total_employees,
+        'total_positions': positions.count(),
+        'budget_per_employee': budget_per_employee,
     }
     
     return render(request, 'departments/department_detail.html', context)
