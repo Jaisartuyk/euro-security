@@ -18,6 +18,9 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-tvservices-hr-system-
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
+# Temporal: Forzar DEBUG en producción para ver errores
+if not DEBUG:
+    DEBUG = True  # Temporal para debugging
 
 # ALLOWED_HOSTS - Permitir todos los hosts para Railway
 if DEBUG:
