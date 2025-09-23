@@ -106,21 +106,31 @@ WSGI_APPLICATION = 'security_hr_system.wsgi.application'
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
-    # Configuración para Railway PostgreSQL
-    # Parsear URL manualmente: postgresql://user:password@host:port/dbname
-    import urllib.parse as urlparse
-    url = urlparse.urlparse(DATABASE_URL)
-    
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': url.path[1:],  # Remover el '/' inicial
-            'USER': url.username,
-            'PASSWORD': url.password,
-            'HOST': url.hostname,
-            'PORT': url.port,
+    try:
+        # Configuración para Railway PostgreSQL
+        # Parsear URL manualmente: postgresql://user:password@host:port/dbname
+        import urllib.parse as urlparse
+        url = urlparse.urlparse(DATABASE_URL)
+        
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': url.path[1:],  # Remover el '/' inicial
+                'USER': url.username,
+                'PASSWORD': url.password,
+                'HOST': url.hostname,
+                'PORT': url.port,
+            }
         }
-    }
+    except Exception as e:
+        print(f"Warning: PostgreSQL config failed: {e}")
+        # Fallback a SQLite si hay problemas
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
+        }
 else:
     # Configuración local SQLite
     DATABASES = {
