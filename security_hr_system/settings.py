@@ -18,9 +18,10 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-tvservices-hr-system-
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
-# Temporal: Forzar DEBUG en producción para ver errores
+# Configuración de producción
 if not DEBUG:
-    DEBUG = True  # Temporal para debugging
+    # Mantener DEBUG=False en producción para seguridad
+    pass
 
 # ALLOWED_HOSTS - Permitir todos los hosts para Railway
 if DEBUG:
@@ -67,7 +68,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    # 'django.middleware.security.SecurityMiddleware',  # Temporal: deshabilitado
+    'django.middleware.security.SecurityMiddleware',  # Habilitado para producción
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -210,16 +211,20 @@ if railway_static:
 if railway_public:
     CSRF_TRUSTED_ORIGINS.append(f'https://{railway_public}')
 
-# CSRF Cookie settings - Temporal: relajado para debugging
-CSRF_COOKIE_SECURE = False  # Temporal: deshabilitado
+# CSRF Cookie settings - Configuración de producción
+CSRF_COOKIE_SECURE = not DEBUG  # Seguro en producción (HTTPS)
 CSRF_COOKIE_HTTPONLY = False  # Permitir acceso desde JavaScript
 CSRF_COOKIE_SAMESITE = 'Lax'
 
-# Deshabilitar configuraciones de seguridad temporalmente
-SECURE_SSL_REDIRECT = False
-SECURE_HSTS_SECONDS = 0
-SECURE_HSTS_INCLUDE_SUBDOMAINS = False
-SECURE_HSTS_PRELOAD = False
+# Configuraciones de seguridad para producción HTTPS
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = 31536000  # 1 año
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_BROWSER_XSS_FILTER = True
+    X_FRAME_OPTIONS = 'DENY'
 LOGOUT_REDIRECT_URL = '/login/'
 
 # Google Maps API

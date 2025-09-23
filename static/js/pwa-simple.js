@@ -13,7 +13,7 @@ class EuroSecurityPWASimple {
     }
     
     async init() {
-        console.log('🚀 Inicializando EURO SECURITY PWA (Modo Desarrollo)');
+        console.log('🚀 Inicializando EURO SECURITY PWA (Producción HTTPS)');
         
         // Registrar Service Worker (solo en HTTPS o localhost)
         await this.registerServiceWorker();
@@ -35,7 +35,7 @@ class EuroSecurityPWASimple {
             try {
                 const registration = await navigator.serviceWorker.register('/static/sw-simple.js');
                 this.serviceWorker = registration;
-                console.log('✅ Service Worker registrado (modo desarrollo)');
+                console.log('✅ Service Worker registrado (producción HTTPS)');
                 
                 // Escuchar actualizaciones
                 registration.addEventListener('updatefound', () => {
@@ -86,7 +86,7 @@ class EuroSecurityPWASimple {
     startGPSTracking() {
         if (this.gpsTrackingActive) return;
         
-        console.log('🛰️ Iniciando rastreo GPS (modo desarrollo)');
+        console.log('🛰️ Iniciando rastreo GPS (producción HTTPS)');
         this.gpsTrackingActive = true;
         
         // Rastreo cada 30 segundos
@@ -237,7 +237,7 @@ class EuroSecurityPWASimple {
                 <small class="text-muted">
                     📍 ${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}
                     <br>Precisión: ${location.accuracy}m
-                    <br><span class="badge bg-info">Modo Desarrollo</span>
+                    <br><span class="badge bg-success">Producción HTTPS</span>
                 </small>
             `;
         }
@@ -277,7 +277,7 @@ class EuroSecurityPWASimple {
     
     showDevelopmentInfo() {
         console.log(`
-🚀 EURO SECURITY PWA - MODO DESARROLLO
+🚀 EURO SECURITY PWA - PRODUCCIÓN
 =====================================
 
 📍 FUNCIONALIDADES ACTIVAS:
@@ -314,7 +314,7 @@ Para funcionalidad completa, desplegar en HTTPS.
         banner.style.zIndex = '9999';
         banner.innerHTML = `
             <small>
-                🚧 <strong>MODO DESARROLLO</strong> - 
+                ✅ <strong>PRODUCCIÓN HTTPS</strong> - 
                 PWA completa disponible en producción (HTTPS) - 
                 <button onclick="this.parentElement.parentElement.remove()" class="btn btn-sm btn-outline-dark">×</button>
             </small>
