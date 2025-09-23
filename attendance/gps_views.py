@@ -19,12 +19,19 @@ from .permissions import AttendancePermissions
 from employees.models import Employee
 
 @login_required
-@employee_required
 def real_time_tracking_dashboard(request):
     """Dashboard de rastreo en tiempo real"""
     
     # Verificar permisos - SUPERUSUARIOS: Acceso automático
     if not (request.user.is_superuser or request.user.is_staff):
+        # Para usuarios normales, verificar si tienen perfil de empleado
+        from core.permissions import get_employee_from_user
+        employee = get_employee_from_user(request.user)
+        if not employee:
+            return render(request, 'attendance/no_permission.html', {
+                'message': 'Necesitas tener un perfil de empleado para acceder al rastreo GPS'
+            })
+        
         if not AttendancePermissions.can_view_location_maps(request.user):
             return render(request, 'attendance/no_permission.html', {
                 'message': 'No tienes permisos para ver el rastreo GPS en tiempo real'
@@ -171,7 +178,6 @@ def work_areas_api(request):
 
 @csrf_exempt
 @login_required
-@employee_required
 def update_gps_location(request):
     """API para actualizar ubicación GPS del empleado"""
     
@@ -184,6 +190,17 @@ def update_gps_location(request):
         # Obtener empleado
         from core.permissions import get_employee_from_user
         employee = get_employee_from_user(request.user)
+        
+        # Si no tiene perfil de empleado, crear uno temporal o usar datos del usuario
+        if not employee:
+            # Para usuarios sin perfil de empleado, crear un registro GPS básico
+            # usando el ID del usuario como referencia
+            return JsonResponse({
+                'error': 'Usuario sin perfil de empleado',
+                'message': 'Necesitas tener un perfil de empleado para el rastreo GPS',
+                'user_id': request.user.id,
+                'username': request.user.username
+            }, status=400)
         
         # Validar datos requeridos
         required_fields = ['latitude', 'longitude']
