@@ -67,7 +67,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
+    # 'django.middleware.security.SecurityMiddleware',  # Temporal: deshabilitado
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -178,10 +178,16 @@ if railway_static:
 if railway_public:
     CSRF_TRUSTED_ORIGINS.append(f'https://{railway_public}')
 
-# CSRF Cookie settings
-CSRF_COOKIE_SECURE = not DEBUG
+# CSRF Cookie settings - Temporal: relajado para debugging
+CSRF_COOKIE_SECURE = False  # Temporal: deshabilitado
 CSRF_COOKIE_HTTPONLY = False  # Permitir acceso desde JavaScript
 CSRF_COOKIE_SAMESITE = 'Lax'
+
+# Deshabilitar configuraciones de seguridad temporalmente
+SECURE_SSL_REDIRECT = False
+SECURE_HSTS_SECONDS = 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+SECURE_HSTS_PRELOAD = False
 LOGOUT_REDIRECT_URL = '/login/'
 
 # Google Maps API
