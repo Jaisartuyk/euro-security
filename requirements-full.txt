@@ -1,5 +1,5 @@
-# EURO SECURITY - Minimal Requirements for Railway Deploy
-# Solo dependencias esenciales para que funcione el sistema básico
+# EURO SECURITY - Production Requirements
+# Sistema de Gestión Empresarial con GPS Tracking y PWA
 
 # Core Django
 Django==5.2.6
@@ -22,6 +22,11 @@ openpyxl==3.1.2
 # Configuration
 python-decouple==3.8
 
+# Computer Vision & AI (Facial Recognition)
+opencv-python-headless==4.9.0.80
+numpy==1.26.4
+scikit-learn==1.4.2
+
 # HTTP Requests (for APIs)
 requests==2.31.0
 
@@ -36,3 +41,9 @@ whitenoise==6.7.0
 
 # Security
 django-cors-headers==4.4.0
+
+# Monitoring & Logging
+sentry-sdk==1.45.0
+
+# Development Tools (optional)
+django-debug-toolbar==4.2.0
