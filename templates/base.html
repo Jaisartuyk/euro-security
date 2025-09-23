@@ -294,6 +294,14 @@
                                         Alertas de Ubicación
                                     </a>
                                 </li>
+                                {% if can_manage_work_areas %}
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{% url 'attendance:work_areas_list' %}">
+                                        <i class="fas fa-map-marked-alt me-2"></i>
+                                        Áreas de Trabajo
+                                    </a>
+                                </li>
+                                {% endif %}
                             {% endif %}
                             {% if can_export_reports %}
                                 <li class="nav-item">

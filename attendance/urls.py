@@ -36,6 +36,13 @@ urlpatterns = [
     path('empleado/<int:employee_id>/historial-gps/', gps_views.employee_tracking_history, name='employee_tracking_history'),
     path('alertas-ubicacion/', gps_views.location_alerts_view, name='location_alerts'),
     
+    # Gestión de Áreas de Trabajo
+    path('areas-trabajo/', gps_views.work_areas_list, name='work_areas_list'),
+    path('areas-trabajo/crear/', gps_views.work_area_create, name='work_area_create'),
+    path('areas-trabajo/<int:pk>/', gps_views.work_area_detail, name='work_area_detail'),
+    path('areas-trabajo/<int:pk>/editar/', gps_views.work_area_edit, name='work_area_edit'),
+    path('areas-trabajo/<int:pk>/asignar-empleados/', gps_views.work_area_assign_employees, name='work_area_assign_employees'),
+    
     # Vista personal del empleado
     path('mi-asistencia/', views.my_attendance, name='my_attendance'),
     

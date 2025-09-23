@@ -341,3 +341,241 @@ def location_alerts_view(request):
     }
     
     return render(request, 'attendance/location_alerts.html', context)
+
+
+# ==========================================
+# GESTIÓN DE ÁREAS DE TRABAJO
+# ==========================================
+
+@login_required
+@employee_required
+def work_areas_list(request):
+    """Lista de áreas de trabajo"""
+    
+    # Verificar permisos - SUPERUSUARIOS: Acceso automático
+    if not (request.user.is_superuser or request.user.is_staff):
+        if not AttendancePermissions.can_manage_work_areas(request.user):
+            return render(request, 'attendance/no_permission.html', {
+                'message': 'No tienes permisos para gestionar áreas de trabajo'
+            })
+    
+    work_areas = WorkArea.objects.all().order_by('name')
+    
+    # Estadísticas
+    stats = {
+        'total_areas': work_areas.count(),
+        'active_areas': work_areas.filter(is_active=True).count(),
+        'total_assignments': EmployeeWorkArea.objects.filter(is_active=True).count(),
+    }
+    
+    context = {
+        'work_areas': work_areas,
+        'stats': stats,
+        'google_maps_api_key': getattr(settings, 'GOOGLE_MAPS_API_KEY', ''),
+    }
+    
+    return render(request, 'attendance/work_areas_list.html', context)
+
+
+@login_required
+@employee_required
+def work_area_create(request):
+    """Crear nueva área de trabajo"""
+    
+    # Verificar permisos
+    if not (request.user.is_superuser or request.user.is_staff):
+        if not AttendancePermissions.can_manage_work_areas(request.user):
+            return render(request, 'attendance/no_permission.html', {
+                'message': 'No tienes permisos para crear áreas de trabajo'
+            })
+    
+    if request.method == 'POST':
+        try:
+            # Crear área de trabajo
+            work_area = WorkArea.objects.create(
+                name=request.POST['name'],
+                description=request.POST.get('description', ''),
+                area_type=request.POST['area_type'],
+                latitude=request.POST['latitude'],
+                longitude=request.POST['longitude'],
+                radius_meters=request.POST.get('radius_meters', 50),
+                address=request.POST.get('address', ''),
+                contact_person=request.POST.get('contact_person', ''),
+                contact_phone=request.POST.get('contact_phone', ''),
+                start_time=request.POST.get('start_time') or None,
+                end_time=request.POST.get('end_time') or None,
+                requires_attendance=request.POST.get('requires_attendance') == 'on',
+                is_active=True,
+                created_by=request.user
+            )
+            
+            messages.success(request, f'Área de trabajo "{work_area.name}" creada exitosamente.')
+            return redirect('attendance:work_areas_list')
+            
+        except Exception as e:
+            messages.error(request, f'Error al crear área de trabajo: {str(e)}')
+    
+    context = {
+        'area_types': WorkArea.AREA_TYPES,
+        'google_maps_api_key': getattr(settings, 'GOOGLE_MAPS_API_KEY', ''),
+    }
+    
+    return render(request, 'attendance/work_area_create.html', context)
+
+
+@login_required
+@employee_required
+def work_area_detail(request, pk):
+    """Detalle de área de trabajo"""
+    
+    work_area = get_object_or_404(WorkArea, pk=pk)
+    
+    # Empleados asignados
+    assignments = EmployeeWorkArea.objects.filter(
+        work_area=work_area,
+        is_active=True
+    ).select_related('employee')
+    
+    # Tracking reciente
+    recent_tracking = GPSTracking.objects.filter(
+        work_area=work_area,
+        timestamp__gte=timezone.now() - timedelta(hours=24)
+    ).select_related('employee').order_by('-timestamp')[:10]
+    
+    # Estadísticas
+    stats = {
+        'assigned_employees': assignments.count(),
+        'recent_visits': recent_tracking.count(),
+        'employees_in_area': GPSTracking.objects.filter(
+            work_area=work_area,
+            is_within_work_area=True,
+            timestamp__gte=timezone.now() - timedelta(minutes=30)
+        ).values('employee').distinct().count(),
+    }
+    
+    context = {
+        'work_area': work_area,
+        'assignments': assignments,
+        'recent_tracking': recent_tracking,
+        'stats': stats,
+        'google_maps_api_key': getattr(settings, 'GOOGLE_MAPS_API_KEY', ''),
+    }
+    
+    return render(request, 'attendance/work_area_detail.html', context)
+
+
+@login_required
+@employee_required
+def work_area_edit(request, pk):
+    """Editar área de trabajo"""
+    
+    work_area = get_object_or_404(WorkArea, pk=pk)
+    
+    # Verificar permisos
+    if not (request.user.is_superuser or request.user.is_staff):
+        if not AttendancePermissions.can_manage_work_areas(request.user):
+            return render(request, 'attendance/no_permission.html', {
+                'message': 'No tienes permisos para editar áreas de trabajo'
+            })
+    
+    if request.method == 'POST':
+        try:
+            # Actualizar área de trabajo
+            work_area.name = request.POST['name']
+            work_area.description = request.POST.get('description', '')
+            work_area.area_type = request.POST['area_type']
+            work_area.latitude = request.POST['latitude']
+            work_area.longitude = request.POST['longitude']
+            work_area.radius_meters = request.POST.get('radius_meters', 50)
+            work_area.address = request.POST.get('address', '')
+            work_area.contact_person = request.POST.get('contact_person', '')
+            work_area.contact_phone = request.POST.get('contact_phone', '')
+            work_area.start_time = request.POST.get('start_time') or None
+            work_area.end_time = request.POST.get('end_time') or None
+            work_area.requires_attendance = request.POST.get('requires_attendance') == 'on'
+            work_area.is_active = request.POST.get('is_active') == 'on'
+            work_area.updated_by = request.user
+            work_area.save()
+            
+            messages.success(request, f'Área de trabajo "{work_area.name}" actualizada exitosamente.')
+            return redirect('attendance:work_area_detail', pk=work_area.pk)
+            
+        except Exception as e:
+            messages.error(request, f'Error al actualizar área de trabajo: {str(e)}')
+    
+    context = {
+        'work_area': work_area,
+        'area_types': WorkArea.AREA_TYPES,
+        'google_maps_api_key': getattr(settings, 'GOOGLE_MAPS_API_KEY', ''),
+    }
+    
+    return render(request, 'attendance/work_area_edit.html', context)
+
+
+@login_required
+@employee_required
+def work_area_assign_employees(request, pk):
+    """Asignar empleados a área de trabajo"""
+    
+    work_area = get_object_or_404(WorkArea, pk=pk)
+    
+    # Verificar permisos
+    if not (request.user.is_superuser or request.user.is_staff):
+        if not AttendancePermissions.can_manage_work_areas(request.user):
+            return render(request, 'attendance/no_permission.html', {
+                'message': 'No tienes permisos para asignar empleados'
+            })
+    
+    if request.method == 'POST':
+        try:
+            employee_ids = request.POST.getlist('employees')
+            
+            # Desactivar asignaciones existentes si se solicita
+            if request.POST.get('replace_existing') == 'on':
+                EmployeeWorkArea.objects.filter(work_area=work_area).update(is_active=False)
+            
+            # Crear nuevas asignaciones
+            created_count = 0
+            for employee_id in employee_ids:
+                employee = Employee.objects.get(id=employee_id)
+                assignment, created = EmployeeWorkArea.objects.get_or_create(
+                    employee=employee,
+                    work_area=work_area,
+                    defaults={
+                        'is_primary': request.POST.get(f'primary_{employee_id}') == 'on',
+                        'is_active': True,
+                    }
+                )
+                if created:
+                    created_count += 1
+                elif not assignment.is_active:
+                    assignment.is_active = True
+                    assignment.save()
+                    created_count += 1
+            
+            messages.success(request, f'{created_count} empleados asignados al área "{work_area.name}".')
+            return redirect('attendance:work_area_detail', pk=work_area.pk)
+            
+        except Exception as e:
+            messages.error(request, f'Error al asignar empleados: {str(e)}')
+    
+    # Empleados disponibles
+    viewable_employees = AttendancePermissions.get_viewable_employees(request.user)
+    assigned_employees = EmployeeWorkArea.objects.filter(
+        work_area=work_area,
+        is_active=True
+    ).values_list('employee_id', flat=True)
+    
+    available_employees = viewable_employees.exclude(id__in=assigned_employees)
+    current_assignments = EmployeeWorkArea.objects.filter(
+        work_area=work_area,
+        is_active=True
+    ).select_related('employee')
+    
+    context = {
+        'work_area': work_area,
+        'available_employees': available_employees,
+        'current_assignments': current_assignments,
+    }
+    
+    return render(request, 'attendance/work_area_assign_employees.html', context)

@@ -12,6 +12,7 @@ def attendance_permissions(request):
         'can_view_attendance_dashboard': False,
         'can_view_attendance_reports': False,
         'can_view_location_maps': False,
+        'can_manage_work_areas': False,
         'can_export_reports': False,
         'attendance_permission_level': 'none',
         'has_employee_profile': False,
@@ -24,6 +25,7 @@ def attendance_permissions(request):
             context['can_view_attendance_dashboard'] = True
             context['can_view_attendance_reports'] = True
             context['can_view_location_maps'] = True
+            context['can_manage_work_areas'] = True
             context['can_export_reports'] = True
             context['attendance_permission_level'] = 'superuser'
             return context
@@ -34,6 +36,7 @@ def attendance_permissions(request):
             context['can_view_attendance_dashboard'] = True
             context['can_view_attendance_reports'] = True
             context['can_view_location_maps'] = True
+            context['can_manage_work_areas'] = True
             context['can_export_reports'] = True
             context['attendance_permission_level'] = 'staff'
             return context

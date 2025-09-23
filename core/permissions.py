@@ -218,3 +218,63 @@ class EmployeePermissionMixin:
             return redirect('dashboard:home')
         
         return super().dispatch(request, *args, **kwargs)
+
+
+class AttendancePermissions:
+    """Permisos específicos para el sistema de asistencias y GPS"""
+    
+    @staticmethod
+    def can_view_location_maps(user):
+        """Determina si puede ver mapas de ubicación"""
+        if user.is_superuser or user.is_staff:
+            return True
+            
+        employee = get_employee_from_user(user)
+        if not employee:
+            return False
+            
+        permission_level = employee.get_permission_level()
+        return permission_level in ['full', 'management', 'supervisor']
+    
+    @staticmethod
+    def can_manage_work_areas(user):
+        """Determina si puede gestionar áreas de trabajo"""
+        if user.is_superuser or user.is_staff:
+            return True
+            
+        employee = get_employee_from_user(user)
+        if not employee:
+            return False
+            
+        permission_level = employee.get_permission_level()
+        return permission_level in ['full', 'management']
+    
+    @staticmethod
+    def get_viewable_employees(user):
+        """Obtiene empleados que el usuario puede ver"""
+        from employees.models import Employee
+        
+        if user.is_superuser or user.is_staff:
+            return Employee.objects.all()
+            
+        employee = get_employee_from_user(user)
+        if not employee:
+            return Employee.objects.none()
+            
+        permission_level = employee.get_permission_level()
+        
+        if permission_level in ['full']:
+            # Directores ven todos
+            return Employee.objects.all()
+        elif permission_level in ['management']:
+            # Gerentes ven su departamento
+            return Employee.objects.filter(department=employee.department)
+        elif permission_level in ['supervisor']:
+            # Supervisores ven su equipo
+            return Employee.objects.filter(
+                department=employee.department,
+                position__level__in=['ENTRY', 'JUNIOR', 'SENIOR']
+            )
+        else:
+            # Empleados básicos solo se ven a sí mismos
+            return Employee.objects.filter(pk=employee.pk)
