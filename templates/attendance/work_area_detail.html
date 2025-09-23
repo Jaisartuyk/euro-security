@@ -1,0 +1,369 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ work_area.name }} - Área de Trabajo - EURO SECURITY{% endblock %}
+
+{% block extra_css %}
+<style>
+    .area-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 30px;
+    }
+    
+    .stats-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        padding: 20px;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    
+    .map-container {
+        height: 400px;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .employee-card {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 15px;
+        transition: all 0.3s ease;
+    }
+    
+    .employee-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    }
+    
+    .tracking-item {
+        border-left: 4px solid #3b82f6;
+        padding: 15px;
+        margin-bottom: 10px;
+        background: #f8f9fa;
+        border-radius: 0 10px 10px 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header del Área -->
+    <div class="area-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2 class="mb-2">
+                    <i class="fas fa-map-marked-alt me-3"></i>
+                    {{ work_area.name }}
+                </h2>
+                <p class="mb-2">
+                    <span class="badge bg-light text-dark me-2">{{ work_area.get_area_type_display }}</span>
+                    {% if work_area.is_active %}
+                        <span class="badge bg-success">Activa</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Inactiva</span>
+                    {% endif %}
+                </p>
+                {% if work_area.description %}
+                <p class="mb-0 opacity-75">{{ work_area.description }}</p>
+                {% endif %}
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'attendance:work_area_edit' work_area.pk %}" class="btn btn-light me-2">
+                    <i class="fas fa-edit me-1"></i>
+                    Editar
+                </a>
+                <a href="{% url 'attendance:work_area_assign_employees' work_area.pk %}" class="btn btn-outline-light">
+                    <i class="fas fa-users me-1"></i>
+                    Asignar Empleados
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Estadísticas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card">
+                <h3 class="text-primary">{{ stats.assigned_employees }}</h3>
+                <p class="mb-0">Empleados Asignados</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <h3 class="text-success">{{ stats.employees_in_area }}</h3>
+                <p class="mb-0">En el Área Ahora</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <h3 class="text-info">{{ stats.recent_visits }}</h3>
+                <p class="mb-0">Visitas (24h)</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <h3 class="text-warning">{{ work_area.radius_meters }}m</h3>
+                <p class="mb-0">Radio de Cobertura</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Mapa -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-map me-2"></i>
+                        Ubicación y Área de Cobertura
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div id="map" class="map-container"></div>
+                </div>
+            </div>
+            
+            <!-- Información Adicional -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Información del Área
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Coordenadas:</strong></p>
+                            <p class="text-muted">
+                                Lat: {{ work_area.latitude }}<br>
+                                Lng: {{ work_area.longitude }}
+                            </p>
+                            
+                            {% if work_area.address %}
+                            <p><strong>Dirección:</strong></p>
+                            <p class="text-muted">{{ work_area.address }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            {% if work_area.contact_person %}
+                            <p><strong>Contacto:</strong></p>
+                            <p class="text-muted">
+                                {{ work_area.contact_person }}
+                                {% if work_area.contact_phone %}
+                                <br><i class="fas fa-phone me-1"></i>{{ work_area.contact_phone }}
+                                {% endif %}
+                            </p>
+                            {% endif %}
+                            
+                            {% if work_area.start_time and work_area.end_time %}
+                            <p><strong>Horario:</strong></p>
+                            <p class="text-muted">{{ work_area.start_time }} - {{ work_area.end_time }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Empleados Asignados -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users me-2"></i>
+                        Empleados Asignados ({{ assignments.count }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for assignment in assignments %}
+                    <div class="employee-card card">
+                        <div class="card-body p-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">{{ assignment.employee.get_full_name }}</h6>
+                                    <small class="text-muted">{{ assignment.employee.position.title }}</small>
+                                    {% if assignment.is_primary %}
+                                    <br><span class="badge bg-primary badge-sm">Área Principal</span>
+                                    {% endif %}
+                                </div>
+                                <div class="text-end">
+                                    <small class="text-muted">
+                                        Desde: {{ assignment.assigned_date|date:"d/m/Y" }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-user-plus fa-2x mb-2"></i>
+                        <p>No hay empleados asignados</p>
+                        <a href="{% url 'attendance:work_area_assign_employees' work_area.pk %}" class="btn btn-primary btn-sm">
+                            Asignar Empleados
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Actividad Reciente -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clock me-2"></i>
+                        Actividad Reciente
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for tracking in recent_tracking %}
+                    <div class="tracking-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong>{{ tracking.employee.get_full_name }}</strong>
+                                <br>
+                                <small class="text-muted">
+                                    {% if tracking.is_within_work_area %}
+                                        <i class="fas fa-check-circle text-success me-1"></i>
+                                        En el área
+                                    {% else %}
+                                        <i class="fas fa-exclamation-circle text-warning me-1"></i>
+                                        Fuera del área ({{ tracking.distance_to_work_area|floatformat:0 }}m)
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <small class="text-muted">
+                                {{ tracking.timestamp|date:"H:i" }}
+                            </small>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-satellite-dish fa-2x mb-2"></i>
+                        <p>No hay actividad reciente</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Botones de Acción -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between">
+                <a href="{% url 'attendance:work_areas_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    Volver a Lista
+                </a>
+                <div>
+                    <a href="{% url 'attendance:real_time_tracking' %}" class="btn btn-info me-2">
+                        <i class="fas fa-satellite-dish me-2"></i>
+                        Ver en Tiempo Real
+                    </a>
+                    <a href="{% url 'attendance:work_area_edit' work_area.pk %}" class="btn btn-primary">
+                        <i class="fas fa-edit me-2"></i>
+                        Editar Área
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Configuración de datos para JavaScript -->
+{{ work_area_config|json_script:"work-area-config" }}
+<script>
+    // Obtener configuración del área
+    const workAreaConfig = JSON.parse(document.getElementById('work-area-config').textContent);
+    let map;
+    
+    function initMap() {
+        // Coordenadas del área
+        const areaLocation = { 
+            lat: parseFloat(workAreaConfig.latitude), 
+            lng: parseFloat(workAreaConfig.longitude)
+        };
+        
+        // Crear mapa
+        map = new google.maps.Map(document.getElementById("map"), {
+            zoom: 16,
+            center: areaLocation,
+            mapTypeId: google.maps.MapTypeId.ROADMAP,
+        });
+        
+        // Marcador del área
+        const marker = new google.maps.Marker({
+            position: areaLocation,
+            map: map,
+            title: workAreaConfig.name,
+            icon: {
+                url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+            }
+        });
+        
+        // Círculo de cobertura
+        const circle = new google.maps.Circle({
+            map: map,
+            radius: workAreaConfig.radius_meters,
+            fillColor: '#3b82f6',
+            fillOpacity: 0.2,
+            strokeColor: '#3b82f6',
+            strokeOpacity: 0.8,
+            strokeWeight: 2,
+            center: areaLocation
+        });
+        
+        // Info window
+        const infoWindow = new google.maps.InfoWindow({
+            content: `
+                <div style="padding: 10px;">
+                    <h6><strong>${workAreaConfig.name}</strong></h6>
+                    <p class="mb-1"><small>${workAreaConfig.area_type}</small></p>
+                    <p class="mb-1"><small>Radio: ${workAreaConfig.radius_meters}m</small></p>
+                    ${workAreaConfig.address ? `<p class="mb-0"><small>${workAreaConfig.address}</small></p>` : ''}
+                </div>
+            `
+        });
+        
+        marker.addListener("click", () => {
+            infoWindow.open(map, marker);
+        });
+        
+        // Mostrar info window automáticamente
+        infoWindow.open(map, marker);
+        
+        // Mostrar empleados en el mapa si están disponibles
+        // TODO: Agregar marcadores de empleados activos
+    }
+    
+    // Manejar errores de Google Maps
+    function gm_authFailure() {
+        document.getElementById('map').innerHTML = `
+            <div class="d-flex justify-content-center align-items-center h-100">
+                <div class="text-center">
+                    <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                    <h5>Error de Google Maps</h5>
+                    <p class="text-muted">No se pudo cargar el mapa. Verifica la API Key.</p>
+                </div>
+            </div>
+        `;
+    }
+</script>
+
+<!-- Cargar Google Maps API -->
+<script async defer 
+        src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&callback=initMap">
+</script>
+{% endblock %}

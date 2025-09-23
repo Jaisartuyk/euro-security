@@ -453,11 +453,22 @@ def work_area_detail(request, pk):
         ).values('employee').distinct().count(),
     }
     
+    # Configuración para JavaScript
+    work_area_config = {
+        'name': work_area.name,
+        'latitude': str(work_area.latitude),
+        'longitude': str(work_area.longitude),
+        'radius_meters': work_area.radius_meters,
+        'area_type': work_area.get_area_type_display(),
+        'address': work_area.address or '',
+    }
+    
     context = {
         'work_area': work_area,
         'assignments': assignments,
         'recent_tracking': recent_tracking,
         'stats': stats,
+        'work_area_config': work_area_config,
         'google_maps_api_key': getattr(settings, 'GOOGLE_MAPS_API_KEY', ''),
     }
     
