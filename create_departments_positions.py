@@ -24,48 +24,64 @@ def create_departments_and_positions():
     departments_data = [
         {
             'name': 'Administración',
+            'code': 'ADM',
+            'department_type': 'ADMINISTRACION',
             'description': 'Departamento de administración general y dirección ejecutiva',
             'budget': 50000.00,
             'is_active': True
         },
         {
             'name': 'Recursos Humanos',
+            'code': 'RRHH',
+            'department_type': 'RRHH',
             'description': 'Gestión de personal, nómina y desarrollo humano',
             'budget': 35000.00,
             'is_active': True
         },
         {
             'name': 'Seguridad Física',
+            'code': 'SEGF',
+            'department_type': 'SEGURIDAD',
             'description': 'Servicios de seguridad física y vigilancia',
             'budget': 80000.00,
             'is_active': True
         },
         {
             'name': 'Seguridad Electrónica',
+            'code': 'SEGE',
+            'department_type': 'SEGURIDAD',
             'description': 'Sistemas de alarmas, CCTV y control de acceso',
             'budget': 60000.00,
             'is_active': True
         },
         {
             'name': 'Operaciones',
+            'code': 'OPE',
+            'department_type': 'OPERACIONES',
             'description': 'Coordinación operativa y logística de servicios',
             'budget': 45000.00,
             'is_active': True
         },
         {
             'name': 'Tecnología',
+            'code': 'TI',
+            'department_type': 'SISTEMAS',
             'description': 'Sistemas informáticos y soporte técnico',
             'budget': 40000.00,
             'is_active': True
         },
         {
             'name': 'Comercial',
+            'code': 'COM',
+            'department_type': 'OPERACIONES',
             'description': 'Ventas, marketing y atención al cliente',
             'budget': 30000.00,
             'is_active': True
         },
         {
             'name': 'Finanzas',
+            'code': 'FIN',
+            'department_type': 'FINANZAS',
             'description': 'Contabilidad, finanzas y control presupuestario',
             'budget': 25000.00,
             'is_active': True
