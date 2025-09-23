@@ -187,19 +187,25 @@ def update_gps_location(request):
     try:
         data = json.loads(request.body)
         
+        # Debug logging
+        print(f"🔍 GPS Update - Usuario: {request.user.username} (ID: {request.user.id})")
+        print(f"🔍 GPS Data: lat={data.get('latitude')}, lng={data.get('longitude')}")
+        
         # Obtener empleado
         from core.permissions import get_employee_from_user
         employee = get_employee_from_user(request.user)
         
+        print(f"🔍 Empleado encontrado: {employee}")
+        
         # Si no tiene perfil de empleado, crear uno temporal o usar datos del usuario
         if not employee:
-            # Para usuarios sin perfil de empleado, crear un registro GPS básico
-            # usando el ID del usuario como referencia
+            print(f"❌ No se encontró perfil de empleado para {request.user.username}")
             return JsonResponse({
                 'error': 'Usuario sin perfil de empleado',
-                'message': 'Necesitas tener un perfil de empleado para el rastreo GPS',
+                'message': f'Usuario {request.user.username} necesita tener un perfil de empleado para el rastreo GPS',
                 'user_id': request.user.id,
-                'username': request.user.username
+                'username': request.user.username,
+                'debug': 'No employee profile found'
             }, status=400)
         
         # Validar datos requeridos
