@@ -2,8 +2,9 @@
 Vistas para el sistema de rastreo GPS en tiempo real
 EURO SECURITY - GPS Tracking Views
 """
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
@@ -514,9 +515,20 @@ def work_area_edit(request, pk):
         except Exception as e:
             messages.error(request, f'Error al actualizar área de trabajo: {str(e)}')
     
+    # Configuración para JavaScript
+    work_area_config = {
+        'name': work_area.name,
+        'latitude': str(work_area.latitude),
+        'longitude': str(work_area.longitude),
+        'radius_meters': work_area.radius_meters,
+        'area_type': work_area.get_area_type_display(),
+        'address': work_area.address or '',
+    }
+    
     context = {
         'work_area': work_area,
         'area_types': WorkArea.AREA_TYPES,
+        'work_area_config': work_area_config,
         'google_maps_api_key': getattr(settings, 'GOOGLE_MAPS_API_KEY', ''),
     }
     
