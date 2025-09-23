@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+ien #!/usr/bin/env python3
 """
 Script para crear iconos PWA básicos
 EURO SECURITY - Create PWA Icons
