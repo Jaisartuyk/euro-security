@@ -218,16 +218,41 @@ def update_gps_location(request):
         
         print(f"🔍 Empleado encontrado: {employee}")
         
-        # Si no tiene perfil de empleado, crear uno temporal o usar datos del usuario
+        # SUPERUSUARIOS: Permitir GPS sin perfil de empleado
         if not employee:
-            print(f"❌ No se encontró perfil de empleado para {request.user.username}")
-            return JsonResponse({
-                'error': 'Usuario sin perfil de empleado',
-                'message': f'Usuario {request.user.username} necesita tener un perfil de empleado para el rastreo GPS',
-                'user_id': request.user.id,
-                'username': request.user.username,
-                'debug': 'No employee profile found'
-            }, status=400)
+            if request.user.is_superuser or request.user.is_staff:
+                print(f"✅ Superusuario/Staff: Permitiendo GPS sin perfil de empleado")
+                # Crear registro GPS básico para superusuarios
+                from attendance.models_gps import GPSTracking
+                
+                tracking = GPSTracking.objects.create(
+                    employee=None,  # Sin empleado asociado
+                    latitude=data['latitude'],
+                    longitude=data['longitude'],
+                    accuracy=data.get('accuracy'),
+                    altitude=data.get('altitude'),
+                    tracking_type=data.get('tracking_type', 'SUPERUSER'),
+                    battery_level=data.get('battery_level'),
+                    device_info=data.get('device_info', f'Superuser: {request.user.username}'),
+                    notes=f'GPS from superuser {request.user.username}',
+                )
+                
+                return JsonResponse({
+                    'success': True,
+                    'tracking_id': tracking.id,
+                    'timestamp': tracking.timestamp.isoformat(),
+                    'message': f'GPS guardado para superusuario {request.user.username}',
+                    'user_type': 'superuser'
+                })
+            else:
+                print(f"❌ No se encontró perfil de empleado para {request.user.username}")
+                return JsonResponse({
+                    'error': 'Usuario sin perfil de empleado',
+                    'message': f'Usuario {request.user.username} necesita tener un perfil de empleado para el rastreo GPS',
+                    'user_id': request.user.id,
+                    'username': request.user.username,
+                    'debug': 'No employee profile found'
+                }, status=400)
         
         # Validar datos requeridos
         required_fields = ['latitude', 'longitude']

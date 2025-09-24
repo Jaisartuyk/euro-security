@@ -132,9 +132,10 @@ class GPSTracking(BaseModel):
         ('ATTENDANCE', 'Marcación'),
         ('PATROL', 'Patrullaje'),
         ('EMERGENCY', 'Emergencia'),
+        ('SUPERUSER', 'Superusuario'),
     ]
     
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='gps_tracking')
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='gps_tracking', null=True, blank=True)
     
     # Ubicación GPS
     latitude = models.DecimalField('Latitud', max_digits=10, decimal_places=8)
