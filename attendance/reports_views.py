@@ -137,7 +137,6 @@ def department_attendance_report(request, department_id):
     return render(request, 'attendance/department_report.html', context)
 
 @login_required
-@employee_required
 def attendance_locations_map(request):
     """Vista del mapa de ubicaciones de asistencia"""
     # SUPERUSUARIOS: Acceso automático sin restricciones
@@ -154,13 +153,21 @@ def attendance_locations_map(request):
     if isinstance(date_filter, str):
         date_filter = datetime.strptime(date_filter, '%Y-%m-%d').date()
     
-    # Registros con ubicación del día seleccionado
-    records_with_location = AttendanceRecord.objects.filter(
-        employee__in=viewable_employees,
-        timestamp__date=date_filter,
-        latitude__isnull=False,
-        longitude__isnull=False
-    ).select_related('employee').order_by('-timestamp')
+    # Registros GPS del día seleccionado
+    from .models_gps import GPSTracking
+    
+    # Filtrar por empleados visibles (incluyendo registros sin empleado para superusuarios)
+    if request.user.is_superuser or request.user.is_staff:
+        # Superusuarios ven todos los registros GPS
+        records_with_location = GPSTracking.objects.filter(
+            timestamp__date=date_filter
+        ).select_related('employee').order_by('-timestamp')
+    else:
+        # Usuarios normales solo ven GPS de empleados que pueden ver
+        records_with_location = GPSTracking.objects.filter(
+            employee__in=viewable_employees,
+            timestamp__date=date_filter
+        ).select_related('employee').order_by('-timestamp')
     
     context = {
         'records': records_with_location,
