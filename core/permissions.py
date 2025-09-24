@@ -265,8 +265,8 @@ class AttendancePermissions:
             
         permission_level = employee.get_permission_level()
         
-        if permission_level in ['full']:
-            # Directores ven todos
+        if permission_level in ['full', 'advanced']:
+            # Directores y empleados SENIOR con responsabilidades directivas ven todos
             return Employee.objects.all()
         elif permission_level in ['management']:
             # Gerentes ven su departamento

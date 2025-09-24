@@ -159,11 +159,11 @@ class Employee(BaseModel):
     
     def can_view_all_employees(self):
         """Determina si puede ver todos los empleados"""
-        return self.get_permission_level() in ['full', 'management']
+        return self.get_permission_level() in ['full', 'management', 'advanced']
     
     def can_edit_employees(self):
         """Determina si puede editar empleados"""
-        return self.get_permission_level() in ['full', 'management']
+        return self.get_permission_level() in ['full', 'management', 'advanced']
     
     def can_view_reports(self):
         """Determina si puede ver reportes"""
