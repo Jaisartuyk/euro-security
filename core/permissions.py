@@ -234,7 +234,8 @@ class AttendancePermissions:
             return False
             
         permission_level = employee.get_permission_level()
-        return permission_level in ['full', 'management', 'supervisor']
+        # Incluir 'advanced' para empleados SENIOR que son directores/gerentes
+        return permission_level in ['full', 'management', 'supervisor', 'advanced']
     
     @staticmethod
     def can_manage_work_areas(user):
@@ -247,7 +248,8 @@ class AttendancePermissions:
             return False
             
         permission_level = employee.get_permission_level()
-        return permission_level in ['full', 'management']
+        # Incluir 'advanced' para empleados SENIOR con responsabilidades directivas
+        return permission_level in ['full', 'management', 'advanced']
     
     @staticmethod
     def get_viewable_employees(user):
