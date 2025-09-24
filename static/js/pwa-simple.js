@@ -339,6 +339,34 @@ class EuroSecurityPWASimple {
         }
     }
     
+    // Función para obtener ubicación GPS usando solo API nativa del navegador
+    getCurrentPosition() {
+        return new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject(new Error('Geolocalización no soportada'));
+                return;
+            }
+            
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 30000 // Cache por 30 segundos
+            };
+            
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    console.log('🌍 Ubicación obtenida del navegador:', position.coords);
+                    resolve(position);
+                },
+                (error) => {
+                    console.error('❌ Error de geolocalización:', error);
+                    reject(error);
+                },
+                options
+            );
+        });
+    }
+    
     updateLocationDisplay(location) {
         const locationElement = document.getElementById('current-location');
         if (locationElement) {
@@ -346,7 +374,7 @@ class EuroSecurityPWASimple {
                 <small class="text-muted">
                     📍 ${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}
                     <br>Precisión: ${location.accuracy}m
-                    <br><span class="badge bg-success">Producción HTTPS</span>
+                    <br><span class="badge bg-success">Navegador Nativo</span>
                 </small>
             `;
         }
