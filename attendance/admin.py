@@ -248,7 +248,7 @@ class GPSTrackingAdmin(admin.ModelAdmin):
             'fields': ('latitude', 'longitude', 'accuracy', 'altitude')
         }),
         ('Información de Rastreo', {
-            'fields': ('tracking_type', 'is_active_session', 'session_id')
+            'fields': ('tracking_type', 'is_active_session')
         }),
         ('Área de Trabajo', {
             'fields': ('work_area', 'is_within_work_area', 'distance_to_work_area')

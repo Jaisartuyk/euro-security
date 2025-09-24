@@ -156,18 +156,36 @@ def attendance_locations_map(request):
     # Registros GPS del día seleccionado
     from .models_gps import GPSTracking
     
+    # Debug logging
+    print(f"🔍 MAPA DEBUG - Usuario: {request.user.username}")
+    print(f"🔍 MAPA DEBUG - Es superusuario: {request.user.is_superuser}")
+    print(f"🔍 MAPA DEBUG - Fecha filtro: {date_filter}")
+    
+    # Contar todos los registros GPS sin filtro de fecha
+    total_gps_records = GPSTracking.objects.count()
+    print(f"🔍 MAPA DEBUG - Total registros GPS en BD: {total_gps_records}")
+    
+    # Contar registros GPS de hoy
+    today_records = GPSTracking.objects.filter(timestamp__date=timezone.now().date()).count()
+    print(f"🔍 MAPA DEBUG - Registros GPS de hoy: {today_records}")
+    
     # Filtrar por empleados visibles (incluyendo registros sin empleado para superusuarios)
     if request.user.is_superuser or request.user.is_staff:
         # Superusuarios ven todos los registros GPS
         records_with_location = GPSTracking.objects.filter(
             timestamp__date=date_filter
         ).select_related('employee').order_by('-timestamp')
+        print(f"🔍 MAPA DEBUG - Registros encontrados (superusuario): {records_with_location.count()}")
     else:
         # Usuarios normales solo ven GPS de empleados que pueden ver
+        viewable_count = viewable_employees.count()
+        print(f"🔍 MAPA DEBUG - Empleados visibles: {viewable_count}")
+        
         records_with_location = GPSTracking.objects.filter(
             employee__in=viewable_employees,
             timestamp__date=date_filter
         ).select_related('employee').order_by('-timestamp')
+        print(f"🔍 MAPA DEBUG - Registros encontrados (usuario normal): {records_with_location.count()}")
     
     context = {
         'records': records_with_location,
