@@ -55,12 +55,13 @@ def attendance_permissions(request):
             context['attendance_permission_level'] = permission_level
             
             # Determinar permisos específicos
-            if permission_level in ['full', 'management', 'supervisor']:
+            if permission_level in ['full', 'management', 'supervisor', 'advanced']:
                 context['can_view_attendance_dashboard'] = True
                 context['can_view_attendance_reports'] = True
             
-            if permission_level in ['full', 'management']:
+            if permission_level in ['full', 'management', 'advanced']:
                 context['can_view_location_maps'] = True
+                context['can_manage_work_areas'] = True
                 context['can_export_reports'] = True
             
             # Supervisores también pueden ver mapas
