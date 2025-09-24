@@ -347,20 +347,43 @@ class EuroSecurityPWASimple {
                 return;
             }
             
+            // Configuración optimizada para evitar servicios externos
             const options = {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 30000 // Cache por 30 segundos
+                enableHighAccuracy: false, // Cambiar a false para evitar Google services
+                timeout: 15000, // Más tiempo para GPS
+                maximumAge: 60000 // Cache más largo
             };
+            
+            console.log('🌍 Solicitando ubicación con configuración nativa...');
             
             navigator.geolocation.getCurrentPosition(
                 (position) => {
-                    console.log('🌍 Ubicación obtenida del navegador:', position.coords);
+                    console.log('✅ Ubicación obtenida del GPS nativo:', position.coords);
+                    console.log('📍 Precisión:', position.coords.accuracy, 'metros');
                     resolve(position);
                 },
                 (error) => {
-                    console.error('❌ Error de geolocalización:', error);
-                    reject(error);
+                    console.warn('⚠️ Error de geolocalización:', error.message);
+                    console.log('🔄 Intentando con configuración alternativa...');
+                    
+                    // Segundo intento con configuración más permisiva
+                    const fallbackOptions = {
+                        enableHighAccuracy: false,
+                        timeout: 20000,
+                        maximumAge: 300000 // 5 minutos de cache
+                    };
+                    
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            console.log('✅ Ubicación obtenida (fallback):', position.coords);
+                            resolve(position);
+                        },
+                        (fallbackError) => {
+                            console.error('❌ Error final de geolocalización:', fallbackError);
+                            reject(fallbackError);
+                        },
+                        fallbackOptions
+                    );
                 },
                 options
             );
