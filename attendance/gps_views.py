@@ -229,40 +229,36 @@ def update_gps_location(request):
                 from positions.models import Position
                 
                 try:
-                    # Buscar o crear departamento admin
-                    dept, _ = Department.objects.get_or_create(
-                        code='SYS',
-                        defaults={
-                            'name': 'Sistema',
-                            'description': 'Departamento del Sistema'
-                        }
-                    )
+                    # Buscar departamento existente
+                    dept = Department.objects.filter(code='ADM').first()
+                    if not dept:
+                        dept = Department.objects.first()  # Usar cualquier departamento
                     
-                    # Buscar o crear posición admin
-                    pos, _ = Position.objects.get_or_create(
-                        code='SYSADMIN',
-                        defaults={
-                            'title': 'Administrador del Sistema',
-                            'description': 'Superusuario del sistema',
-                            'level': 'DIRECTOR'
-                        }
-                    )
+                    # Buscar posición existente
+                    pos = Position.objects.filter(level='DIRECTOR').first()
+                    if not pos:
+                        pos = Position.objects.first()  # Usar cualquier posición
                     
-                    # Crear empleado temporal
+                    if not dept or not pos:
+                        raise Exception('No hay departamentos o posiciones disponibles')
+                    
+                    # Crear empleado temporal con campos mínimos
                     employee, created = Employee.objects.get_or_create(
                         user=request.user,
                         defaults={
-                            'employee_id': f'SYS{request.user.id:03d}',
+                            'employee_id': f'ADM{request.user.id:03d}',
                             'first_name': request.user.first_name or 'Admin',
                             'last_name': request.user.last_name or 'System',
-                            'email': request.user.email,
+                            'email': request.user.email or f'admin{request.user.id}@system.local',
                             'phone': '+000-000-0000',
-                            'national_id': f'SYS{request.user.id}',
+                            'national_id': f'ADM{request.user.id}000',
                             'department': dept,
                             'position': pos,
                             'hire_date': timezone.now().date(),
-                            'current_salary': 0.00,
-                            'is_active': True
+                            'current_salary': 1.00,  # Evitar 0.00 por si hay validaciones
+                            'is_active': True,
+                            # Campos opcionales con valores por defecto
+                            'country': 'Ecuador'
                         }
                     )
                     
