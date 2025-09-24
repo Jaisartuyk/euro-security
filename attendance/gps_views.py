@@ -221,56 +221,25 @@ def update_gps_location(request):
         # SUPERUSUARIOS: Permitir GPS sin perfil de empleado
         if not employee:
             if request.user.is_superuser or request.user.is_staff:
-                print(f"✅ Superusuario/Staff: Creando empleado temporal para GPS")
+                print(f"✅ Superusuario/Staff: Buscando empleado existente")
                 
-                # Crear empleado temporal para superusuarios
+                # Buscar si ya existe un empleado para este usuario
                 from employees.models import Employee
-                from departments.models import Department
-                from positions.models import Position
-                
                 try:
-                    # Buscar departamento existente
-                    dept = Department.objects.filter(code='ADM').first()
-                    if not dept:
-                        dept = Department.objects.first()  # Usar cualquier departamento
-                    
-                    # Buscar posición existente
-                    pos = Position.objects.filter(level='DIRECTOR').first()
-                    if not pos:
-                        pos = Position.objects.first()  # Usar cualquier posición
-                    
-                    if not dept or not pos:
-                        raise Exception('No hay departamentos o posiciones disponibles')
-                    
-                    # Crear empleado temporal con campos mínimos
-                    employee, created = Employee.objects.get_or_create(
-                        user=request.user,
-                        defaults={
-                            'employee_id': f'ADM{request.user.id:03d}',
-                            'first_name': request.user.first_name or 'Admin',
-                            'last_name': request.user.last_name or 'System',
-                            'email': request.user.email or f'admin{request.user.id}@system.local',
-                            'phone': '+000-000-0000',
-                            'national_id': f'ADM{request.user.id}000',
-                            'department': dept,
-                            'position': pos,
-                            'hire_date': timezone.now().date(),
-                            'current_salary': 1.00,  # Evitar 0.00 por si hay validaciones
-                            'is_active': True,
-                            # Campos opcionales con valores por defecto
-                            'country': 'Ecuador'
-                        }
-                    )
-                    
-                    if created:
-                        print(f"✅ Empleado temporal creado: {employee.employee_id}")
+                    employee = Employee.objects.filter(user=request.user).first()
+                    if employee:
+                        print(f"✅ Empleado encontrado: {employee.employee_id} - {employee.get_full_name()}")
                     else:
-                        print(f"✅ Usando empleado existente: {employee.employee_id}")
-                        
+                        print(f"❌ No se encontró empleado para superusuario {request.user.username}")
+                        return JsonResponse({
+                            'error': 'Superusuario sin perfil',
+                            'message': f'Superusuario {request.user.username} necesita un perfil de empleado. Crea uno desde el admin.',
+                            'suggestion': 'Ir a /admin/employees/employee/add/ y crear un perfil'
+                        }, status=400)
                 except Exception as e:
-                    print(f"❌ Error creando empleado temporal: {e}")
+                    print(f"❌ Error buscando empleado: {e}")
                     return JsonResponse({
-                        'error': 'Error creando perfil temporal',
+                        'error': 'Error de base de datos',
                         'message': str(e)
                     }, status=500)
             else:

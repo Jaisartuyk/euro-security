@@ -146,12 +146,17 @@ def attendance_locations_map(request):
     
     viewable_employees = AttendancePermissions.get_viewable_employees(request.user)
     
-    # Filtros de fecha
+    # Filtros de fecha - manejar zona horaria UTC
     today = timezone.now().date()
     date_filter = request.GET.get('date', today)
     
     if isinstance(date_filter, str):
         date_filter = datetime.strptime(date_filter, '%Y-%m-%d').date()
+    
+    # Convertir fecha a rango UTC para buscar correctamente
+    from datetime import datetime, timedelta
+    start_datetime = timezone.make_aware(datetime.combine(date_filter, datetime.min.time()))
+    end_datetime = start_datetime + timedelta(days=1)
     
     # Registros GPS del día seleccionado
     from .models_gps import GPSTracking
@@ -171,11 +176,13 @@ def attendance_locations_map(request):
     
     # Filtrar por empleados visibles (incluyendo registros sin empleado para superusuarios)
     if request.user.is_superuser or request.user.is_staff:
-        # Superusuarios ven todos los registros GPS
+        # Superusuarios ven todos los registros GPS usando rango UTC
         records_with_location = GPSTracking.objects.filter(
-            timestamp__date=date_filter
+            timestamp__gte=start_datetime,
+            timestamp__lt=end_datetime
         ).select_related('employee').order_by('-timestamp')
         print(f"🔍 MAPA DEBUG - Registros encontrados (superusuario): {records_with_location.count()}")
+        print(f"🔍 MAPA DEBUG - Rango UTC: {start_datetime} a {end_datetime}")
     else:
         # Usuarios normales solo ven GPS de empleados que pueden ver
         viewable_count = viewable_employees.count()
@@ -183,7 +190,8 @@ def attendance_locations_map(request):
         
         records_with_location = GPSTracking.objects.filter(
             employee__in=viewable_employees,
-            timestamp__date=date_filter
+            timestamp__gte=start_datetime,
+            timestamp__lt=end_datetime
         ).select_related('employee').order_by('-timestamp')
         print(f"🔍 MAPA DEBUG - Registros encontrados (usuario normal): {records_with_location.count()}")
     
