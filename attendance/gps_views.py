@@ -221,29 +221,62 @@ def update_gps_location(request):
         # SUPERUSUARIOS: Permitir GPS sin perfil de empleado
         if not employee:
             if request.user.is_superuser or request.user.is_staff:
-                print(f"✅ Superusuario/Staff: Permitiendo GPS sin perfil de empleado")
-                # Crear registro GPS básico para superusuarios
-                from attendance.models_gps import GPSTracking
+                print(f"✅ Superusuario/Staff: Creando empleado temporal para GPS")
                 
-                tracking = GPSTracking.objects.create(
-                    employee=None,  # Sin empleado asociado
-                    latitude=data['latitude'],
-                    longitude=data['longitude'],
-                    accuracy=data.get('accuracy'),
-                    altitude=data.get('altitude'),
-                    tracking_type=data.get('tracking_type', 'SUPERUSER'),
-                    battery_level=data.get('battery_level'),
-                    device_info=data.get('device_info', f'Superuser: {request.user.username}'),
-                    notes=f'GPS from superuser {request.user.username}',
-                )
+                # Crear empleado temporal para superusuarios
+                from employees.models import Employee
+                from departments.models import Department
+                from positions.models import Position
                 
-                return JsonResponse({
-                    'success': True,
-                    'tracking_id': tracking.id,
-                    'timestamp': tracking.timestamp.isoformat(),
-                    'message': f'GPS guardado para superusuario {request.user.username}',
-                    'user_type': 'superuser'
-                })
+                try:
+                    # Buscar o crear departamento admin
+                    dept, _ = Department.objects.get_or_create(
+                        code='SYS',
+                        defaults={
+                            'name': 'Sistema',
+                            'description': 'Departamento del Sistema'
+                        }
+                    )
+                    
+                    # Buscar o crear posición admin
+                    pos, _ = Position.objects.get_or_create(
+                        code='SYSADMIN',
+                        defaults={
+                            'title': 'Administrador del Sistema',
+                            'description': 'Superusuario del sistema',
+                            'level': 'DIRECTOR'
+                        }
+                    )
+                    
+                    # Crear empleado temporal
+                    employee, created = Employee.objects.get_or_create(
+                        user=request.user,
+                        defaults={
+                            'employee_id': f'SYS{request.user.id:03d}',
+                            'first_name': request.user.first_name or 'Admin',
+                            'last_name': request.user.last_name or 'System',
+                            'email': request.user.email,
+                            'phone': '+000-000-0000',
+                            'national_id': f'SYS{request.user.id}',
+                            'department': dept,
+                            'position': pos,
+                            'hire_date': timezone.now().date(),
+                            'current_salary': 0.00,
+                            'is_active': True
+                        }
+                    )
+                    
+                    if created:
+                        print(f"✅ Empleado temporal creado: {employee.employee_id}")
+                    else:
+                        print(f"✅ Usando empleado existente: {employee.employee_id}")
+                        
+                except Exception as e:
+                    print(f"❌ Error creando empleado temporal: {e}")
+                    return JsonResponse({
+                        'error': 'Error creando perfil temporal',
+                        'message': str(e)
+                    }, status=500)
             else:
                 print(f"❌ No se encontró perfil de empleado para {request.user.username}")
                 return JsonResponse({
