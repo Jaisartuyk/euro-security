@@ -22,23 +22,39 @@ from employees.models import Employee
 def real_time_tracking_dashboard(request):
     """Dashboard de rastreo en tiempo real"""
     
+    # Debug logging
+    from core.permissions import get_employee_from_user
+    employee = get_employee_from_user(request.user)
+    print(f"🔍 DEBUG GPS Dashboard - Usuario: {request.user.username}")
+    print(f"🔍 DEBUG - Es superusuario: {request.user.is_superuser}")
+    print(f"🔍 DEBUG - Es staff: {request.user.is_staff}")
+    print(f"🔍 DEBUG - Empleado: {employee}")
+    if employee:
+        print(f"🔍 DEBUG - Nivel de permisos: {employee.get_permission_level()}")
+        print(f"🔍 DEBUG - Posición: {employee.position}")
+        print(f"🔍 DEBUG - Departamento: {employee.department}")
+    
     # Verificar permisos - SUPERUSUARIOS: Acceso automático
     if not (request.user.is_superuser or request.user.is_staff):
         # Para usuarios normales, verificar si tienen perfil de empleado
-        from core.permissions import get_employee_from_user
-        employee = get_employee_from_user(request.user)
         if not employee:
+            print(f"❌ DEBUG - Sin perfil de empleado")
             return render(request, 'attendance/no_permission.html', {
                 'message': 'Necesitas tener un perfil de empleado para acceder al rastreo GPS'
             })
         
-        if not AttendancePermissions.can_view_location_maps(request.user):
+        can_view_maps = AttendancePermissions.can_view_location_maps(request.user)
+        print(f"🔍 DEBUG - Puede ver mapas: {can_view_maps}")
+        
+        if not can_view_maps:
+            print(f"❌ DEBUG - Sin permisos para ver mapas GPS")
             return render(request, 'attendance/no_permission.html', {
                 'message': 'No tienes permisos para ver el rastreo GPS en tiempo real'
             })
     
     # Empleados que puede ver
     viewable_employees = AttendancePermissions.get_viewable_employees(request.user)
+    print(f"🔍 DEBUG - Empleados visibles: {viewable_employees.count()}")
     
     # Empleados activos con ubicación reciente (últimos 30 minutos)
     thirty_minutes_ago = timezone.now() - timedelta(minutes=30)
