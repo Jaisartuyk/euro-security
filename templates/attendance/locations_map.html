@@ -176,19 +176,23 @@
                                 </span>
                             </td>
                             <td>
-                                <span class="attendance-marker {% if record.attendance_type == 'IN' %}entry{% elif record.attendance_type == 'OUT' %}exit{% endif %}">
-                                    {{ record.get_attendance_type_display }}
+                                <span class="badge bg-primary">
+                                    {{ record.get_tracking_type_display|default:record.tracking_type }}
                                 </span>
                             </td>
                             <td>{{ record.timestamp|time:'H:i:s' }}</td>
                             <td>
                                 <small class="text-muted">
-                                    {{ record.address|default:'Ubicación no disponible' }}
+                                    {% if record.latitude and record.longitude %}
+                                        {{ record.latitude|floatformat:6 }}, {{ record.longitude|floatformat:6 }}
+                                    {% else %}
+                                        Ubicación no disponible
+                                    {% endif %}
                                 </small>
                             </td>
                             <td>
-                                {% if record.location_accuracy %}
-                                    <span class="badge bg-info">±{{ record.location_accuracy|floatformat:0 }}m</span>
+                                {% if record.accuracy %}
+                                    <span class="badge bg-info">±{{ record.accuracy|floatformat:0 }}m</span>
                                 {% else %}
                                     <span class="text-muted">N/A</span>
                                 {% endif %}
