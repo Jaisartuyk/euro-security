@@ -154,7 +154,6 @@ def attendance_locations_map(request):
         date_filter = datetime.strptime(date_filter, '%Y-%m-%d').date()
     
     # Convertir fecha a rango UTC para buscar correctamente
-    from datetime import datetime, timedelta
     start_datetime = timezone.make_aware(datetime.combine(date_filter, datetime.min.time()))
     end_datetime = start_datetime + timedelta(days=1)
     
