@@ -46,10 +46,15 @@ def real_time_tracking_dashboard(request):
         can_view_maps = AttendancePermissions.can_view_location_maps(request.user)
         print(f"🔍 DEBUG - Puede ver mapas: {can_view_maps}")
         
+        # BYPASS TEMPORAL: Permitir acceso a usuarios con nivel advanced
+        if employee and employee.get_permission_level() == 'advanced':
+            print(f"✅ DEBUG - Bypass para nivel advanced activado")
+            can_view_maps = True
+        
         if not can_view_maps:
             print(f"❌ DEBUG - Sin permisos para ver mapas GPS")
             return render(request, 'attendance/no_permission.html', {
-                'message': 'No tienes permisos para ver el rastreo GPS en tiempo real'
+                'message': f'No tienes permisos para ver el rastreo GPS. Nivel: {employee.get_permission_level() if employee else "Sin empleado"}'
             })
     
     # Empleados que puede ver

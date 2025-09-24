@@ -226,16 +226,28 @@ class AttendancePermissions:
     @staticmethod
     def can_view_location_maps(user):
         """Determina si puede ver mapas de ubicación"""
+        print(f"🔍 PERMISSION CHECK - can_view_location_maps para {user.username}")
+        
         if user.is_superuser or user.is_staff:
+            print(f"✅ PERMISSION - Superusuario/Staff acceso automático")
             return True
             
         employee = get_employee_from_user(user)
         if not employee:
+            print(f"❌ PERMISSION - Sin empleado")
             return False
             
         permission_level = employee.get_permission_level()
-        # Incluir 'advanced' para empleados SENIOR que son directores/gerentes
-        return permission_level in ['full', 'management', 'supervisor', 'advanced']
+        print(f"🔍 PERMISSION - Nivel: {permission_level}")
+        
+        # FORZAR: Incluir 'advanced' para empleados SENIOR que son directores/gerentes
+        allowed_levels = ['full', 'management', 'supervisor', 'advanced']
+        print(f"🔍 PERMISSION - Niveles permitidos: {allowed_levels}")
+        
+        result = permission_level in allowed_levels
+        print(f"🔍 PERMISSION - Resultado final: {result}")
+        
+        return result
     
     @staticmethod
     def can_manage_work_areas(user):
