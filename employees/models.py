@@ -38,13 +38,13 @@ class Employee(BaseModel):
     national_id = models.CharField('Cédula/DNI', max_length=20, unique=True)
     
     # Información demográfica
-    date_of_birth = models.DateField('Fecha de Nacimiento')
-    gender = models.CharField('Género', max_length=1, choices=GENDER_CHOICES)
-    marital_status = models.CharField('Estado Civil', max_length=10, choices=MARITAL_STATUS_CHOICES)
+    date_of_birth = models.DateField('Fecha de Nacimiento', null=True, blank=True)
+    gender = models.CharField('Género', max_length=1, choices=GENDER_CHOICES, null=True, blank=True)
+    marital_status = models.CharField('Estado Civil', max_length=10, choices=MARITAL_STATUS_CHOICES, null=True, blank=True)
     
     # Dirección
-    address = models.TextField('Dirección')
-    city = models.CharField('Ciudad', max_length=100)
+    address = models.TextField('Dirección', null=True, blank=True)
+    city = models.CharField('Ciudad', max_length=100, null=True, blank=True)
     country = models.CharField('País', max_length=100, default='México')
     
     # Información laboral - usando strings para evitar importaciones circulares
