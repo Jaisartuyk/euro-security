@@ -6,6 +6,7 @@ from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from .models import AttendanceRecord, AttendanceSummary, FacialRecognitionProfile, AttendanceSettings
+from .models_gps import GPSTracking, WorkArea, EmployeeWorkArea, LocationAlert
 
 
 @admin.register(AttendanceRecord)
@@ -223,3 +224,128 @@ class AttendanceSettingsAdmin(admin.ModelAdmin):
         if not change:  # Si es un nuevo objeto
             obj.created_by = request.user
         super().save_model(request, obj, form, change)
+
+
+# ============================================================================
+# MODELOS GPS
+# ============================================================================
+
+@admin.register(GPSTracking)
+class GPSTrackingAdmin(admin.ModelAdmin):
+    list_display = ('employee', 'timestamp', 'latitude', 'longitude', 'accuracy', 
+                   'is_within_work_area', 'work_area', 'tracking_type')
+    list_filter = ('tracking_type', 'is_within_work_area', 'timestamp', 'work_area')
+    search_fields = ('employee__first_name', 'employee__last_name', 'employee__employee_id')
+    readonly_fields = ('timestamp', 'distance_to_work_area', 'created_at', 'updated_at')
+    date_hierarchy = 'timestamp'
+    ordering = ('-timestamp',)
+    
+    fieldsets = (
+        ('Empleado', {
+            'fields': ('employee',)
+        }),
+        ('Ubicación GPS', {
+            'fields': ('latitude', 'longitude', 'accuracy', 'altitude')
+        }),
+        ('Información de Rastreo', {
+            'fields': ('tracking_type', 'is_active_session', 'session_id')
+        }),
+        ('Área de Trabajo', {
+            'fields': ('work_area', 'is_within_work_area', 'distance_to_work_area')
+        }),
+        ('Dispositivo', {
+            'fields': ('battery_level', 'device_info', 'notes'),
+            'classes': ('collapse',)
+        }),
+        ('Timestamps', {
+            'fields': ('timestamp', 'created_at', 'updated_at'),
+            'classes': ('collapse',)
+        })
+    )
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('employee', 'work_area')
+
+
+@admin.register(WorkArea)
+class WorkAreaAdmin(admin.ModelAdmin):
+    list_display = ('name', 'area_type', 'latitude', 'longitude', 'radius_meters', 
+                   'is_active', 'requires_attendance')
+    list_filter = ('area_type', 'is_active', 'requires_attendance')
+    search_fields = ('name', 'description', 'address')
+    readonly_fields = ('created_at', 'updated_at')
+    
+    fieldsets = (
+        ('Información Básica', {
+            'fields': ('name', 'description', 'area_type')
+        }),
+        ('Ubicación GPS', {
+            'fields': ('latitude', 'longitude', 'radius_meters', 'address')
+        }),
+        ('Contacto', {
+            'fields': ('contact_person', 'contact_phone')
+        }),
+        ('Horarios', {
+            'fields': ('start_time', 'end_time')
+        }),
+        ('Configuración', {
+            'fields': ('requires_attendance', 'is_active')
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        })
+    )
+
+
+@admin.register(EmployeeWorkArea)
+class EmployeeWorkAreaAdmin(admin.ModelAdmin):
+    list_display = ('employee', 'work_area', 'is_primary', 'assigned_date', 'is_active')
+    list_filter = ('is_primary', 'is_active', 'assigned_date', 'work_area')
+    search_fields = ('employee__first_name', 'employee__last_name', 'work_area__name')
+    readonly_fields = ('assigned_date', 'created_at', 'updated_at')
+    
+    fieldsets = (
+        ('Asignación', {
+            'fields': ('employee', 'work_area', 'is_primary', 'is_active')
+        }),
+        ('Fechas', {
+            'fields': ('assigned_date', 'start_date', 'end_date')
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        })
+    )
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('employee', 'work_area')
+
+
+@admin.register(LocationAlert)
+class LocationAlertAdmin(admin.ModelAdmin):
+    list_display = ('employee', 'alert_type', 'alert_level', 'title', 'is_resolved', 'created_at')
+    list_filter = ('alert_type', 'alert_level', 'is_resolved', 'created_at')
+    search_fields = ('employee__first_name', 'employee__last_name', 'title', 'message')
+    readonly_fields = ('created_at', 'updated_at')
+    date_hierarchy = 'created_at'
+    ordering = ('-created_at',)
+    
+    fieldsets = (
+        ('Alerta', {
+            'fields': ('employee', 'work_area', 'gps_tracking')
+        }),
+        ('Detalles', {
+            'fields': ('alert_type', 'alert_level', 'title', 'message')
+        }),
+        ('Estado', {
+            'fields': ('is_resolved', 'resolved_at', 'resolved_by', 'resolution_notes')
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        })
+    )
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('employee', 'work_area', 'gps_tracking')
