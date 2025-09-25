@@ -9,9 +9,9 @@
         Reportes de Departamentos
     </h1>
     <div>
-        <a href="{% url 'reports:dashboard' %}" class="btn btn-outline-secondary">
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
             <i class="fas fa-arrow-left me-2"></i>
-            Volver a Reportes
+            Volver a Dashboard
         </a>
         <button class="btn btn-primary" onclick="window.print()">
             <i class="fas fa-print me-2"></i>
@@ -90,8 +90,9 @@
                                 {% if dept.budget > 0 and dept.total_payroll %}
                                     {% widthratio dept.total_payroll dept.budget 100 as utilization %}
                                     <div class="progress" style="height: 20px;">
-                                        <div class="progress-bar bg-{% if utilization < 70 %}success{% elif utilization < 90 %}warning{% else %}danger{% endif %}" 
-                                             role="progressbar" style="width: {{ utilization }}%">
+                                        <div class="progress-bar {% if utilization < 70 %}bg-success{% elif utilization < 90 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                             role="progressbar" 
+                                             data-width="{{ utilization }}">
                                             {{ utilization }}%
                                         </div>
                                     </div>
@@ -145,60 +146,86 @@
 {% endblock %}
 
 {% block extra_js %}
+<!-- Datos JSON para los gráficos -->
+{{ departments_json|json_script:"departments-data" }}
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Gráfico de distribución de empleados
-    const employeeCtx = document.getElementById('employeeDistributionChart').getContext('2d');
-    new Chart(employeeCtx, {
-        type: 'pie',
-        data: {
-            labels: [{% for dept in departments %}'{{ dept.name }}'{% if not forloop.last %},{% endif %}{% endfor %}],
-            datasets: [{
-                data: [{% for dept in departments %}{{ dept.employee_count }}{% if not forloop.last %},{% endif %}{% endfor %}],
-                backgroundColor: [
-                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
-                ]
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                }
-            }
-        }
+document.addEventListener('DOMContentLoaded', function() {
+    // Aplicar width a las barras de progreso
+    document.querySelectorAll('.progress-bar[data-width]').forEach(function(bar) {
+        const width = bar.getAttribute('data-width');
+        bar.style.width = width + '%';
     });
     
+    // Obtener datos desde el JSON script
+    const departmentsData = JSON.parse(document.getElementById('departments-data').textContent);
+    
+    // Extraer datos para los gráficos
+    const names = departmentsData.map(d => d.name);
+    const employeeCounts = departmentsData.map(d => d.employee_count);
+    const budgets = departmentsData.map(d => d.budget);
+    const payrolls = departmentsData.map(d => d.total_payroll);
+    
+    // Gráfico de distribución de empleados
+    const employeeChartElement = document.getElementById('employeeDistributionChart');
+    if (employeeChartElement) {
+        const employeeCtx = employeeChartElement.getContext('2d');
+        new Chart(employeeCtx, {
+            type: 'pie',
+            data: {
+                labels: names,
+                datasets: [{
+                    data: employeeCounts,
+                    backgroundColor: [
+                        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+    
     // Gráfico de presupuesto vs nómina
-    const budgetCtx = document.getElementById('budgetChart').getContext('2d');
-    new Chart(budgetCtx, {
-        type: 'bar',
-        data: {
-            labels: [{% for dept in departments %}'{{ dept.name }}'{% if not forloop.last %},{% endif %}{% endfor %}],
-            datasets: [{
-                label: 'Presupuesto',
-                data: [{% for dept in departments %}{{ dept.budget }}{% if not forloop.last %},{% endif %}{% endfor %}],
-                backgroundColor: '#36A2EB'
-            }, {
-                label: 'Nómina Actual',
-                data: [{% for dept in departments %}{{ dept.total_payroll|default:0 }}{% if not forloop.last %},{% endif %}{% endfor %}],
-                backgroundColor: '#FF6384'
-            }]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            return '$' + value.toLocaleString();
+    const budgetChartElement = document.getElementById('budgetChart');
+    if (budgetChartElement) {
+        const budgetCtx = budgetChartElement.getContext('2d');
+        new Chart(budgetCtx, {
+            type: 'bar',
+            data: {
+                labels: names,
+                datasets: [{
+                    label: 'Presupuesto',
+                    data: budgets,
+                    backgroundColor: '#36A2EB'
+                }, {
+                    label: 'Nómina Actual',
+                    data: payrolls,
+                    backgroundColor: '#FF6384'
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toLocaleString();
+                            }
                         }
                     }
                 }
             }
-        }
-    });
+        });
+    }
+});
 </script>
 {% endblock %}

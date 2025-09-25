@@ -99,8 +99,19 @@ def department_reports(request):
     total_budget = departments.aggregate(sum=Sum('budget'))['sum'] or 0
     total_payroll = departments.aggregate(sum=Sum('total_payroll'))['sum'] or 0
     
+    # Preparar datos JSON para los gráficos
+    departments_json = []
+    for dept in departments:
+        departments_json.append({
+            'name': dept.name,
+            'employee_count': dept.employee_count or 0,
+            'budget': float(dept.budget or 0),
+            'total_payroll': float(dept.total_payroll or 0)
+        })
+    
     context = {
         'departments': departments,
+        'departments_json': departments_json,
         'total_budget': total_budget,
         'total_payroll': total_payroll,
         'budget_utilization': (total_payroll / total_budget * 100) if total_budget > 0 else 0,
@@ -184,8 +195,28 @@ def payroll_reports(request):
     
     departments = Department.objects.filter(is_active=True).order_by('name')
     
+    # Preparar datos por departamento para gráficos
+    department_payroll = []
+    for dept in departments:
+        dept_employees = [item for item in payroll_data if item['employee'].department == dept]
+        dept_total = sum(item['gross_salary'] for item in dept_employees)
+        if dept_total > 0:  # Solo incluir departamentos con nómina
+            department_payroll.append({
+                'name': dept.name,
+                'total_payroll': float(dept_total)
+            })
+    
+    # Preparar datos JSON para los gráficos
+    payroll_json_data = {
+        'total_net': float(total_net),
+        'total_tax': float(total_tax),
+        'total_social_security': float(total_social_security),
+        'departments': department_payroll
+    }
+    
     context = {
         'payroll_data': payroll_data,
+        'payroll_json_data': payroll_json_data,  # Datos JSON para gráficos
         'summary': {
             'total_gross': total_gross,
             'total_tax': total_tax,

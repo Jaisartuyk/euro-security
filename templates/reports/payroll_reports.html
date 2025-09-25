@@ -314,67 +314,76 @@
 {% endblock %}
 
 {% block extra_js %}
+<!-- Datos JSON para los gráficos -->
+{{ payroll_json_data|json_script:"payroll-data" }}
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Gráfico de distribución de deducciones
-    const deductionsCtx = document.getElementById('deductionsChart').getContext('2d');
-    const totalNet = {{ summary.total_net|default:0 }};
-    const totalTax = {{ summary.total_tax|default:0 }};
-    const totalSocial = {{ summary.total_social_security|default:0 }};
+document.addEventListener('DOMContentLoaded', function() {
+    // Obtener datos desde el JSON script
+    const payrollData = JSON.parse(document.getElementById('payroll-data').textContent);
     
-    new Chart(deductionsCtx, {
-        type: 'pie',
-        data: {
-            labels: ['Salario Neto', 'Impuestos', 'Seguro Social'],
-            datasets: [{
-                data: [totalNet, totalTax, totalSocial],
-                backgroundColor: ['#28a745', '#ffc107', '#17a2b8']
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'bottom',
+    // Gráfico de distribución de deducciones
+    const deductionsChartElement = document.getElementById('deductionsChart');
+    if (deductionsChartElement) {
+        const deductionsCtx = deductionsChartElement.getContext('2d');
+        new Chart(deductionsCtx, {
+            type: 'pie',
+            data: {
+                labels: ['Salario Neto', 'Impuestos', 'Seguro Social'],
+                datasets: [{
+                    data: [
+                        payrollData.total_net || 0,
+                        payrollData.total_tax || 0,
+                        payrollData.total_social_security || 0
+                    ],
+                    backgroundColor: ['#28a745', '#ffc107', '#17a2b8']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
                 }
             }
-        }
-    });
+        });
+    }
     
     // Gráfico de nómina por departamento
-    fetch('{% url "reports:api" %}?type=salary_by_department')
-        .then(response => response.json())
-        .then(data => {
-            const deptCtx = document.getElementById('departmentPayrollChart').getContext('2d');
-            new Chart(deptCtx, {
-                type: 'bar',
-                data: {
-                    labels: data.map(item => item.name),
-                    datasets: [{
-                        label: 'Nómina Total',
-                        data: data.map(item => item.total_payroll || 0),
-                        backgroundColor: '#36A2EB'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return '$' + value.toLocaleString();
-                                }
+    const departmentChartElement = document.getElementById('departmentPayrollChart');
+    if (departmentChartElement && payrollData.departments) {
+        const deptCtx = departmentChartElement.getContext('2d');
+        new Chart(deptCtx, {
+            type: 'bar',
+            data: {
+                labels: payrollData.departments.map(item => item.name),
+                datasets: [{
+                    label: 'Nómina Total',
+                    data: payrollData.departments.map(item => item.total_payroll || 0),
+                    backgroundColor: '#36A2EB'
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toLocaleString();
                             }
                         }
                     }
                 }
-            });
-        })
-        .catch(error => console.log('Error loading department payroll chart:', error));
-    
-    function exportPayroll() {
-        alert('Función de exportación a Excel en desarrollo');
+            }
+        });
     }
+});
+
+function exportPayroll() {
+    alert('Función de exportación a Excel en desarrollo');
+}
 </script>
 {% endblock %}
