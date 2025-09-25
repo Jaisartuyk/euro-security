@@ -42,9 +42,18 @@
         width: 100% !important;
         height: 100% !important;
         position: relative !important;
-        z-index: 1 !important;
+        z-index: 999 !important;
         background-color: #f0f0f0 !important;
         border: 2px solid #007bff;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    
+    #loading {
+        z-index: -999 !important;
+        display: none !important;
+        visibility: hidden !important;
     }
     
     .employee-list {
@@ -212,7 +221,7 @@
         <!-- Mapa -->
         <div class="col-lg-8">
             <div class="map-container">
-                <div id="loading" class="d-flex justify-content-center align-items-center h-100" style="display: none;">
+                <div id="loading" class="d-flex justify-content-center align-items-center h-100" style="display: none !important; visibility: hidden !important; opacity: 0 !important; z-index: -1 !important;">
                     <div class="text-center">
                         <div class="spinner-border text-primary" role="status">
                             <span class="visually-hidden">Cargando mapa...</span>
