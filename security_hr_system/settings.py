@@ -262,4 +262,4 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
 
 # Google Maps API Configuration
-GOOGLE_MAPS_API_KEY = config('GOOGLE_MAPS_API_KEY', default='AIzaSyBOti4mM-6x9WDnZIjIeyb21L_5nM_5eXs')
+GOOGLE_MAPS_API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY', 'AIzaSyBOti4mM-6x9WDnZIjIeyb21L_5nM_5eXs')
