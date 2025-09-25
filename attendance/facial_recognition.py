@@ -541,6 +541,11 @@ facial_recognition_system = FacialRecognitionSystem()
 
 def verify_employee_identity(captured_image, employee):
     """Función de conveniencia para verificar identidad"""
+    # Verificar dependencias antes de intentar usar el sistema completo
+    if not CV2_AVAILABLE or not NUMPY_AVAILABLE or not PIL_AVAILABLE:
+        logger.warning("Dependencias de ML no disponibles, usando modo fallback")
+        return _simple_verification_fallback(captured_image, employee)
+    
     try:
         return facial_recognition_system.verify_identity(captured_image, employee)
     except Exception as e:
