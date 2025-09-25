@@ -213,18 +213,23 @@
 {% block extra_css %}
 <style>
     .video-container {
+        position: relative;
         display: inline-block;
         border: 3px solid #007bff;
         border-radius: 15px;
         overflow: hidden;
         box-shadow: 0 8px 25px rgba(0,0,0,0.15);
         background: #000;
+        width: 100%;
+        max-width: 640px;
+        margin: 0 auto;
     }
     
     #video {
         display: block;
-        max-width: 100%;
+        width: 100%;
         height: auto;
+        object-fit: cover;
     }
     
     .action-icon {
@@ -411,23 +416,29 @@
     
     async function startCamera() {
         try {
-            stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { 
-                    width: 640, 
-                    height: 480,
-                    facingMode: 'user'
-                } 
-            });
+            // Configuración más flexible de la cámara
+            const constraints = {
+                video: {
+                    width: { ideal: 640, max: 1280 },
+                    height: { ideal: 480, max: 720 },
+                    facingMode: 'user',
+                    aspectRatio: 4/3
+                }
+            };
+            
+            stream = await navigator.mediaDevices.getUserMedia(constraints);
             video.srcObject = stream;
+            
             return new Promise((resolve) => {
                 video.onloadedmetadata = () => {
                     video.play();
+                    console.log('Cámara iniciada:', video.videoWidth + 'x' + video.videoHeight);
                     resolve();
                 };
             });
         } catch (error) {
             console.error('Error accediendo a la cámara:', error);
-            updateStatus('Error: No se pudo acceder a la cámara', 'danger');
+            updateStatus('Error: No se pudo acceder a la cámara. Verifique permisos.', 'danger');
             throw error;
         }
     }
