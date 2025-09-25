@@ -18,7 +18,7 @@ from PIL import Image
 from core.permissions import employee_required, permission_required, get_employee_from_user
 from .models import AttendanceRecord, AttendanceSummary, FacialRecognitionProfile, AttendanceSettings
 from employees.models import Employee
-# from .facial_recognition import verify_employee_identity, enroll_employee_facial_profile
+from .facial_recognition import verify_employee_identity, enroll_employee_facial_profile
 
 logger = logging.getLogger(__name__)
 
