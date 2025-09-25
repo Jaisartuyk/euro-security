@@ -535,8 +535,19 @@ class FacialRecognitionSystem:
             return 0.5
 
 
-# Instancia global del sistema
-facial_recognition_system = FacialRecognitionSystem()
+# Instancia global del sistema (se crea solo si las dependencias están disponibles)
+facial_recognition_system = None
+
+def get_facial_recognition_system():
+    """Obtiene la instancia del sistema de reconocimiento facial"""
+    global facial_recognition_system
+    if facial_recognition_system is None and CV2_AVAILABLE and NUMPY_AVAILABLE and PIL_AVAILABLE:
+        try:
+            facial_recognition_system = FacialRecognitionSystem()
+        except Exception as e:
+            logger.error(f"Error creando sistema de reconocimiento: {str(e)}")
+            facial_recognition_system = False  # Marcar como fallido
+    return facial_recognition_system
 
 
 def verify_employee_identity(captured_image, employee):
@@ -546,8 +557,14 @@ def verify_employee_identity(captured_image, employee):
         logger.warning("Dependencias de ML no disponibles, usando modo fallback")
         return _simple_verification_fallback(captured_image, employee)
     
+    # Obtener sistema de reconocimiento
+    system = get_facial_recognition_system()
+    if not system:
+        logger.warning("Sistema de reconocimiento no disponible, usando modo fallback")
+        return _simple_verification_fallback(captured_image, employee)
+    
     try:
-        return facial_recognition_system.verify_identity(captured_image, employee)
+        return system.verify_identity(captured_image, employee)
     except Exception as e:
         logger.error(f"Error en sistema de reconocimiento facial: {str(e)}")
         # Fallback: verificación simple si no hay dependencias
@@ -610,4 +627,11 @@ def _simple_verification_fallback(captured_image, employee):
 
 def enroll_employee_facial_profile(employee, reference_images):
     """Función de conveniencia para registrar perfil facial"""
-    return facial_recognition_system.enroll_employee(employee, reference_images)
+    system = get_facial_recognition_system()
+    if not system:
+        logger.error("Sistema de reconocimiento no disponible para enrollment")
+        return {
+            'success': False,
+            'error': 'Sistema de reconocimiento facial no disponible'
+        }
+    return system.enroll_employee(employee, reference_images)
