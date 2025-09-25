@@ -491,12 +491,20 @@ def create_profile_from_photos(request):
             pass
         
         # Crear perfil facial con fotos capturadas
-        from .facial_recognition import facial_recognition_system
+        from .facial_recognition import get_facial_recognition_system
         from PIL import Image
         import base64
         import io
         import tempfile
         import os
+        
+        # Obtener sistema de reconocimiento
+        facial_system = get_facial_recognition_system()
+        if not facial_system:
+            return JsonResponse({
+                'success': False,
+                'error': 'Sistema de reconocimiento facial no disponible'
+            })
         
         # Procesar cada foto
         processed_features = []
@@ -518,7 +526,7 @@ def create_profile_from_photos(request):
                 
                 # Procesar imagen
                 pil_image = Image.open(temp_file.name)
-                features, location_data, quality = facial_recognition_system.extract_face_encoding(pil_image)
+                features, location_data, quality = facial_system.extract_face_encoding(pil_image)
                 
                 if features and quality > 0.3:
                     processed_features.append(features)
