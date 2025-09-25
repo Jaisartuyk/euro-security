@@ -11,6 +11,7 @@ from django.contrib import messages
 from datetime import datetime, date, timedelta
 import json
 import base64
+import logging
 from io import BytesIO
 from PIL import Image
 
@@ -18,6 +19,8 @@ from core.permissions import employee_required, permission_required, get_employe
 from .models import AttendanceRecord, AttendanceSummary, FacialRecognitionProfile, AttendanceSettings
 from employees.models import Employee
 # from .facial_recognition import verify_employee_identity, enroll_employee_facial_profile
+
+logger = logging.getLogger(__name__)
 
 def update_daily_summary(employee, attendance_record):
     """Actualizar resumen diario de asistencia"""
@@ -148,10 +151,16 @@ def record_attendance(request):
         
         # Procesar imagen facial con sistema real
         try:
+            logger.info(f"Iniciando verificación facial para empleado: {employee.employee_id}")
+            logger.info(f"Tamaño de imagen recibida: {len(facial_image) if facial_image else 0} caracteres")
+            
             # Verificar identidad usando reconocimiento facial real
             verification_result = verify_employee_identity(facial_image, employee)
             
+            logger.info(f"Resultado de verificación: {verification_result}")
+            
             if not verification_result['success']:
+                logger.warning(f"Verificación fallida: {verification_result['error']}")
                 return JsonResponse({
                     'success': False, 
                     'error': verification_result['error'],
@@ -162,8 +171,11 @@ def record_attendance(request):
             facial_confidence = verification_result['confidence']
             security_checks = verification_result.get('security_checks', {})
             
+            logger.info(f"Verificación exitosa con confianza: {facial_confidence}")
+            
             # Verificar checks de seguridad
             if not security_checks.get('overall_security', True):
+                logger.warning(f"Checks de seguridad fallidos: {security_checks}")
                 return JsonResponse({
                     'success': False,
                     'error': 'Verificación de seguridad fallida. Intente con mejor iluminación.',
@@ -174,6 +186,10 @@ def record_attendance(request):
             facial_image_path = f'attendance/faces/{employee.employee_id}_{timezone.now().strftime("%Y%m%d_%H%M%S")}.jpg'
             
         except Exception as e:
+            logger.error(f"Error en reconocimiento facial: {str(e)}")
+            logger.error(f"Tipo de error: {type(e).__name__}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             return JsonResponse({'success': False, 'error': f'Error en reconocimiento facial: {str(e)}'})
         
         # Obtener dirección (simulado - en producción usar API de geocodificación)
