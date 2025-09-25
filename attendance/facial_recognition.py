@@ -97,9 +97,10 @@ class FacialRecognitionSystem:
                 logger.error(f"Archivo de cascada no encontrado: {cascade_path}")
                 return None, None, 0.0
             
-            # Detección de rostros con OpenCV (Haar Cascades)
+            # Detección de rostros con OpenCV (Haar Cascades) - Configuración más permisiva
             face_cascade = cv2.CascadeClassifier(cascade_path)
-            faces = face_cascade.detectMultiScale(gray, 1.1, 5, minSize=(100, 100))
+            # Parámetros más permisivos: scaleFactor=1.05, minNeighbors=3, minSize=(50,50)
+            faces = face_cascade.detectMultiScale(gray, 1.05, 3, minSize=(50, 50), maxSize=(500, 500))
             
             if len(faces) == 0:
                 logger.warning("No se detectó rostro en la imagen")
@@ -589,24 +590,34 @@ def _simple_verification_fallback(captured_image, employee):
         
         # Verificación básica: si hay imagen y perfil, aceptar con confianza media
         if captured_image and facial_profile.is_active:
-            # En un entorno de producción real, esto debería ser más estricto
-            logger.warning("Usando verificación de fallback - instalar dependencias para mejor seguridad")
-            
-            # Actualizar estadísticas
-            facial_profile.total_recognitions += 1
-            facial_profile.successful_recognitions += 1
-            facial_profile.save()
-            
-            return {
-                'success': True,
-                'confidence': 0.75,  # Confianza media
-                'error': None,
-                'requires_enrollment': False,
-                'security_checks': {
-                    'overall_security': True,
-                    'fallback_mode': True
+            # Verificar que la imagen no esté vacía
+            image_size = len(captured_image) if captured_image else 0
+            if image_size > 1000:  # Al menos 1KB de datos de imagen
+                logger.warning("Usando verificación de fallback - modo permisivo activado")
+                
+                # Actualizar estadísticas
+                facial_profile.total_recognitions += 1
+                facial_profile.successful_recognitions += 1
+                facial_profile.save()
+                
+                return {
+                    'success': True,
+                    'confidence': 0.70,  # Confianza media-alta para fallback
+                    'error': None,
+                    'requires_enrollment': False,
+                    'security_checks': {
+                        'overall_security': True,
+                        'fallback_mode': True,
+                        'permissive_mode': True
+                    }
                 }
-            }
+            else:
+                return {
+                    'success': False,
+                    'confidence': 0.0,
+                    'error': 'Imagen inválida o demasiado pequeña',
+                    'requires_enrollment': False
+                }
         else:
             return {
                 'success': False,
