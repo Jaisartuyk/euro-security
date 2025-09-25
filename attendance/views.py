@@ -86,17 +86,31 @@ def attendance_clock(request):
         timestamp__date=today
     ).order_by('-timestamp')
     
-    # Determinar próxima acción
+    # Determinar próxima acción con logging detallado
     last_record = today_records.first()
     next_action = 'IN'  # Por defecto entrada
     
+    logger.info(f"📊 DIAGNÓSTICO ENTRADA/SALIDA para {employee.get_full_name()}:")
+    logger.info(f"   Total registros hoy: {today_records.count()}")
+    
     if last_record:
+        logger.info(f"   Último registro: {last_record.attendance_type} a las {last_record.timestamp}")
         if last_record.attendance_type == 'IN':
             next_action = 'OUT'
+            logger.info(f"   ✅ Última fue ENTRADA → Próxima será SALIDA")
+        elif last_record.attendance_type == 'OUT':
+            next_action = 'IN'
+            logger.info(f"   ✅ Última fue SALIDA → Próxima será ENTRADA")
         elif last_record.attendance_type == 'BREAK_OUT':
             next_action = 'BREAK_IN'
+            logger.info(f"   ✅ Última fue BREAK_OUT → Próxima será BREAK_IN")
         elif last_record.attendance_type == 'BREAK_IN':
             next_action = 'OUT'
+            logger.info(f"   ✅ Última fue BREAK_IN → Próxima será SALIDA")
+    else:
+        logger.info(f"   ✅ No hay registros hoy → Próxima será ENTRADA")
+    
+    logger.info(f"   🎯 ACCIÓN DETERMINADA: {next_action}")
     
     # Obtener configuración
     settings = AttendanceSettings.objects.filter(is_active=True).first()
@@ -207,7 +221,9 @@ def record_attendance(request):
         # Obtener dirección (simulado - en producción usar API de geocodificación)
         address = get_address_from_coordinates(latitude, longitude)
         
-        # Crear registro de asistencia
+        # Crear registro de asistencia con logging
+        logger.info(f"💾 CREANDO REGISTRO: {employee.get_full_name()} - Tipo: {attendance_type}")
+        
         attendance_record = AttendanceRecord.objects.create(
             employee=employee,
             attendance_type=attendance_type,
