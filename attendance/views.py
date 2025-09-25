@@ -84,8 +84,8 @@ def attendance_clock(request):
     logger.info(f"📅 Fecha actual del sistema: {today}")
     logger.info(f"🕰️ Hora actual del sistema: {timezone.now()}")
     
-    # Forzar consulta fresca sin cache
-    today_records = AttendanceRecord.objects.select_for_update().filter(
+    # Consulta fresca de registros
+    today_records = AttendanceRecord.objects.filter(
         employee=employee,
         timestamp__date=today
     ).order_by('-timestamp')
