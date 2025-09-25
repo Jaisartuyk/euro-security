@@ -305,8 +305,8 @@
 {
     "hasProfile": {% if has_facial_profile %}true{% else %}false{% endif %},
     "csrfToken": "{{ csrf_token }}",
-    "createProfileUrl": "{% url 'attendance:create_profile' %}",
-    "emergencyRecordUrl": "{% url 'attendance:emergency_record' %}"
+    "recordUrl": "{% url 'attendance:record' %}",
+    "createProfileUrl": "{% url 'attendance:create_profile' %}"
 }
 </script>
 
@@ -659,19 +659,36 @@
             }
             
             // Enviar para reconocimiento
-            const response = await fetch(djangoConfig.emergencyRecordUrl, {
+            console.log('Enviando imagen para reconocimiento...', {
+                url: djangoConfig.recordUrl,
+                imageSize: compressedImage.length,
+                location: currentLocation
+            });
+            
+            const response = await fetch(djangoConfig.recordUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRFToken': djangoConfig.csrfToken
                 },
                 body: JSON.stringify({
+                    attendance_type: '{{ next_action }}',
                     facial_image: compressedImage,
-                    location: currentLocation
+                    latitude: currentLocation?.latitude,
+                    longitude: currentLocation?.longitude,
+                    location_accuracy: currentLocation?.accuracy,
+                    device_info: navigator.userAgent
                 })
             });
             
+            console.log('Respuesta recibida:', response.status, response.statusText);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
             const result = await response.json();
+            console.log('Resultado del reconocimiento:', result);
             
             if (result.success) {
                 showSuccessResult(result);
