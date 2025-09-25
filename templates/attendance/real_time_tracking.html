@@ -336,16 +336,11 @@
         map = new google.maps.Map(document.getElementById('map'), {
             zoom: 12,
             center: { lat: -2.1894, lng: -79.8890 },
-            mapTypeId: 'roadmap',
-            mapId: 'euro-security-realtime-map', // ID requerido para marcadores avanzados
-            styles: [
-                {
-                    featureType: 'poi',
-                    elementType: 'labels',
-                    stylers: [{ visibility: 'off' }]
-                }
-            ]
+            mapTypeId: 'roadmap'
+            // Removido mapId y styles para evitar conflictos
         });
+        
+        console.log('🗺️ Mapa creado exitosamente');
         
         // Cargar datos iniciales
         loadWorkAreas();
