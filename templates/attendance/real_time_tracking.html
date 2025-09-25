@@ -342,12 +342,24 @@
         
         console.log('🗺️ Mapa creado exitosamente');
         
+        // Verificar que el elemento del mapa sea visible
+        const mapElement = document.getElementById('map');
+        console.log('🗺️ Elemento del mapa:', mapElement);
+        console.log('🗺️ Dimensiones del mapa:', mapElement.offsetWidth, 'x', mapElement.offsetHeight);
+        console.log('🗺️ Estilo display:', mapElement.style.display);
+        
         // Cargar datos iniciales
         loadWorkAreas();
         loadEmployeeLocations();
         
         // Configurar actualización automática
         setupAutoRefresh();
+        
+        // Forzar redimensionamiento del mapa después de un momento
+        setTimeout(() => {
+            google.maps.event.trigger(map, 'resize');
+            console.log('🗺️ Mapa redimensionado');
+        }, 1000);
         
         // Si no hay datos después de 3 segundos, mostrar mensaje
         setTimeout(() => {
