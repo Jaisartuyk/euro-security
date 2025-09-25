@@ -322,8 +322,13 @@
         return csrfMeta ? csrfMeta.getAttribute('content') : '';
     }
     
+    // Debugging de API Key
+    console.log('🗺️ Google Maps API Key:', '{{ google_maps_api_key }}');
+    console.log('🗺️ API Key length:', '{{ google_maps_api_key }}'.length);
+    
     // Inicializar mapa
     function initMap() {
+        console.log('🗺️ initMap() llamada');
         document.getElementById('loading').style.display = 'none';
         document.getElementById('map').style.display = 'block';
         
@@ -613,14 +618,33 @@
     
     // Manejar errores de Google Maps
     window.gm_authFailure = function() {
+        console.error('🗺️ Error de autenticación de Google Maps');
         document.getElementById('loading').innerHTML = `
             <div class="text-center text-danger">
                 <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
-                <h5>Error de Google Maps</h5>
+                <h5>Error de Autenticación de Google Maps</h5>
+                <p>API Key: {{ google_maps_api_key|slice:":10" }}...</p>
                 <p>Verifica la configuración de la API Key</p>
             </div>
         `;
     };
+    
+    // Verificar si Google Maps se cargó correctamente
+    window.addEventListener('load', function() {
+        setTimeout(function() {
+            if (typeof google === 'undefined' || typeof google.maps === 'undefined') {
+                console.error('🗺️ Google Maps no se cargó correctamente');
+                document.getElementById('loading').innerHTML = `
+                    <div class="text-center text-danger">
+                        <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                        <h5>Error cargando Google Maps</h5>
+                        <p>No se pudo cargar la API de Google Maps</p>
+                        <p>API Key: {{ google_maps_api_key|slice:":10" }}...</p>
+                    </div>
+                `;
+            }
+        }, 5000); // Esperar 5 segundos
+    });
 </script>
 
 <!-- Cargar Google Maps API -->
