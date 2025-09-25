@@ -79,9 +79,13 @@ def attendance_clock(request):
     """Vista principal para marcar entrada/salida"""
     employee = get_employee_from_user(request.user)
     
-    # Obtener último registro del día
+    # Obtener último registro del día - CONSULTA FRESCA
     today = timezone.now().date()
-    today_records = AttendanceRecord.objects.filter(
+    logger.info(f"📅 Fecha actual del sistema: {today}")
+    logger.info(f"🕰️ Hora actual del sistema: {timezone.now()}")
+    
+    # Forzar consulta fresca sin cache
+    today_records = AttendanceRecord.objects.select_for_update().filter(
         employee=employee,
         timestamp__date=today
     ).order_by('-timestamp')
@@ -92,6 +96,10 @@ def attendance_clock(request):
     
     logger.info(f"📊 DIAGNÓSTICO ENTRADA/SALIDA para {employee.get_full_name()}:")
     logger.info(f"   Total registros hoy: {today_records.count()}")
+    
+    # Mostrar TODOS los registros para debugging
+    for i, record in enumerate(today_records[:5]):  # Solo los primeros 5
+        logger.info(f"   Registro {i+1}: {record.attendance_type} a las {record.timestamp}")
     
     if last_record:
         logger.info(f"   Último registro: {last_record.attendance_type} a las {last_record.timestamp}")
