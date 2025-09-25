@@ -247,7 +247,10 @@ COMPANY_CITY = 'Guayaquil'
 
 # Configuración de archivos
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
-DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
+# Configuración para manejar imágenes base64 grandes
+DATA_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024  # 50MB para imágenes
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000  # Permitir más campos
+FILE_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024  # 50MB para archivos
 
 # Configuración de sesiones
 SESSION_COOKIE_AGE = 8 * 60 * 60  # 8 horas

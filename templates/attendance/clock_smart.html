@@ -498,8 +498,9 @@
         isCapturingPhotos = true;
         photoCount++;
         
-        // Agregar foto a la colección
-        capturedPhotos.push(imageData);
+        // Comprimir foto antes de agregar a la colección
+        const compressedPhoto = await compressImage(imageData, 0.8, 480, 360);
+        capturedPhotos.push(compressedPhoto);
         
         // Actualizar contador
         updatePhotoCounter(photoCount);
@@ -599,6 +600,43 @@
         }
     }
     
+    // Función para comprimir imagen
+    function compressImage(imageData, quality = 0.7, maxWidth = 640, maxHeight = 480) {
+        return new Promise((resolve) => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            
+            img.onload = function() {
+                // Calcular nuevas dimensiones manteniendo aspecto
+                let { width, height } = img;
+                
+                if (width > maxWidth || height > maxHeight) {
+                    const ratio = Math.min(maxWidth / width, maxHeight / height);
+                    width *= ratio;
+                    height *= ratio;
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                // Dibujar imagen redimensionada
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // Comprimir y devolver
+                const compressedData = canvas.toDataURL('image/jpeg', quality);
+                console.log('Imagen comprimida:', {
+                    original: imageData.length,
+                    compressed: compressedData.length,
+                    reduction: Math.round((1 - compressedData.length / imageData.length) * 100) + '%'
+                });
+                resolve(compressedData);
+            };
+            
+            img.src = imageData;
+        });
+    }
+
     async function processRecognition(imageData) {
         if (isProcessing || (Date.now() - lastDetectionTime) < PROCESSING_COOLDOWN) {
             return;
@@ -608,9 +646,12 @@
         lastDetectionTime = Date.now();
         
         updateDetectionIndicator('Reconociendo...', 'primary');
-        showProgress(true, 'Analizando rostro...');
+        showProgress(true, 'Comprimiendo imagen...');
         
         try {
+            // Comprimir imagen antes del envío
+            const compressedImage = await compressImage(imageData, 0.8, 640, 480);
+            
             // Simular progreso de reconocimiento
             for (let i = 0; i <= 100; i += 10) {
                 updateProgress(i, `Analizando... ${i}%`);
@@ -625,7 +666,7 @@
                     'X-CSRFToken': djangoConfig.csrfToken
                 },
                 body: JSON.stringify({
-                    facial_image: imageData,
+                    facial_image: compressedImage,
                     location: currentLocation
                 })
             });

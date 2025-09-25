@@ -129,6 +129,18 @@ def record_attendance(request):
     
     try:
         employee = get_employee_from_user(request.user)
+        
+        # Verificar tamaño del request
+        content_length = request.META.get('CONTENT_LENGTH')
+        if content_length:
+            content_length = int(content_length)
+            max_size = 50 * 1024 * 1024  # 50MB
+            if content_length > max_size:
+                return JsonResponse({
+                    'success': False, 
+                    'error': f'Imagen demasiado grande. Máximo {max_size//1024//1024}MB'
+                })
+        
         data = json.loads(request.body)
         
         # Datos requeridos
