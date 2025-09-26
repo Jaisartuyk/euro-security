@@ -81,5 +81,17 @@ def company_info(request):
     return {
         'company_name': 'EURO SECURITY',
         'company_tagline': 'Seguridad Física Profesional',
-        'company_version': '2.0',
+        'current_year': timezone.now().year,
+    }
+
+def branding_context(request):
+    """
+    Context processor para branding de EURO SECURITY
+    Hace disponible logos, colores y información corporativa en todos los templates
+    """
+    from .branding import EuroSecurityBranding
+    
+    return {
+        'branding': EuroSecurityBranding.get_context(),
+        'euro_security': EuroSecurityBranding,
     }

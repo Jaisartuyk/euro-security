@@ -92,6 +92,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'core.context_processors.attendance_permissions',
                 'core.context_processors.company_info',
+                'core.context_processors.branding_context',
             ],
         },
     },
