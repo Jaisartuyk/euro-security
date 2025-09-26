@@ -467,7 +467,8 @@ Para funcionalidad completa, desplegar en HTTPS.
     }
     
     showDevelopmentBanner() {
-        // Crear banner informativo
+        // Banner informativo deshabilitado para evitar molestias
+        /*
         const banner = document.createElement('div');
         banner.id = 'dev-info-banner';
         banner.className = 'position-fixed top-0 start-0 end-0 bg-warning text-dark p-2 text-center';
@@ -488,6 +489,7 @@ Para funcionalidad completa, desplegar en HTTPS.
                 banner.remove();
             }
         }, 10000);
+        */
     }
 }
 

@@ -653,5 +653,41 @@
             });
         });
     </script>
+    
+    <!-- Scripts PWA -->
+    <script src="{% static 'js/pwa-cache-update.js' %}"></script>
+    <script src="{% static 'js/background-gps.js' %}"></script>
+    
+    <!-- Auto-actualizar PWA si hay nueva versión -->
+    <script>
+        // Detectar si hay nueva versión del manifest
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then(registration => {
+                registration.addEventListener('updatefound', () => {
+                    console.log('🔄 Nueva versión de PWA disponible');
+                    // Mostrar notificación de actualización
+                    if (confirm('Nueva versión disponible. ¿Actualizar ahora?')) {
+                        updatePWA();
+                    }
+                });
+            });
+        }
+        
+        // Forzar actualización si es la primera carga después del deploy
+        const lastUpdate = localStorage.getItem('pwa_last_update');
+        const currentVersion = '2.1.0';
+        
+        if (lastUpdate !== currentVersion) {
+            console.log('🔄 Detectada nueva versión PWA:', currentVersion);
+            localStorage.setItem('pwa_last_update', currentVersion);
+            
+            // Actualizar después de 2 segundos para no interrumpir la carga
+            setTimeout(() => {
+                if (typeof updatePWA === 'function') {
+                    updatePWA();
+                }
+            }, 2000);
+        }
+    </script>
 </body>
 </html>
