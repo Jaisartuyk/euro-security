@@ -2,6 +2,7 @@
 Context processors para EURO SECURITY
 Hace disponible información global en todos los templates
 """
+from django.utils import timezone
 from employees.models import Employee
 
 def attendance_permissions(request):
