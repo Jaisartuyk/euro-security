@@ -77,6 +77,7 @@
                 
                 <form method="post" id="assignment-form">
                     {% csrf_token %}
+                    <input type="hidden" name="action" value="assign">
                     
                     <!-- Opciones de Asignación -->
                     <div class="mb-3">
@@ -154,42 +155,76 @@
                     Empleados Asignados ({{ current_assignments.count }})
                 </h5>
                 
-                {% for assignment in current_assignments %}
-                <div class="employee-card card">
-                    <div class="card-body p-3">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <h6 class="mb-1">{{ assignment.employee.get_full_name }}</h6>
-                                <small class="text-muted">
-                                    {{ assignment.employee.position.title }} - {{ assignment.employee.department.name }}
-                                </small>
-                                <br>
-                                <small class="text-muted">
-                                    <i class="fas fa-calendar me-1"></i>Desde: {{ assignment.assigned_date|date:"d/m/Y" }}
-                                </small>
-                                {% if assignment.is_primary %}
-                                <br><span class="badge bg-primary badge-sm">Área Principal</span>
-                                {% endif %}
-                            </div>
-                            <div class="text-end">
-                                <small class="text-muted">
-                                    {% if assignment.is_active %}
-                                        <span class="badge bg-success">Activo</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">Inactivo</span>
+                <form id="unassignForm" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="unassign">
+                    
+                    {% for assignment in current_assignments %}
+                    <div class="employee-card card">
+                        <div class="card-body p-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="form-check me-3">
+                                    <input class="form-check-input unassign-checkbox" type="checkbox" 
+                                           name="unassign_employees" value="{{ assignment.employee.id }}" 
+                                           id="unassign_{{ assignment.employee.id }}">
+                                    <label class="form-check-label" for="unassign_{{ assignment.employee.id }}">
+                                        <!-- Checkbox para seleccionar -->
+                                    </label>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">{{ assignment.employee.get_full_name }}</h6>
+                                    <small class="text-muted">
+                                        {{ assignment.employee.position.title }} - {{ assignment.employee.department.name }}
+                                    </small>
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar me-1"></i>Desde: {{ assignment.assigned_date|date:"d/m/Y" }}
+                                    </small>
+                                    {% if assignment.is_primary %}
+                                    <br><span class="badge bg-primary badge-sm">Área Principal</span>
                                     {% endif %}
-                                </small>
+                                </div>
+                                <div class="text-end">
+                                    <small class="text-muted">
+                                        {% if assignment.is_active %}
+                                            <span class="badge bg-success">Activo</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inactivo</span>
+                                        {% endif %}
+                                    </small>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                {% empty %}
+                    {% empty %}
                 <div class="text-center text-muted py-4">
                     <i class="fas fa-user-slash fa-3x mb-3"></i>
                     <h5>No hay empleados asignados</h5>
                     <p>Selecciona empleados de la lista de la izquierda para asignar</p>
                 </div>
                 {% endfor %}
+                
+                <!-- Botones de Desasignación -->
+                {% if current_assignments %}
+                <div class="mt-3 border-top pt-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="selectAllUnassign">
+                                <i class="fas fa-check-square me-1"></i>Seleccionar Todos
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm ms-2" id="clearAllUnassign">
+                                <i class="fas fa-square me-1"></i>Limpiar Selección
+                            </button>
+                        </div>
+                        <div>
+                            <button type="submit" class="btn btn-danger" id="unassignButton" disabled>
+                                <i class="fas fa-user-minus me-2"></i>Desasignar Seleccionados
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                </form>
             </div>
         </div>
     </div>
@@ -330,6 +365,77 @@
         
         // Inicializar estado del botón
         updateAssignButton();
+        
+        // ===== FUNCIONALIDAD DE DESASIGNACIÓN =====
+        const unassignCheckboxes = document.querySelectorAll('.unassign-checkbox');
+        const unassignBtn = document.getElementById('unassignButton');
+        const selectAllUnassignBtn = document.getElementById('selectAllUnassign');
+        const clearAllUnassignBtn = document.getElementById('clearAllUnassign');
+        
+        // Función para actualizar el estado del botón de desasignación
+        function updateUnassignButton() {
+            const checkedUnassignBoxes = document.querySelectorAll('.unassign-checkbox:checked');
+            if (unassignBtn) {
+                unassignBtn.disabled = checkedUnassignBoxes.length === 0;
+                unassignBtn.innerHTML = checkedUnassignBoxes.length > 0 
+                    ? `<i class="fas fa-user-minus me-2"></i>Desasignar ${checkedUnassignBoxes.length} Empleado${checkedUnassignBoxes.length > 1 ? 's' : ''}`
+                    : '<i class="fas fa-user-minus me-2"></i>Desasignar Seleccionados';
+            }
+        }
+        
+        // Event listeners para checkboxes de desasignación
+        unassignCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const card = this.closest('.employee-card');
+                if (this.checked) {
+                    card.classList.add('selected');
+                } else {
+                    card.classList.remove('selected');
+                }
+                updateUnassignButton();
+            });
+        });
+        
+        // Seleccionar todos los empleados para desasignar
+        if (selectAllUnassignBtn) {
+            selectAllUnassignBtn.addEventListener('click', function() {
+                unassignCheckboxes.forEach(checkbox => {
+                    checkbox.checked = true;
+                    checkbox.dispatchEvent(new Event('change'));
+                });
+            });
+        }
+        
+        // Limpiar selección de desasignación
+        if (clearAllUnassignBtn) {
+            clearAllUnassignBtn.addEventListener('click', function() {
+                unassignCheckboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                    checkbox.dispatchEvent(new Event('change'));
+                });
+            });
+        }
+        
+        // Validación del formulario de desasignación
+        const unassignForm = document.getElementById('unassignForm');
+        if (unassignForm) {
+            unassignForm.addEventListener('submit', function(e) {
+                const checkedUnassignBoxes = document.querySelectorAll('.unassign-checkbox:checked');
+                if (checkedUnassignBoxes.length === 0) {
+                    e.preventDefault();
+                    alert('Por favor selecciona al menos un empleado para desasignar');
+                    return;
+                }
+                
+                const confirmMsg = `¿Estás seguro de desasignar ${checkedUnassignBoxes.length} empleado${checkedUnassignBoxes.length > 1 ? 's' : ''} del área?\n\nEsta acción desactivará su asignación pero no eliminará el historial.`;
+                if (!confirm(confirmMsg)) {
+                    e.preventDefault();
+                }
+            });
+        }
+        
+        // Inicializar estado del botón de desasignación
+        updateUnassignButton();
     });
 </script>
 {% endblock %}

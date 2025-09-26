@@ -618,33 +618,53 @@ def work_area_assign_employees(request, pk):
     
     if request.method == 'POST':
         try:
-            employee_ids = request.POST.getlist('employees')
+            action = request.POST.get('action', 'assign')
             
-            # Desactivar asignaciones existentes si se solicita
-            if request.POST.get('replace_existing') == 'on':
-                EmployeeWorkArea.objects.filter(work_area=work_area).update(is_active=False)
+            if action == 'assign':
+                # ASIGNAR EMPLEADOS
+                employee_ids = request.POST.getlist('employees')
+                
+                # Desactivar asignaciones existentes si se solicita
+                if request.POST.get('replace_existing') == 'on':
+                    EmployeeWorkArea.objects.filter(work_area=work_area).update(is_active=False)
+                
+                # Crear nuevas asignaciones
+                created_count = 0
+                for employee_id in employee_ids:
+                    employee = Employee.objects.get(id=employee_id)
+                    assignment, created = EmployeeWorkArea.objects.get_or_create(
+                        employee=employee,
+                        work_area=work_area,
+                        defaults={
+                            'is_primary': request.POST.get(f'primary_{employee_id}') == 'on',
+                            'is_active': True,
+                        }
+                    )
+                    if created:
+                        created_count += 1
+                    elif not assignment.is_active:
+                        assignment.is_active = True
+                        assignment.save()
+                        created_count += 1
+                
+                messages.success(request, f'{created_count} empleados asignados al área "{work_area.name}".')
+                
+            elif action == 'unassign':
+                # DESASIGNAR EMPLEADOS
+                employee_ids = request.POST.getlist('unassign_employees')
+                
+                if employee_ids:
+                    unassigned_count = EmployeeWorkArea.objects.filter(
+                        work_area=work_area,
+                        employee_id__in=employee_ids,
+                        is_active=True
+                    ).update(is_active=False)
+                    
+                    messages.success(request, f'{unassigned_count} empleados desasignados del área "{work_area.name}".')
+                else:
+                    messages.warning(request, 'No se seleccionaron empleados para desasignar.')
             
-            # Crear nuevas asignaciones
-            created_count = 0
-            for employee_id in employee_ids:
-                employee = Employee.objects.get(id=employee_id)
-                assignment, created = EmployeeWorkArea.objects.get_or_create(
-                    employee=employee,
-                    work_area=work_area,
-                    defaults={
-                        'is_primary': request.POST.get(f'primary_{employee_id}') == 'on',
-                        'is_active': True,
-                    }
-                )
-                if created:
-                    created_count += 1
-                elif not assignment.is_active:
-                    assignment.is_active = True
-                    assignment.save()
-                    created_count += 1
-            
-            messages.success(request, f'{created_count} empleados asignados al área "{work_area.name}".')
-            return redirect('attendance:work_area_detail', pk=work_area.pk)
+            return redirect('attendance:work_area_assign_employees', pk=work_area.pk)
             
         except Exception as e:
             messages.error(request, f'Error al asignar empleados: {str(e)}')
