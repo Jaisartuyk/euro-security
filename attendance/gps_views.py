@@ -689,3 +689,82 @@ def work_area_assign_employees(request, pk):
     }
     
     return render(request, 'attendance/work_area_assign_employees.html', context)
+
+
+@csrf_exempt
+@login_required
+def update_gps_location(request):
+    """
+    API para actualizar ubicación GPS desde JavaScript en segundo plano
+    Usado por background-gps.js
+    """
+    
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        
+        # Debug logging
+        print(f"🔍 Background GPS Update - Usuario: {request.user.username}")
+        print(f"🔍 GPS Data: lat={data.get('latitude')}, lng={data.get('longitude')}")
+        
+        # Obtener empleado
+        from core.permissions import get_employee_from_user
+        employee = get_employee_from_user(request.user)
+        
+        if not employee:
+            return JsonResponse({
+                'success': False,
+                'error': 'Usuario no tiene perfil de empleado'
+            }, status=400)
+        
+        # Validar datos requeridos
+        latitude = data.get('latitude')
+        longitude = data.get('longitude')
+        
+        if not latitude or not longitude:
+            return JsonResponse({
+                'success': False,
+                'error': 'Coordenadas requeridas'
+            }, status=400)
+        
+        # Crear registro GPS
+        tracking = GPSTracking.objects.create(
+            employee=employee,
+            latitude=Decimal(str(latitude)),
+            longitude=Decimal(str(longitude)),
+            accuracy=data.get('accuracy', 0),
+            tracking_type='AUTO',
+            is_active_session=True,
+            device_info=data.get('source', 'background_js'),
+            notes=f"Actualización automática desde {data.get('source', 'JavaScript')}"
+        )
+        
+        print(f"✅ GPS guardado - ID: {tracking.id}, Empleado: {employee.get_full_name()}")
+        
+        # Respuesta exitosa
+        return JsonResponse({
+            'success': True,
+            'message': 'Ubicación actualizada exitosamente',
+            'tracking_id': tracking.id,
+            'timestamp': tracking.timestamp.isoformat(),
+            'work_area': {
+                'name': tracking.work_area.name if tracking.work_area else None,
+                'is_within': tracking.is_within_work_area,
+                'distance': float(tracking.distance_to_work_area) if tracking.distance_to_work_area else None,
+            } if tracking.work_area else None
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'JSON inválido'
+        }, status=400)
+        
+    except Exception as e:
+        print(f"❌ Error actualizando GPS: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': f'Error interno: {str(e)}'
+        }, status=500)

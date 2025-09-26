@@ -54,4 +54,7 @@ urlpatterns = [
     
     # Modo de emergencia
     path('api/emergency-record/', views.emergency_record_attendance, name='emergency_record'),
+    
+    # GPS en segundo plano
+    path('actualizar-gps/', gps_views.update_gps_location, name='update_gps_location'),
 ]
