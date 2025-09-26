@@ -11,6 +11,7 @@ from django.utils import timezone
 from django.db.models import Q, Count, Avg, Max
 from django.conf import settings
 from datetime import datetime, timedelta
+from decimal import Decimal
 import json
 
 from core.permissions import employee_required
