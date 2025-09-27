@@ -77,20 +77,20 @@ def medical_dashboard(request):
         ).order_by('-created_at')[:10]
         
         # Asistencias recientes (últimos 30 días)
-        from .models import Attendance
+        from .models import AttendanceRecord
         thirty_days_ago = timezone.now() - timedelta(days=30)
-        recent_attendances = Attendance.objects.filter(
+        recent_attendances = AttendanceRecord.objects.filter(
             employee=employee,
-            check_in_time__gte=thirty_days_ago
-        ).order_by('-check_in_time')[:15]
+            timestamp__gte=thirty_days_ago
+        ).order_by('-timestamp')[:15]
         
         # Asistencias afectadas por permisos médicos
         affected_attendances = []
         for leave in active_leaves:
             # Buscar asistencias en el rango del permiso
-            leave_attendances = Attendance.objects.filter(
+            leave_attendances = AttendanceRecord.objects.filter(
                 employee=employee,
-                check_in_time__date__range=[leave.start_date, leave.end_date]
+                timestamp__date__range=[leave.start_date, leave.end_date]
             )
             affected_attendances.extend(leave_attendances)
         
