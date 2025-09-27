@@ -36,7 +36,11 @@ from .models import (
     Employee, MedicalDocument, MedicalLeave, DrClaudeConversation,
     MedicalDocumentType, MedicalLeaveStatus
 )
-from .dr_claude_service import dr_claude
+# from .dr_claude_service import dr_claude
+# Importar dinámicamente para evitar import circular
+def get_dr_claude():
+    from .dr_claude_service import dr_claude
+    return dr_claude
 
 
 @login_required
@@ -47,7 +51,7 @@ def medical_dashboard(request):
         employee = Employee.objects.get(user=request.user)
         
         # Obtener resumen médico del empleado
-        medical_summary = dr_claude.get_employee_medical_summary(employee)
+        medical_summary = get_dr_claude().get_employee_medical_summary(employee)
         
         # Documentos recientes
         recent_documents = MedicalDocument.objects.filter(
@@ -81,7 +85,7 @@ def medical_dashboard(request):
             'active_leaves': active_leaves,
             'stats': stats,
             'medical_summary': medical_summary,
-            'dr_claude_greeting': dr_claude.personality['greeting'],
+            'dr_claude_greeting': get_dr_claude().personality['greeting'],
             'page_title': 'Dr. Claude - Asistente Médico IA'
         }
         
@@ -138,12 +142,12 @@ def upload_medical_document(request):
             )
             
             # Procesar con Dr. Claude
-            analysis_result = dr_claude.analyze_medical_certificate(medical_doc)
+            analysis_result = get_dr_claude().analyze_medical_certificate(medical_doc)
             
             if analysis_result.get('success', True):
                 # Crear permiso médico si es necesario
                 if document_type == MedicalDocumentType.CERTIFICATE:
-                    medical_leave = dr_claude.create_medical_leave(medical_doc)
+                    medical_leave = get_dr_claude().create_medical_leave(medical_doc)
                     
                     return JsonResponse({
                         'success': True,
@@ -203,7 +207,7 @@ def chat_with_claude(request):
             })
         
         # Procesar con Dr. Claude
-        response = dr_claude.chat_with_employee(employee, message, session_id)
+        response = get_dr_claude().chat_with_employee(employee, message, session_id)
         
         return JsonResponse(response)
         
