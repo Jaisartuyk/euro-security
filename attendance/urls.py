@@ -6,6 +6,7 @@ from . import views
 from . import reports_views
 from . import gps_views
 from . import shift_views
+from . import medical_views
 
 app_name = 'attendance'
 
@@ -74,4 +75,17 @@ urlpatterns = [
     # APIs para asignación de empleados
     path('api/empleados-disponibles/', shift_views.get_available_employees, name='get_available_employees'),
     path('api/asignacion-masiva/', shift_views.bulk_assign_employees, name='bulk_assign_employees'),
+    
+    # Sistema Médico con Dr. Claude IA
+    path('medico/', medical_views.medical_dashboard, name='medical_dashboard'),
+    path('medico/subir-documento/', medical_views.upload_medical_document, name='upload_medical_document'),
+    path('medico/chat-claude/', medical_views.chat_with_claude, name='chat_with_claude'),
+    path('medico/documento/<int:document_id>/', medical_views.medical_document_detail, name='medical_document_detail'),
+    path('medico/permiso/<int:leave_id>/', medical_views.medical_leave_detail, name='medical_leave_detail'),
+    path('medico/historial/', medical_views.medical_history, name='medical_history'),
+    path('medico/calificar/', medical_views.rate_claude_response, name='rate_claude_response'),
+    
+    # Dashboard Médico para RRHH
+    path('medico/rrhh/', medical_views.hr_medical_dashboard, name='hr_medical_dashboard'),
+    path('medico/rrhh/aprobar/<int:leave_id>/', medical_views.approve_medical_leave, name='approve_medical_leave'),
 ]

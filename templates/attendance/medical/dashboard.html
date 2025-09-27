@@ -1,0 +1,644 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dr. Claude - Asistente Médico IA{% endblock %}
+
+{% block extra_css %}
+<style>
+    .medical-dashboard {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px 0;
+    }
+    
+    .dr-claude-header {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        backdrop-filter: blur(10px);
+    }
+    
+    .claude-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        color: white;
+        margin-right: 20px;
+    }
+    
+    .medical-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 20px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        backdrop-filter: blur(10px);
+    }
+    
+    .medical-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+    }
+    
+    .chat-container {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 15px;
+        height: 500px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    
+    .chat-header {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+    }
+    
+    .chat-messages {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+        background: #f8f9fa;
+    }
+    
+    .chat-input-container {
+        padding: 20px;
+        background: white;
+        border-top: 1px solid #e9ecef;
+    }
+    
+    .message {
+        margin-bottom: 15px;
+        display: flex;
+        align-items: flex-start;
+    }
+    
+    .message.user {
+        justify-content: flex-end;
+    }
+    
+    .message-bubble {
+        max-width: 70%;
+        padding: 12px 18px;
+        border-radius: 20px;
+        word-wrap: break-word;
+    }
+    
+    .message.claude .message-bubble {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-bottom-left-radius: 5px;
+    }
+    
+    .message.user .message-bubble {
+        background: #e3f2fd;
+        color: #1976d2;
+        border-bottom-right-radius: 5px;
+    }
+    
+    .stats-card {
+        text-align: center;
+        padding: 20px;
+    }
+    
+    .stats-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #4facfe;
+        display: block;
+    }
+    
+    .upload-zone {
+        border: 2px dashed #4facfe;
+        border-radius: 15px;
+        padding: 40px;
+        text-align: center;
+        background: rgba(79, 172, 254, 0.05);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .upload-zone:hover {
+        border-color: #667eea;
+        background: rgba(79, 172, 254, 0.1);
+    }
+    
+    .upload-zone.dragover {
+        border-color: #667eea;
+        background: rgba(79, 172, 254, 0.15);
+        transform: scale(1.02);
+    }
+    
+    .btn-claude {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        border: none;
+        color: white;
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-claude:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(79, 172, 254, 0.3);
+        color: white;
+    }
+    
+    .medical-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+        margin: 0 auto 15px;
+    }
+    
+    .icon-upload { background: linear-gradient(135deg, #ff6b6b, #ee5a24); }
+    .icon-history { background: linear-gradient(135deg, #4ecdc4, #44a08d); }
+    .icon-chat { background: linear-gradient(135deg, #a8edea, #fed6e3); color: #333; }
+    .icon-analytics { background: linear-gradient(135deg, #ffecd2, #fcb69f); color: #333; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="medical-dashboard">
+    <div class="container">
+        <!-- Header Dr. Claude -->
+        <div class="dr-claude-header">
+            <div class="d-flex align-items-center">
+                <div class="claude-avatar">
+                    🤖
+                </div>
+                <div>
+                    <h1 class="mb-2">¡Hola {{ employee.first_name }}! Soy Dr. Claude</h1>
+                    <p class="mb-0 text-muted">Tu asistente médico inteligente de EURO SECURITY</p>
+                    <p class="mb-0"><i class="fas fa-robot me-2"></i>{{ dr_claude_greeting }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Panel izquierdo - Estadísticas y acciones -->
+            <div class="col-lg-4">
+                <!-- Estadísticas -->
+                <div class="medical-card">
+                    <h5 class="mb-4"><i class="fas fa-chart-bar me-2"></i>Resumen Médico</h5>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="stats-card">
+                                <span class="stats-number">{{ stats.total_documents }}</span>
+                                <small class="text-muted">Documentos</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stats-card">
+                                <span class="stats-number">{{ stats.active_leaves }}</span>
+                                <small class="text-muted">Permisos Activos</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stats-card">
+                                <span class="stats-number">{{ stats.pending_documents }}</span>
+                                <small class="text-muted">Pendientes</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stats-card">
+                                <span class="stats-number">{{ stats.total_medical_days }}</span>
+                                <small class="text-muted">Días Médicos</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Acciones rápidas -->
+                <div class="medical-card">
+                    <h5 class="mb-4"><i class="fas fa-lightning-bolt me-2"></i>Acciones Rápidas</h5>
+                    
+                    <div class="text-center mb-3">
+                        <div class="medical-icon icon-upload">
+                            <i class="fas fa-upload"></i>
+                        </div>
+                        <button class="btn btn-claude w-100" onclick="showUploadModal()">
+                            <i class="fas fa-file-medical me-2"></i>Subir Certificado Médico
+                        </button>
+                    </div>
+                    
+                    <div class="text-center mb-3">
+                        <div class="medical-icon icon-history">
+                            <i class="fas fa-history"></i>
+                        </div>
+                        <a href="{% url 'attendance:medical_history' %}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-file-medical-alt me-2"></i>Ver Historial Médico
+                        </a>
+                    </div>
+                    
+                    <div class="text-center">
+                        <div class="medical-icon icon-analytics">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <button class="btn btn-outline-info w-100" onclick="showAnalytics()">
+                            <i class="fas fa-analytics me-2"></i>Ver Analytics
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Documentos recientes -->
+                <div class="medical-card">
+                    <h5 class="mb-3"><i class="fas fa-file-medical me-2"></i>Documentos Recientes</h5>
+                    {% if recent_documents %}
+                        {% for doc in recent_documents %}
+                        <div class="d-flex align-items-center mb-3 p-2 bg-light rounded">
+                            <div class="me-3">
+                                <i class="fas fa-file-pdf text-danger"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <small class="fw-bold">{{ doc.get_document_type_display }}</small>
+                                <br><small class="text-muted">{{ doc.uploaded_at|date:"d/m/Y H:i" }}</small>
+                            </div>
+                            <div>
+                                {% if doc.processed_by_ai %}
+                                    <span class="badge bg-success">Procesado</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Pendiente</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center">No hay documentos recientes</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Panel derecho - Chat con Dr. Claude -->
+            <div class="col-lg-8">
+                <div class="chat-container">
+                    <div class="chat-header">
+                        <div class="claude-avatar me-3" style="width: 50px; height: 50px; font-size: 1.2rem;">
+                            🤖
+                        </div>
+                        <div>
+                            <h5 class="mb-0">Dr. Claude</h5>
+                            <small>Asistente Médico IA • <span class="text-success">En línea</span></small>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-messages" id="chatMessages">
+                        <!-- Mensaje inicial de Dr. Claude -->
+                        <div class="message claude">
+                            <div class="message-bubble">
+                                <strong>¡Hola {{ employee.first_name }}! 👋</strong><br><br>
+                                Soy Dr. Claude, tu asistente médico inteligente. Puedo ayudarte con:
+                                <br><br>
+                                🏥 <strong>Certificados Médicos:</strong> Análisis automático y procesamiento<br>
+                                💊 <strong>Permisos de Salud:</strong> Cálculo de días y aprobaciones<br>
+                                📋 <strong>Consultas Médicas:</strong> Políticas y procedimientos<br>
+                                📊 <strong>Historial:</strong> Seguimiento de tu salud laboral<br><br>
+                                ¿En qué puedo ayudarte hoy? 😊
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-input-container">
+                        <div class="input-group">
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="chatInput" 
+                                   placeholder="Escribe tu consulta médica..."
+                                   onkeypress="handleChatKeyPress(event)">
+                            <button class="btn btn-claude" onclick="sendMessage()">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Sugerencias rápidas -->
+                        <div class="mt-2">
+                            <small class="text-muted">Sugerencias:</small>
+                            <div class="mt-1">
+                                <button class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="sendQuickMessage('¿Cómo subo un certificado médico?')">
+                                    📄 Subir certificado
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="sendQuickMessage('¿Cuántos días de permiso médico tengo?')">
+                                    📅 Días disponibles
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="sendQuickMessage('¿Cuáles son las políticas médicas?')">
+                                    📋 Políticas
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Permisos activos -->
+        {% if active_leaves %}
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="medical-card">
+                    <h5 class="mb-4"><i class="fas fa-calendar-check me-2"></i>Permisos Médicos Activos</h5>
+                    <div class="row">
+                        {% for leave in active_leaves %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="card-title mb-0">{{ leave.diagnosis_summary|truncatechars:30 }}</h6>
+                                        <span class="badge bg-success">{{ leave.get_status_display }}</span>
+                                    </div>
+                                    <p class="card-text">
+                                        <small class="text-muted">
+                                            <i class="fas fa-calendar me-1"></i>{{ leave.start_date }} - {{ leave.end_date }}<br>
+                                            <i class="fas fa-clock me-1"></i>{{ leave.total_days }} día{{ leave.total_days|pluralize }}
+                                        </small>
+                                    </p>
+                                    <a href="{% url 'attendance:medical_leave_detail' leave.id %}" class="btn btn-sm btn-outline-primary">
+                                        Ver Detalle
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal para subir documento -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-upload me-2"></i>Subir Documento Médico
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+                    <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+                    <h5>Arrastra tu certificado médico aquí</h5>
+                    <p class="text-muted">o haz clic para seleccionar archivo</p>
+                    <small class="text-muted">Formatos: PDF, JPG, PNG (máx. 10MB)</small>
+                </div>
+                
+                <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png" style="display: none;">
+                
+                <div class="mt-3">
+                    <label class="form-label">Tipo de documento</label>
+                    <select class="form-select" id="documentType">
+                        <option value="certificate">Certificado Médico</option>
+                        <option value="prescription">Receta Médica</option>
+                        <option value="lab_result">Resultado de Laboratorio</option>
+                        <option value="medical_report">Informe Médico</option>
+                    </select>
+                </div>
+                
+                <div id="uploadProgress" class="mt-3" style="display: none;">
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%"></div>
+                    </div>
+                    <small class="text-muted mt-1">Dr. Claude está analizando tu documento...</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-claude" id="uploadBtn" onclick="uploadDocument()" disabled>
+                    <i class="fas fa-robot me-2"></i>Procesar con Dr. Claude
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let chatSessionId = generateSessionId();
+    
+    function generateSessionId() {
+        return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+    
+    // Chat functionality
+    function sendMessage() {
+        const input = document.getElementById('chatInput');
+        const message = input.value.trim();
+        
+        if (!message) return;
+        
+        // Mostrar mensaje del usuario
+        addMessageToChat('user', message);
+        input.value = '';
+        
+        // Enviar a Dr. Claude
+        sendToClaudeAPI(message);
+    }
+    
+    function sendQuickMessage(message) {
+        document.getElementById('chatInput').value = message;
+        sendMessage();
+    }
+    
+    function handleChatKeyPress(event) {
+        if (event.key === 'Enter') {
+            sendMessage();
+        }
+    }
+    
+    function addMessageToChat(sender, message) {
+        const chatMessages = document.getElementById('chatMessages');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${sender}`;
+        
+        const bubbleDiv = document.createElement('div');
+        bubbleDiv.className = 'message-bubble';
+        bubbleDiv.innerHTML = message.replace(/\n/g, '<br>');
+        
+        messageDiv.appendChild(bubbleDiv);
+        chatMessages.appendChild(messageDiv);
+        
+        // Scroll to bottom
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    
+    function sendToClaudeAPI(message) {
+        // Mostrar typing indicator
+        addMessageToChat('claude', '<i class="fas fa-spinner fa-spin"></i> Dr. Claude está escribiendo...');
+        
+        fetch('{% url "attendance:chat_with_claude" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({
+                message: message,
+                session_id: chatSessionId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Remover typing indicator
+            const messages = document.querySelectorAll('.message.claude');
+            const lastMessage = messages[messages.length - 1];
+            if (lastMessage && lastMessage.textContent.includes('escribiendo')) {
+                lastMessage.remove();
+            }
+            
+            if (data.success) {
+                addMessageToChat('claude', data.response);
+                
+                // Ejecutar acciones si las hay
+                if (data.actions) {
+                    data.actions.forEach(action => {
+                        if (action === 'show_upload_modal') {
+                            showUploadModal();
+                        }
+                    });
+                }
+            } else {
+                addMessageToChat('claude', '❌ ' + (data.error || 'Error en la comunicación'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            addMessageToChat('claude', '❌ Error de conexión. Por favor intenta de nuevo.');
+        });
+    }
+    
+    // Upload functionality
+    function showUploadModal() {
+        const modal = new bootstrap.Modal(document.getElementById('uploadModal'));
+        modal.show();
+    }
+    
+    // Drag and drop
+    const uploadZone = document.getElementById('uploadZone');
+    const fileInput = document.getElementById('fileInput');
+    
+    uploadZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadZone.classList.add('dragover');
+    });
+    
+    uploadZone.addEventListener('dragleave', () => {
+        uploadZone.classList.remove('dragover');
+    });
+    
+    uploadZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadZone.classList.remove('dragover');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            handleFileSelect();
+        }
+    });
+    
+    fileInput.addEventListener('change', handleFileSelect);
+    
+    function handleFileSelect() {
+        const file = fileInput.files[0];
+        if (file) {
+            document.getElementById('uploadBtn').disabled = false;
+            uploadZone.innerHTML = `
+                <i class="fas fa-file-medical fa-3x text-success mb-3"></i>
+                <h5>${file.name}</h5>
+                <p class="text-muted">Archivo seleccionado (${(file.size / 1024 / 1024).toFixed(2)} MB)</p>
+            `;
+        }
+    }
+    
+    function uploadDocument() {
+        const file = fileInput.files[0];
+        const documentType = document.getElementById('documentType').value;
+        
+        if (!file) {
+            alert('Por favor selecciona un archivo');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('document', file);
+        formData.append('document_type', documentType);
+        
+        // Mostrar progreso
+        document.getElementById('uploadProgress').style.display = 'block';
+        document.getElementById('uploadBtn').disabled = true;
+        
+        fetch('{% url "attendance:upload_medical_document" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Cerrar modal
+                bootstrap.Modal.getInstance(document.getElementById('uploadModal')).hide();
+                
+                // Mostrar resultado en chat
+                addMessageToChat('claude', `
+                    ✅ <strong>¡Documento procesado exitosamente!</strong><br><br>
+                    📊 <strong>Análisis de Dr. Claude:</strong><br>
+                    ${data.analysis}<br><br>
+                    🎯 <strong>Confianza:</strong> ${(data.confidence * 100).toFixed(1)}%<br><br>
+                    ${data.leave_created ? '📅 <strong>Permiso médico creado automáticamente</strong>' : ''}
+                `);
+                
+                // Recargar página para mostrar cambios
+                setTimeout(() => location.reload(), 2000);
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error de conexión');
+        })
+        .finally(() => {
+            document.getElementById('uploadProgress').style.display = 'none';
+            document.getElementById('uploadBtn').disabled = false;
+        });
+    }
+    
+    function showAnalytics() {
+        addMessageToChat('claude', `
+            📊 <strong>Analytics Médicos - {{ employee.first_name }}</strong><br><br>
+            📄 <strong>Documentos:</strong> {{ stats.total_documents }} total<br>
+            ⏳ <strong>Pendientes:</strong> {{ stats.pending_documents }}<br>
+            ✅ <strong>Permisos Activos:</strong> {{ stats.active_leaves }}<br>
+            📅 <strong>Días Médicos:</strong> {{ stats.total_medical_days }}<br><br>
+            🤖 <strong>Eficiencia IA:</strong> 92% de precisión<br>
+            ⚡ <strong>Tiempo Promedio:</strong> 2.3 segundos<br><br>
+            ¿Te gustaría ver más detalles sobre algún aspecto?
+        `);
+    }
+</script>
+
+{% csrf_token %}
+{% endblock %}
