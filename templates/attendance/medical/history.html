@@ -1,0 +1,404 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Historial Médico Completo{% endblock %}
+
+{% block extra_css %}
+<style>
+    .medical-history {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px 0;
+    }
+    
+    .history-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 20px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        backdrop-filter: blur(10px);
+    }
+    
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 15px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: linear-gradient(to bottom, #4facfe, #00f2fe);
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 30px;
+        padding: 20px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -37px;
+        top: 20px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #4facfe;
+        border: 3px solid white;
+        box-shadow: 0 0 0 3px #4facfe;
+    }
+    
+    .document-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        color: white;
+        margin-right: 15px;
+    }
+    
+    .icon-certificate { background: linear-gradient(135deg, #ff6b6b, #ee5a24); }
+    .icon-prescription { background: linear-gradient(135deg, #4ecdc4, #44a08d); }
+    .icon-lab { background: linear-gradient(135deg, #a8edea, #fed6e3); color: #333; }
+    .icon-report { background: linear-gradient(135deg, #ffecd2, #fcb69f); color: #333; }
+    
+    .conversation-bubble {
+        background: #f8f9fa;
+        border-left: 4px solid #4facfe;
+        padding: 15px;
+        border-radius: 0 10px 10px 0;
+        margin: 10px 0;
+    }
+    
+    .claude-response {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-left: 4px solid #fff;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .stat-card {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #4facfe;
+    }
+    
+    .filter-tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+    
+    .filter-tab {
+        padding: 10px 20px;
+        border: 2px solid #4facfe;
+        background: transparent;
+        color: #4facfe;
+        border-radius: 25px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .filter-tab.active,
+    .filter-tab:hover {
+        background: #4facfe;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="medical-history">
+    <div class="container">
+        <!-- Header -->
+        <div class="history-card">
+            <div class="d-flex align-items-center mb-4">
+                <div class="document-icon icon-certificate me-3">
+                    <i class="fas fa-history"></i>
+                </div>
+                <div>
+                    <h1 class="mb-1">Historial Médico Completo</h1>
+                    <p class="text-muted mb-0">{{ employee.get_full_name }} - {{ employee.employee_id }}</p>
+                </div>
+            </div>
+            
+            <!-- Estadísticas -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">{{ documents.count }}</div>
+                    <small class="text-muted">Documentos Totales</small>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ leaves.count }}</div>
+                    <small class="text-muted">Permisos Médicos</small>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ conversations.count }}</div>
+                    <small class="text-muted">Consultas Dr. Claude</small>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">
+                        {% for leave in leaves %}
+                            {% if forloop.first %}{{ leave.total_days }}{% endif %}
+                        {% empty %}0{% endfor %}
+                    </div>
+                    <small class="text-muted">Días Médicos Recientes</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="history-card">
+            <div class="filter-tabs">
+                <button class="filter-tab active" onclick="filterContent('all')">
+                    <i class="fas fa-list me-2"></i>Todo
+                </button>
+                <button class="filter-tab" onclick="filterContent('documents')">
+                    <i class="fas fa-file-medical me-2"></i>Documentos
+                </button>
+                <button class="filter-tab" onclick="filterContent('leaves')">
+                    <i class="fas fa-calendar-check me-2"></i>Permisos
+                </button>
+                <button class="filter-tab" onclick="filterContent('conversations')">
+                    <i class="fas fa-comments me-2"></i>Conversaciones
+                </button>
+            </div>
+        </div>
+
+        <!-- Timeline -->
+        <div class="history-card">
+            <h4 class="mb-4"><i class="fas fa-clock me-2"></i>Línea de Tiempo Médica</h4>
+            
+            <div class="timeline">
+                <!-- Documentos Médicos -->
+                {% for document in documents %}
+                <div class="timeline-item filter-item" data-type="documents">
+                    <div class="d-flex align-items-start">
+                        <div class="document-icon icon-{% if document.document_type == 'certificate' %}certificate{% elif document.document_type == 'prescription' %}prescription{% elif document.document_type == 'lab_result' %}lab{% else %}report{% endif %}">
+                            <i class="fas fa-{% if document.document_type == 'certificate' %}file-medical{% elif document.document_type == 'prescription' %}pills{% elif document.document_type == 'lab_result' %}flask{% else %}file-alt{% endif %}"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="mb-0">{{ document.get_document_type_display }}</h6>
+                                <small class="text-muted">{{ document.uploaded_at|date:"d/m/Y H:i" }}</small>
+                            </div>
+                            
+                            {% if document.processed_by_ai %}
+                                <div class="mb-2">
+                                    <span class="badge bg-success me-2">Procesado por Dr. Claude</span>
+                                    <span class="badge bg-info">Confianza: {{ document.ai_confidence_score|floatformat:1 }}%</span>
+                                </div>
+                                
+                                {% if document.diagnosis %}
+                                    <p class="mb-2"><strong>Diagnóstico:</strong> {{ document.diagnosis }}</p>
+                                {% endif %}
+                                
+                                {% if document.doctor_name %}
+                                    <p class="mb-2"><strong>Médico:</strong> {{ document.doctor_name }}</p>
+                                {% endif %}
+                                
+                                {% if document.ai_analysis %}
+                                    <div class="conversation-bubble claude-response">
+                                        <strong>Análisis Dr. Claude:</strong><br>
+                                        {{ document.ai_analysis|truncatewords:30 }}
+                                    </div>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge bg-warning">Pendiente de Procesamiento</span>
+                            {% endif %}
+                            
+                            <div class="mt-2">
+                                <a href="{% url 'attendance:medical_document_detail' document.id %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye me-1"></i>Ver Detalle
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <!-- Permisos Médicos -->
+                {% for leave in leaves %}
+                <div class="timeline-item filter-item" data-type="leaves">
+                    <div class="d-flex align-items-start">
+                        <div class="document-icon" style="background: linear-gradient(135deg, #2ecc71, #27ae60);">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="mb-0">Permiso Médico</h6>
+                                <small class="text-muted">{{ leave.created_at|date:"d/m/Y H:i" }}</small>
+                            </div>
+                            
+                            <div class="mb-2">
+                                <span class="badge bg-{% if leave.status == 'ai_approved' or leave.status == 'hr_approved' %}success{% elif leave.status == 'human_review' %}warning{% else %}secondary{% endif %}">
+                                    {{ leave.get_status_display }}
+                                </span>
+                            </div>
+                            
+                            <p class="mb-2">
+                                <strong>Período:</strong> {{ leave.start_date }} - {{ leave.end_date }} 
+                                <span class="badge bg-info ms-2">{{ leave.total_days }} día{{ leave.total_days|pluralize }}</span>
+                            </p>
+                            
+                            {% if leave.diagnosis_summary %}
+                                <p class="mb-2"><strong>Diagnóstico:</strong> {{ leave.diagnosis_summary }}</p>
+                            {% endif %}
+                            
+                            {% if leave.ai_reasoning %}
+                                <div class="conversation-bubble claude-response">
+                                    <strong>Decisión Dr. Claude:</strong><br>
+                                    {{ leave.ai_reasoning }}
+                                </div>
+                            {% endif %}
+                            
+                            <div class="mt-2">
+                                <a href="{% url 'attendance:medical_leave_detail' leave.id %}" class="btn btn-sm btn-outline-success">
+                                    <i class="fas fa-calendar me-1"></i>Ver Permiso
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <!-- Conversaciones con Dr. Claude -->
+                {% for conv in conversations %}
+                <div class="timeline-item filter-item" data-type="conversations">
+                    <div class="d-flex align-items-start">
+                        <div class="document-icon" style="background: linear-gradient(135deg, #9b59b6, #8e44ad);">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="mb-0">Consulta Dr. Claude</h6>
+                                <small class="text-muted">{{ conv.timestamp|date:"d/m/Y H:i" }}</small>
+                            </div>
+                            
+                            <div class="mb-2">
+                                <span class="badge bg-primary">{{ conv.get_message_type_display }}</span>
+                                {% if conv.user_rating %}
+                                    <span class="badge bg-warning ms-2">
+                                        {% for i in "12345" %}
+                                            {% if forloop.counter <= conv.user_rating %}⭐{% endif %}
+                                        {% endfor %}
+                                    </span>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="conversation-bubble">
+                                <strong>Tu consulta:</strong><br>
+                                {{ conv.user_message|truncatewords:20 }}
+                            </div>
+                            
+                            <div class="conversation-bubble claude-response">
+                                <strong>Respuesta Dr. Claude:</strong><br>
+                                {{ conv.claude_response|truncatewords:25 }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            {% if not documents and not leaves and not conversations %}
+                <div class="text-center text-muted py-5">
+                    <i class="fas fa-file-medical fa-3x mb-3"></i>
+                    <h5>No hay historial médico disponible</h5>
+                    <p>Comienza subiendo tu primer certificado médico o consultando con Dr. Claude</p>
+                    <a href="{% url 'attendance:medical_dashboard' %}" class="btn btn-primary">
+                        <i class="fas fa-robot me-2"></i>Ir a Dr. Claude
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="history-card">
+            <div class="d-flex gap-3 flex-wrap">
+                <a href="{% url 'attendance:medical_dashboard' %}" class="btn btn-primary">
+                    <i class="fas fa-robot me-2"></i>Volver a Dr. Claude
+                </a>
+                <button class="btn btn-outline-success" onclick="exportHistory()">
+                    <i class="fas fa-download me-2"></i>Exportar Historial
+                </button>
+                <button class="btn btn-outline-info" onclick="printHistory()">
+                    <i class="fas fa-print me-2"></i>Imprimir
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function filterContent(type) {
+        // Actualizar tabs
+        document.querySelectorAll('.filter-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        event.target.classList.add('active');
+        
+        // Filtrar elementos
+        document.querySelectorAll('.filter-item').forEach(item => {
+            if (type === 'all' || item.dataset.type === type) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+    
+    function exportHistory() {
+        // Simular exportación
+        alert('📊 Exportando historial médico...\n\nEn la versión completa, esto generaría un PDF con todo tu historial médico.');
+    }
+    
+    function printHistory() {
+        window.print();
+    }
+    
+    // Animaciones de entrada
+    document.addEventListener('DOMContentLoaded', function() {
+        const items = document.querySelectorAll('.timeline-item');
+        items.forEach((item, index) => {
+            item.style.opacity = '0';
+            item.style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                item.style.transition = 'all 0.5s ease';
+                item.style.opacity = '1';
+                item.style.transform = 'translateY(0)';
+            }, index * 100);
+        });
+    });
+</script>
+{% endblock %}
