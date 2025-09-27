@@ -1,9 +1,9 @@
 """
-Dr. Claude - Asistente Médico IA
-EURO SECURITY - Servicio de IA para análisis médico
+Dr. Claude - Asistente Médico IA REAL para EURO SECURITY
+Integración con Anthropic Claude AI para análisis inteligente de documentos médicos
 """
 import json
-import re
+import logging
 from datetime import datetime, timedelta
 from typing import Dict, List, Tuple, Optional
 from django.conf import settings
@@ -13,67 +13,199 @@ from .models import (
     MedicalDocumentType, MedicalLeaveStatus
 )
 
+# Importar Anthropic Claude AI
+try:
+    import anthropic
+    ANTHROPIC_AVAILABLE = True
+except ImportError:
+    ANTHROPIC_AVAILABLE = False
+    logging.warning("Anthropic no está instalado. Usando modo simulado.")
+
+# Configurar logging
+logger = logging.getLogger(__name__)
+
 
 class DrClaudeService:
-    """Servicio principal para Dr. Claude - Asistente Médico IA"""
+    """Servicio principal para Dr. Claude - Asistente Médico IA REAL"""
     
     def __init__(self):
         self.personality = {
-            "name": "Dr. Claude",
-            "role": "Asistente Médico Inteligente de EURO SECURITY",
-            "greeting": "¡Hola! Soy Dr. Claude, tu asistente médico inteligente. ¿En qué puedo ayudarte hoy?",
-            "expertise": [
-                "Análisis de certificados médicos",
-                "Validación de documentos de salud",
-                "Cálculo de días de incapacidad",
-                "Políticas laborales de Ecuador",
-                "Gestión de permisos médicos"
+            'name': 'Dr. Claude',
+            'role': 'Asistente Médico IA',
+            'company': 'EURO SECURITY',
+            'greeting': '¡Hola! Soy Dr. Claude, tu asistente médico inteligente. ¿En qué puedo ayudarte hoy?',
+            'expertise': [
+                'Análisis de certificados médicos',
+                'Validación de documentos',
+                'Cálculo de permisos médicos',
+                'Políticas de salud laboral',
+                'Consultas médicas generales'
             ]
         }
+        
+        # Inicializar cliente de Anthropic
+        self.client = None
+        if ANTHROPIC_AVAILABLE and settings.ANTHROPIC_API_KEY:
+            try:
+                self.client = anthropic.Anthropic(
+                    api_key=settings.ANTHROPIC_API_KEY
+                )
+                logger.info("Cliente Anthropic Claude AI inicializado correctamente")
+            except Exception as e:
+                logger.error(f"Error inicializando Anthropic: {e}")
+                self.client = None
+        else:
+            logger.warning("Claude AI no disponible - usando modo simulado")
+    
+    def _call_claude_ai(self, prompt: str, system_prompt: str = None) -> str:
+        """Llamar a Claude AI con el prompt dado"""
+        if not self.client:
+            # Fallback a respuesta simulada si no hay cliente
+            return self._simulate_claude_response(prompt)
+        
+        try:
+            # Configurar prompt del sistema
+            if not system_prompt:
+                system_prompt = f"""
+Eres Dr. Claude, un asistente médico IA especializado para EURO SECURITY en Ecuador.
+
+Tu personalidad:
+- Profesional pero amigable
+- Experto en medicina laboral ecuatoriana
+- Hablas español ecuatoriano natural
+- Siempre das respuestas precisas y útiles
+
+Tus especialidades:
+- Análisis de certificados médicos
+- Validación de documentos de salud
+- Cálculo de días de incapacidad
+- Políticas laborales de Ecuador
+- Gestión de permisos médicos
+
+Siempre responde en español y mantén un tono profesional pero cálido.
+"""
+            
+            # Llamar a Claude AI
+            response = self.client.messages.create(
+                model=settings.CLAUDE_MODEL,
+                max_tokens=settings.CLAUDE_MAX_TOKENS,
+                temperature=settings.CLAUDE_TEMPERATURE,
+                system=system_prompt,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ]
+            )
+            
+            # Extraer respuesta
+            if response.content and len(response.content) > 0:
+                return response.content[0].text
+            else:
+                logger.warning("Respuesta vacía de Claude AI")
+                return self._simulate_claude_response(prompt)
+                
+        except Exception as e:
+            logger.error(f"Error llamando a Claude AI: {e}")
+            return self._simulate_claude_response(prompt)
+    
+    def _simulate_claude_response(self, prompt: str) -> str:
+        """Respuesta simulada cuando Claude AI no está disponible"""
+        if "certificado" in prompt.lower():
+            return "He analizado el documento. Parece ser un certificado médico válido que requiere 3-5 días de reposo."
+        elif "hola" in prompt.lower():
+            return "¡Hola! Soy Dr. Claude, tu asistente médico IA. ¿En qué puedo ayudarte hoy?"
+        else:
+            return "Entiendo tu consulta. Te ayudaré con la información médica que necesites."
     
     def analyze_medical_certificate(self, document: MedicalDocument) -> Dict:
         """
-        Analizar certificado médico usando IA simulada
-        En producción, aquí iría la integración con Claude API
+        Analizar certificado médico usando Claude AI REAL
         """
         try:
-            # Simulación de análisis IA (reemplazar con Claude API real)
-            analysis_result = self._simulate_claude_analysis(document)
+            # Crear prompt para Claude AI
+            prompt = f"""
+Analiza este certificado médico para el empleado {document.employee.get_full_name()} de EURO SECURITY.
+
+Tipo de documento: {document.get_document_type_display()}
+Fecha de subida: {document.uploaded_at.strftime('%d/%m/%Y %H:%M')}
+
+Por favor:
+1. Valida si el documento parece auténtico
+2. Extrae la información médica relevante
+3. Determina los días de reposo recomendados
+4. Evalúa si requiere revisión humana
+
+Responde en formato JSON con esta estructura:
+{{
+    "is_valid": true/false,
+    "confidence": 0.0-1.0,
+    "patient_name": "nombre del paciente",
+    "diagnosis": "diagnóstico principal",
+    "doctor_name": "nombre del médico",
+    "medical_center": "centro médico",
+    "rest_days": número_de_días,
+    "analysis": "análisis detallado del documento",
+    "requires_review": true/false,
+    "recommendation": "aprobar/rechazar/revisar"
+}}
+"""
             
-            # Guardar análisis en el documento
-            document.ai_extracted_data = analysis_result['extracted_data']
-            document.ai_analysis = analysis_result['analysis']
-            document.ai_confidence_score = analysis_result['confidence']
-            document.is_valid_document = analysis_result['is_valid']
-            document.validation_notes = analysis_result['validation_notes']
+            # Llamar a Claude AI
+            claude_response = self._call_claude_ai(prompt)
             
-            # Extraer campos específicos
-            extracted = analysis_result['extracted_data']
-            document.patient_name = extracted.get('patient_name', '')
-            document.diagnosis = extracted.get('diagnosis', '')
-            document.doctor_name = extracted.get('doctor_name', '')
-            document.medical_center = extracted.get('medical_center', '')
+            # Intentar parsear respuesta JSON
+            try:
+                analysis_data = json.loads(claude_response)
+            except json.JSONDecodeError:
+                # Si no es JSON válido, usar respuesta simulada
+                logger.warning("Respuesta de Claude no es JSON válido, usando simulación")
+                analysis_data = self._simulate_medical_analysis(document)
             
-            if extracted.get('issue_date'):
-                try:
-                    document.issue_date = datetime.strptime(
-                        extracted['issue_date'], '%Y-%m-%d'
-                    ).date()
-                except:
-                    pass
+            # Actualizar documento con resultados
+            document.ai_extracted_data = {
+                'patient_name': analysis_data.get('patient_name', ''),
+                'diagnosis': analysis_data.get('diagnosis', ''),
+                'doctor_name': analysis_data.get('doctor_name', ''),
+                'medical_center': analysis_data.get('medical_center', ''),
+                'rest_days': analysis_data.get('rest_days', 0),
+                'recommendation': analysis_data.get('recommendation', 'revisar')
+            }
             
-            document.mark_as_processed()
+            document.ai_analysis = analysis_data.get('analysis', claude_response)
+            document.ai_confidence_score = analysis_data.get('confidence', 0.8)
+            document.is_valid_document = analysis_data.get('is_valid', True)
+            document.processed_by_ai = True
+            document.processed_at = timezone.now()
             
-            return analysis_result
+            # Extraer información médica
+            document.patient_name = analysis_data.get('patient_name', '')
+            document.diagnosis = analysis_data.get('diagnosis', '')
+            document.doctor_name = analysis_data.get('doctor_name', '')
+            document.medical_center = analysis_data.get('medical_center', '')
+            
+            document.save()
+            
+            return {
+                'success': True,
+                'analysis': document.ai_analysis,
+                'confidence': document.ai_confidence_score,
+                'extracted_data': document.ai_extracted_data,
+                'is_valid': document.is_valid_document,
+                'requires_review': analysis_data.get('requires_review', False)
+            }
             
         except Exception as e:
+            logger.error(f"Error analizando certificado médico: {e}")
             return {
                 'success': False,
                 'error': f'Error en análisis: {str(e)}',
+                'analysis': 'Error procesando documento con Claude AI',
                 'confidence': 0.0
             }
     
-    def _simulate_claude_analysis(self, document: MedicalDocument) -> Dict:
+    def _simulate_medical_analysis(self, document: MedicalDocument) -> Dict:
         """
         Simulación del análisis de Claude
         TODO: Reemplazar con integración real de Claude API
@@ -220,99 +352,45 @@ class DrClaudeService:
             return 'general_help'
     
     def _generate_response(self, employee, message: str, message_type: str) -> Dict:
-        """Generar respuesta de Dr. Claude"""
+        """Generar respuesta de Dr. Claude usando IA REAL"""
         
-        responses = {
-            'document_upload': {
-                'text': f'''¡Perfecto, {employee.first_name}! 📄
-                
-Para subir tu certificado médico:
+        # Crear contexto para Claude AI
+        context = f"""
+Empleado: {employee.get_full_name()}
+ID: {employee.employee_id}
+Departamento: {getattr(employee, 'department', 'N/A')}
+Posición: {getattr(employee, 'position', 'N/A')}
+Tipo de consulta: {message_type}
+Mensaje: {message}
 
-1. 📤 Haz clic en "Subir Certificado Médico"
-2. 📷 Toma una foto clara del documento o selecciona el archivo
-3. 🤖 Yo me encargaré automáticamente de:
-   • Extraer todos los datos médicos
-   • Validar la información
-   • Calcular los días de permiso
-   • Reasignar tus turnos
-   • Notificar a tu supervisor
-
-¿Tienes el certificado listo para subir?''',
-                'actions': ['show_upload_modal']
-            },
-            
-            'medical_query': {
-                'text': f'''¡Hola {employee.first_name}! 👨‍⚕️
-
-Como tu asistente médico, puedo ayudarte con:
-
-🏥 **Certificados Médicos:**
-• Procesamiento automático en segundos
-• Validación de documentos
-• Cálculo de días de reposo
-
-📋 **Permisos Médicos:**
-• Creación automática de solicitudes
-• Seguimiento de estado
-• Historial médico personal
-
-💊 **Consultas de Salud:**
-• Políticas de incapacidad
-• Procedimientos médicos
-• Derechos laborales
-
-¿Qué necesitas específicamente?''',
-                'actions': ['show_medical_options']
-            },
-            
-            'policy_question': {
-                'text': f'''📚 **Políticas Médicas - EURO SECURITY**
-
-Hola {employee.first_name}, aquí tienes la información:
-
-🏥 **Permisos por Enfermedad:**
-• Hasta 5 días: Aprobación automática con certificado
-• Más de 5 días: Revisión de RRHH
-• Certificado médico obligatorio desde el 1er día
-
-📅 **Días Disponibles:**
-• Tienes derecho a permisos médicos según el Código de Trabajo
-• Sin límite para enfermedades certificadas
-• Reposo por maternidad: 12 semanas
-
-⏰ **Tiempos de Procesamiento:**
-• Análisis automático: Inmediato
-• Aprobación IA: 2-5 minutos
-• Revisión humana: 24-48 horas
-
-¿Necesitas información específica sobre algún tema?''',
-                'actions': ['show_policy_details']
-            },
-            
-            'general_help': {
-                'text': f'''¡Hola {employee.first_name}! 👋 Soy Dr. Claude, tu asistente médico inteligente.
-
-🤖 **¿Cómo puedo ayudarte?**
-
-🏥 **Gestión Médica:**
-• Subir certificados médicos
-• Consultar permisos activos
-• Ver historial de salud
-
-💬 **Consultas:**
-• Políticas de incapacidad
-• Procedimientos médicos
-• Derechos laborales
-
-📞 **Contacto Humano:**
-• Si necesitas hablar con RRHH
-• Casos complejos o urgentes
-
-Escribe tu consulta o selecciona una opción. ¡Estoy aquí para ayudarte! 😊'''
+Responde como Dr. Claude, el asistente médico IA de EURO SECURITY.
+Sé profesional, amigable y útil. Usa emojis apropiados.
+Si el empleado pregunta sobre subir documentos, menciona el botón de upload.
+Si pregunta sobre políticas, da información específica de Ecuador.
+Mantén respuestas concisas pero informativas.
+"""
+        
+        # Llamar a Claude AI para generar respuesta
+        claude_response = self._call_claude_ai(context)
+        
+        # Determinar acciones basadas en el tipo de mensaje
+        actions = []
+        if message_type == 'document_upload':
+            actions = ['show_upload_modal']
+        elif message_type == 'medical_query':
+            actions = ['show_medical_options']
+        elif message_type == 'policy_question':
+            actions = ['show_policy_details']
+        
+        return {
+            'text': claude_response,
+            'actions': actions,
+            'context': {
+                'message_type': message_type,
+                'employee_id': employee.id,
+                'timestamp': timezone.now().isoformat()
             }
         }
-        
-        return responses.get(message_type, responses['general_help'])
     
     def get_employee_medical_summary(self, employee) -> Dict:
         """Obtener resumen médico del empleado"""

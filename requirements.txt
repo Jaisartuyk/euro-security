@@ -30,6 +30,9 @@ python-decouple==3.8
 # HTTP Requests (for APIs)
 requests==2.31.0
 
+# AI Integration - Anthropic Claude
+anthropic==0.34.2
+
 # Production Server
 gunicorn==22.0.0
 
