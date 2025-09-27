@@ -7,9 +7,9 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.utils import timezone
-from django.db.models import Q, Count, Avg
 from django.core.paginator import Paginator
+from django.utils import timezone
+from django.db.models import Q
 from datetime import datetime, timedelta
 import json
 
@@ -367,6 +367,145 @@ def assign_employee_to_shift(request):
             'success': True,
             'message': f'Empleado {employee.get_full_name()} asignado al turno {shift} exitosamente',
             'assignment_id': assignment.id
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=400)
+
+
+@csrf_exempt
+@login_required
+@permission_required('supervisor')
+def get_available_employees(request):
+    """
+    API para obtener empleados disponibles para asignación
+    """
+    try:
+        # Obtener empleados activos
+        employees = Employee.objects.filter(is_active=True).select_related('department', 'position')
+        
+        # Filtros opcionales
+        department_id = request.GET.get('department')
+        position_id = request.GET.get('position')
+        search = request.GET.get('search')
+        
+        if department_id:
+            employees = employees.filter(department_id=department_id)
+        
+        if position_id:
+            employees = employees.filter(position_id=position_id)
+        
+        if search:
+            employees = employees.filter(
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search) |
+                Q(employee_id__icontains=search)
+            )
+        
+        # Serializar datos
+        employees_data = []
+        for emp in employees[:50]:  # Limitar a 50 resultados
+            employees_data.append({
+                'id': emp.id,
+                'employee_id': emp.employee_id,
+                'full_name': emp.get_full_name(),
+                'department': emp.department.name if emp.department else 'Sin departamento',
+                'position': emp.position.name if emp.position else 'Sin puesto',
+                'photo_url': emp.photo.url if emp.photo else None,
+                'current_assignments': emp.shift_assignments.filter(status='ACTIVE').count()
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'employees': employees_data,
+            'total': employees.count()
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=400)
+
+
+@csrf_exempt
+@login_required
+@permission_required('supervisor')
+def bulk_assign_employees(request):
+    """
+    API para asignación masiva de empleados a turnos
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        employee_ids = data.get('employee_ids', [])
+        shift_id = data.get('shift_id')
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+        notes = data.get('notes', '')
+        
+        if not employee_ids or not shift_id or not start_date:
+            return JsonResponse({
+                'success': False,
+                'error': 'Faltan datos requeridos'
+            }, status=400)
+        
+        # Validar turno
+        shift = get_object_or_404(Shift, id=shift_id, is_active=True)
+        
+        # Procesar asignaciones
+        assignments_created = []
+        errors = []
+        
+        for emp_id in employee_ids:
+            try:
+                employee = Employee.objects.get(id=emp_id, is_active=True)
+                
+                # Verificar si ya tiene asignación activa para este turno
+                existing = EmployeeShiftAssignment.objects.filter(
+                    employee=employee,
+                    shift=shift,
+                    status='ACTIVE',
+                    start_date__lte=start_date
+                ).filter(
+                    Q(end_date__isnull=True) | Q(end_date__gte=start_date)
+                ).exists()
+                
+                if existing:
+                    errors.append(f'{employee.get_full_name()} ya tiene una asignación activa para este turno')
+                    continue
+                
+                # Crear asignación
+                assignment = EmployeeShiftAssignment.objects.create(
+                    employee=employee,
+                    shift=shift,
+                    start_date=datetime.strptime(start_date, '%Y-%m-%d').date(),
+                    end_date=datetime.strptime(end_date, '%Y-%m-%d').date() if end_date else None,
+                    assigned_by=request.user,
+                    notes=notes
+                )
+                
+                assignments_created.append({
+                    'employee_name': employee.get_full_name(),
+                    'assignment_id': assignment.id
+                })
+                
+            except Employee.DoesNotExist:
+                errors.append(f'Empleado con ID {emp_id} no encontrado')
+            except Exception as e:
+                errors.append(f'Error asignando empleado ID {emp_id}: {str(e)}')
+        
+        return JsonResponse({
+            'success': True,
+            'assignments_created': len(assignments_created),
+            'assignments': assignments_created,
+            'errors': errors,
+            'message': f'Se crearon {len(assignments_created)} asignaciones exitosamente'
         })
         
     except Exception as e:

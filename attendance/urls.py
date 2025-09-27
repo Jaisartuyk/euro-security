@@ -67,4 +67,8 @@ urlpatterns = [
     path('turnos/crear-horario/<int:template_id>/', shift_views.create_work_schedule, name='create_work_schedule_with_template'),
     path('turnos/horarios/', shift_views.work_schedules_list, name='work_schedules_list'),
     path('turnos/asignar-empleado/', shift_views.assign_employee_to_shift, name='assign_employee_to_shift'),
+    
+    # APIs para asignación de empleados
+    path('api/empleados-disponibles/', shift_views.get_available_employees, name='get_available_employees'),
+    path('api/asignacion-masiva/', shift_views.bulk_assign_employees, name='bulk_assign_employees'),
 ]
