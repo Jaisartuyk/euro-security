@@ -99,7 +99,7 @@ Tus especialidades:
 Siempre responde en español y mantén un tono profesional pero cálido.
 """
             
-            # Llamar a Claude AI
+            # Llamar a Claude AI con API v2023-06-01
             response = self.client.messages.create(
                 model=settings.CLAUDE_MODEL,
                 max_tokens=settings.CLAUDE_MAX_TOKENS,
@@ -110,7 +110,11 @@ Siempre responde en español y mantén un tono profesional pero cálido.
                         "role": "user",
                         "content": prompt
                     }
-                ]
+                ],
+                # Especificar versión de API si es necesario
+                extra_headers={
+                    "anthropic-version": getattr(settings, 'CLAUDE_API_VERSION', '2023-06-01')
+                } if hasattr(settings, 'CLAUDE_API_VERSION') else {}
             )
             
             # Extraer respuesta

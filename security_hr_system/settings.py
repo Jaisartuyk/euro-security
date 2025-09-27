@@ -231,11 +231,12 @@ LOGOUT_REDIRECT_URL = '/login/'
 # Google Maps API
 GOOGLE_MAPS_API_KEY = 'AIzaSyAtEPZgbPBwnJGrvIuwplRJDFbr0tmbnyQ'
 
-# Anthropic Claude AI Configuration
+# Anthropic Claude AI Configuration - OPUS 4.1
 ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
-CLAUDE_MODEL = 'claude-3-haiku-20240307'  # Modelo más rápido y económico
-CLAUDE_MAX_TOKENS = 1000
+CLAUDE_MODEL = 'claude-opus-4-1-20250805'  # Modelo más avanzado disponible
+CLAUDE_MAX_TOKENS = 1024
 CLAUDE_TEMPERATURE = 0.7
+CLAUDE_API_VERSION = '2023-06-01'
 
 # Configuración de asistencias
 ATTENDANCE_SETTINGS = {
