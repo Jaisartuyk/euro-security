@@ -1,0 +1,473 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - EURO SECURITY{% endblock %}
+
+{% block extra_css %}
+<style>
+    .shift-card {
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .shift-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    }
+    
+    .stat-card {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        text-align: center;
+        transition: transform 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        transform: scale(1.05);
+    }
+    
+    .stat-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        opacity: 0.9;
+    }
+    
+    .template-preview {
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid;
+        background: #f8fafc;
+        transition: all 0.3s ease;
+    }
+    
+    .template-preview:hover {
+        background: #e2e8f0;
+        transform: translateX(5px);
+    }
+    
+    .shift-timeline {
+        position: relative;
+        padding-left: 2rem;
+    }
+    
+    .shift-timeline::before {
+        content: '';
+        position: absolute;
+        left: 0.5rem;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #e2e8f0;
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 1.5rem;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -1.75rem;
+        top: 0.5rem;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--primary-color);
+    }
+    
+    .quick-action-btn {
+        border-radius: 50px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+    }
+    
+    .quick-action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-gray-800">
+                        <i class="fas fa-clock text-primary me-2"></i>
+                        {{ page_title }}
+                    </h1>
+                    <p class="text-muted mb-0">Gestión completa de turnos y horarios de trabajo</p>
+                </div>
+                <div>
+                    <a href="{% url 'attendance:create_work_schedule' %}" class="btn btn-primary quick-action-btn me-2">
+                        <i class="fas fa-plus me-2"></i>Crear Horario
+                    </a>
+                    <a href="{% url 'attendance:shift_templates_list' %}" class="btn btn-outline-primary quick-action-btn">
+                        <i class="fas fa-th-large me-2"></i>Ver Plantillas
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card" style="--primary-color: #3b82f6; --secondary-color: #1e40af;">
+                <div class="stat-icon">
+                    <i class="fas fa-th-large"></i>
+                </div>
+                <div class="stat-number h2 mb-0">{{ stats.total_templates }}</div>
+                <div class="stat-label">Plantillas Activas</div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card" style="--primary-color: #059669; --secondary-color: #047857;">
+                <div class="stat-icon">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+                <div class="stat-number h2 mb-0">{{ stats.active_schedules }}</div>
+                <div class="stat-label">Horarios Activos</div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card" style="--primary-color: #dc2626; --secondary-color: #991b1b;">
+                <div class="stat-icon">
+                    <i class="fas fa-user-clock"></i>
+                </div>
+                <div class="stat-number h2 mb-0">{{ stats.total_assignments }}</div>
+                <div class="stat-label">Asignaciones Activas</div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card" style="--primary-color: #7c3aed; --secondary-color: #5b21b6;">
+                <div class="stat-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-number h2 mb-0">{{ stats.employees_with_shifts }}</div>
+                <div class="stat-label">Empleados con Turnos</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Plantillas Populares -->
+        <div class="col-xl-6 col-lg-12 mb-4">
+            <div class="card shift-card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-star me-2"></i>
+                        Plantillas Más Utilizadas
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% for template in popular_templates %}
+                    <div class="template-preview" data-border-color="{{ template.color_primary }}">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                <i class="{{ template.icon_name }} fa-2x" data-icon-color="{{ template.color_primary }}"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">{{ template.name }}</h6>
+                                <p class="text-muted mb-1 small">{{ template.description|truncatechars:60 }}</p>
+                                <div class="d-flex align-items-center">
+                                    <span class="badge bg-secondary me-2">{{ template.get_category_display }}</span>
+                                    <span class="text-muted small">
+                                        <i class="fas fa-chart-line me-1"></i>
+                                        {{ template.usage_count }} uso{{ template.usage_count|pluralize }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div>
+                                <a href="{% url 'attendance:shift_template_detail' template.id %}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-inbox fa-3x mb-3"></i>
+                        <p>No hay plantillas en uso</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="card-footer">
+                    <a href="{% url 'attendance:shift_templates_list' %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-th-large me-2"></i>Ver Todas las Plantillas
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Horarios Recientes -->
+        <div class="col-xl-6 col-lg-12 mb-4">
+            <div class="card shift-card h-100">
+                <div class="card-header bg-success text-white">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-clock me-2"></i>
+                        Horarios Recientes
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="shift-timeline">
+                        {% for schedule in recent_schedules %}
+                        <div class="timeline-item">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3">
+                                    <i class="{{ schedule.shift_template.icon_name }}" 
+                                       data-icon-color="{{ schedule.shift_template.color_primary }}"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">{{ schedule.name }}</h6>
+                                    <p class="text-muted mb-1 small">{{ schedule.shift_template.name }}</p>
+                                    <span class="badge bg-info">{{ schedule.get_schedule_type_display }}</span>
+                                </div>
+                                <div class="text-end">
+                                    <small class="text-muted">{{ schedule.created_at|date:"d M" }}</small>
+                                    <br>
+                                    <a href="{% url 'attendance:work_schedule_detail' schedule.id %}" 
+                                       class="btn btn-sm btn-outline-success">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-calendar-times fa-3x mb-3"></i>
+                            <p>No hay horarios creados</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="{% url 'attendance:work_schedules_list' %}" class="btn btn-success btn-sm">
+                        <i class="fas fa-calendar-alt me-2"></i>Ver Todos los Horarios
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Asignaciones Pendientes -->
+    {% if pending_assignments %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card shift-card">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Asignaciones Pendientes
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Empleado</th>
+                                    <th>Turno</th>
+                                    <th>Horario</th>
+                                    <th>Fecha Inicio</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for assignment in pending_assignments %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm bg-primary rounded-circle me-2 d-flex align-items-center justify-content-center">
+                                                <i class="fas fa-user text-white"></i>
+                                            </div>
+                                            <div>
+                                                <strong>{{ assignment.employee.get_full_name }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ assignment.employee.employee_id }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge" style="background-color: {{ assignment.shift.color }};">
+                                            <i class="{{ assignment.shift.icon }} me-1"></i>
+                                            {{ assignment.shift }}
+                                        </span>
+                                    </td>
+                                    <td>{{ assignment.shift.work_schedule.name }}</td>
+                                    <td>{{ assignment.start_date|date:"d/m/Y" }}</td>
+                                    <td>
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-clock me-1"></i>
+                                            {{ assignment.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-success me-1" 
+                                                onclick="approveAssignment({{ assignment.id }})">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" 
+                                                onclick="rejectAssignment({{ assignment.id }})">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Acciones Rápidas -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shift-card">
+                <div class="card-header bg-info text-white">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-bolt me-2"></i>
+                        Acciones Rápidas
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'attendance:create_work_schedule' %}" 
+                               class="btn btn-outline-primary w-100 py-3">
+                                <i class="fas fa-plus fa-2x mb-2"></i>
+                                <br>Crear Horario
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'attendance:shift_templates_list' %}" 
+                               class="btn btn-outline-success w-100 py-3">
+                                <i class="fas fa-th-large fa-2x mb-2"></i>
+                                <br>Ver Plantillas
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'attendance:work_schedules_list' %}" 
+                               class="btn btn-outline-info w-100 py-3">
+                                <i class="fas fa-calendar-alt fa-2x mb-2"></i>
+                                <br>Gestionar Horarios
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="#" onclick="showAssignmentModal()" 
+                               class="btn btn-outline-warning w-100 py-3">
+                                <i class="fas fa-user-clock fa-2x mb-2"></i>
+                                <br>Asignar Empleados
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Funciones para gestión de asignaciones
+    function approveAssignment(assignmentId) {
+        if (confirm('¿Aprobar esta asignación de turno?')) {
+            fetch(`/asistencia/turnos/asignaciones/${assignmentId}/aprobar/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            });
+        }
+    }
+    
+    function rejectAssignment(assignmentId) {
+        if (confirm('¿Rechazar esta asignación de turno?')) {
+            fetch(`/asistencia/turnos/asignaciones/${assignmentId}/rechazar/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            });
+        }
+    }
+    
+    function showAssignmentModal() {
+        // Implementar modal para asignación rápida
+        alert('Modal de asignación rápida - Por implementar');
+    }
+    
+    // Función para aplicar colores dinámicos
+    function applyDynamicColors() {
+        // Aplicar colores a template previews
+        document.querySelectorAll('[data-border-color]').forEach(element => {
+            const color = element.getAttribute('data-border-color');
+            element.style.borderLeftColor = color;
+        });
+        
+        // Aplicar colores a iconos
+        document.querySelectorAll('[data-icon-color]').forEach(element => {
+            const color = element.getAttribute('data-icon-color');
+            element.style.color = color;
+        });
+    }
+    
+    // Animaciones al cargar
+    document.addEventListener('DOMContentLoaded', function() {
+        // Aplicar colores dinámicos
+        applyDynamicColors();
+        // Animar estadísticas
+        const statCards = document.querySelectorAll('.stat-card');
+        statCards.forEach((card, index) => {
+            setTimeout(() => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                card.style.transition = 'all 0.5s ease';
+                
+                setTimeout(() => {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, 100);
+            }, index * 100);
+        });
+    });
+</script>
+{% endblock %}

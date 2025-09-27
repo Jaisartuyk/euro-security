@@ -5,6 +5,7 @@ from django.urls import path
 from . import views
 from . import reports_views
 from . import gps_views
+from . import shift_views
 
 app_name = 'attendance'
 
@@ -57,4 +58,13 @@ urlpatterns = [
     
     # GPS en segundo plano
     path('actualizar-gps/', gps_views.update_gps_location, name='update_gps_location'),
+    
+    # Sistema de Turnos
+    path('turnos/', shift_views.shift_management_dashboard, name='shift_management_dashboard'),
+    path('turnos/plantillas/', shift_views.shift_templates_list, name='shift_templates_list'),
+    path('turnos/plantillas/<int:template_id>/', shift_views.shift_template_detail, name='shift_template_detail'),
+    path('turnos/crear-horario/', shift_views.create_work_schedule, name='create_work_schedule'),
+    path('turnos/crear-horario/<int:template_id>/', shift_views.create_work_schedule, name='create_work_schedule_with_template'),
+    path('turnos/horarios/', shift_views.work_schedules_list, name='work_schedules_list'),
+    path('turnos/asignar-empleado/', shift_views.assign_employee_to_shift, name='assign_employee_to_shift'),
 ]

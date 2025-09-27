@@ -1,0 +1,459 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - EURO SECURITY{% endblock %}
+
+{% block extra_css %}
+<style>
+    .template-card {
+        transition: all 0.3s ease;
+        border: none;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        height: 100%;
+    }
+    
+    .template-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .template-header {
+        padding: 1.5rem;
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .template-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        opacity: 0.9;
+    }
+    
+    .template-header * {
+        position: relative;
+        z-index: 1;
+    }
+    
+    .template-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .template-body {
+        padding: 1.5rem;
+        background: white;
+    }
+    
+    .shift-preview {
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        border-left: 4px solid;
+        transition: all 0.3s ease;
+    }
+    
+    .shift-preview:hover {
+        background: #e2e8f0;
+        transform: translateX(5px);
+    }
+    
+    .filter-card {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .category-badge {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: 25px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 1rem;
+    }
+    
+    .template-stats {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        background: #f8fafc;
+        border-top: 1px solid #e2e8f0;
+    }
+    
+    .action-btn {
+        border-radius: 25px;
+        padding: 0.5rem 1.25rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .search-box {
+        border-radius: 25px;
+        border: 2px solid #e2e8f0;
+        padding: 0.75rem 1.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .search-box:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .pagination-modern .page-link {
+        border-radius: 50px;
+        margin: 0 0.25rem;
+        border: none;
+        padding: 0.5rem 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .pagination-modern .page-link:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-gray-800">
+                        <i class="fas fa-th-large text-primary me-2"></i>
+                        {{ page_title }}
+                    </h1>
+                    <p class="text-muted mb-0">Plantillas predefinidas para configuración rápida de turnos</p>
+                </div>
+                <div>
+                    <a href="{% url 'attendance:shift_management_dashboard' %}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-arrow-left me-2"></i>Volver al Dashboard
+                    </a>
+                    <a href="{% url 'attendance:create_work_schedule' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Crear Horario
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filter-card">
+        <div class="card-body">
+            <form method="get" class="row align-items-end">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-bold">
+                        <i class="fas fa-search me-2"></i>Buscar Plantillas
+                    </label>
+                    <input type="text" name="search" class="form-control search-box" 
+                           placeholder="Nombre o descripción..." value="{{ current_search }}">
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label class="form-label fw-bold">
+                        <i class="fas fa-tags me-2"></i>Categoría
+                    </label>
+                    <select name="category" class="form-select">
+                        <option value="">Todas las categorías</option>
+                        {% for value, label in categories %}
+                        <option value="{{ value }}" {% if value == current_category %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label class="form-label fw-bold">
+                        <i class="fas fa-cog me-2"></i>Tipo de Turno
+                    </label>
+                    <select name="shift_type" class="form-select">
+                        <option value="">Todos los tipos</option>
+                        {% for value, label in shift_types %}
+                        <option value="{{ value }}" {% if value == current_shift_type %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-2 mb-3">
+                    <button type="submit" class="btn btn-primary w-100 action-btn">
+                        <i class="fas fa-filter me-2"></i>Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Plantillas Grid -->
+    <div class="row">
+        {% for template in templates %}
+        <div class="col-xl-4 col-lg-6 col-md-12 mb-4">
+            <div class="template-card">
+                <!-- Header con gradiente -->
+                <div class="template-header text-center" 
+                     style="--primary-color: {{ template.color_primary }}; --secondary-color: {{ template.color_secondary }};">
+                    <div class="template-icon">
+                        <i class="{{ template.icon_name }}"></i>
+                    </div>
+                    <h5 class="mb-1">{{ template.name }}</h5>
+                    <p class="mb-0 opacity-75">{{ template.description|truncatechars:60 }}</p>
+                </div>
+                
+                <!-- Body -->
+                <div class="template-body">
+                    <!-- Badge de categoría -->
+                    <div class="category-badge text-center w-100" 
+                         data-primary-color="{{ template.color_primary }}">
+                        {{ template.get_category_display }}
+                    </div>
+                    
+                    <!-- Información básica -->
+                    <div class="row text-center mb-3">
+                        <div class="col-4">
+                            <div class="text-primary fw-bold h4">{{ template.total_shifts_per_day }}</div>
+                            <small class="text-muted">Turnos/Día</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-success fw-bold h4">{{ template.hours_per_shift|floatformat:0 }}h</div>
+                            <small class="text-muted">Horas/Turno</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-info fw-bold h4">
+                                {% if template.rotation_days > 0 %}{{ template.rotation_days }}d{% else %}—{% endif %}
+                            </div>
+                            <small class="text-muted">Rotación</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Preview de turnos -->
+                    <div class="mb-3">
+                        <h6 class="fw-bold mb-2">
+                            <i class="fas fa-clock me-2"></i>Turnos Configurados:
+                        </h6>
+                        {% for shift in template.get_shifts_config_list %}
+                        <div class="shift-preview" data-shift-color="{{ shift.color }}">
+                            <div class="d-flex align-items-center">
+                                <i class="{{ shift.icon }} me-2" data-icon-color="{{ shift.color }}"></i>
+                                <div class="flex-grow-1">
+                                    <strong>{{ shift.custom_name|default:shift.name }}</strong>
+                                    <div class="text-muted small">
+                                        {{ shift.start_time }} - {{ shift.end_time }}
+                                        {% if shift.is_overnight %}
+                                        <span class="badge bg-dark ms-1">24h</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Tipo de turno -->
+                    <div class="mb-3">
+                        <span class="badge bg-secondary">
+                            <i class="fas fa-tag me-1"></i>
+                            {{ template.get_shift_type_display }}
+                        </span>
+                        {% if template.is_default %}
+                        <span class="badge bg-warning text-dark ms-1">
+                            <i class="fas fa-star me-1"></i>
+                            Por Defecto
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Footer con estadísticas y acciones -->
+                <div class="template-stats">
+                    <div class="text-muted small">
+                        <i class="fas fa-chart-line me-1"></i>
+                        {{ template.work_schedules.count }} uso{{ template.work_schedules.count|pluralize }}
+                    </div>
+                    <div>
+                        <a href="{% url 'attendance:shift_template_detail' template.id %}" 
+                           class="btn btn-sm btn-outline-primary action-btn me-2">
+                            <i class="fas fa-eye me-1"></i>Ver
+                        </a>
+                        <a href="{% url 'attendance:create_work_schedule' template.id %}" 
+                           class="btn btn-sm btn-primary action-btn">
+                            <i class="fas fa-plus me-1"></i>Usar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <!-- Estado vacío -->
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted">No se encontraron plantillas</h4>
+                <p class="text-muted">Intenta ajustar los filtros de búsqueda</p>
+                <a href="{% url 'attendance:shift_templates_list' %}" class="btn btn-primary">
+                    <i class="fas fa-refresh me-2"></i>Limpiar Filtros
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Paginación -->
+    {% if page_obj.has_other_pages %}
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="Paginación de plantillas">
+                <ul class="pagination pagination-modern justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% if current_search %}search={{ current_search }}&{% endif %}{% if current_category %}category={{ current_category }}&{% endif %}{% if current_shift_type %}shift_type={{ current_shift_type }}&{% endif %}page={{ page_obj.previous_page_number }}">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link bg-primary border-primary">{{ num }}</span>
+                    </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% if current_search %}search={{ current_search }}&{% endif %}{% if current_category %}category={{ current_category }}&{% endif %}{% if current_shift_type %}shift_type={{ current_shift_type }}&{% endif %}page={{ num }}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% if current_search %}search={{ current_search }}&{% endif %}{% if current_category %}category={{ current_category }}&{% endif %}{% if current_shift_type %}shift_type={{ current_shift_type }}&{% endif %}page={{ page_obj.next_page_number }}">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Información adicional -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="alert alert-info border-0" style="background: linear-gradient(135deg, #3b82f6, #1e40af); color: white;">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-info-circle fa-2x me-3"></i>
+                    <div>
+                        <h6 class="mb-1">💡 Consejo Profesional</h6>
+                        <p class="mb-0">
+                            Selecciona una plantilla que se adapte a las necesidades de tu empresa. 
+                            Puedes personalizar los horarios después de crear el horario de trabajo.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Aplicar colores dinámicos
+        applyDynamicColors();
+        
+        // Animación de entrada para las cards
+        const templateCards = document.querySelectorAll('.template-card');
+        templateCards.forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(30px)';
+            
+            setTimeout(() => {
+                card.style.transition = 'all 0.6s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 100);
+        });
+        
+        // Efecto hover para shift previews
+        const shiftPreviews = document.querySelectorAll('.shift-preview');
+        shiftPreviews.forEach(preview => {
+            preview.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateX(10px)';
+            });
+            
+            preview.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateX(0)';
+            });
+        });
+        
+        // Auto-submit del formulario de filtros con delay
+        let searchTimeout;
+        const searchInput = document.querySelector('input[name="search"]');
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    this.form.submit();
+                }, 500);
+            });
+        }
+    });
+    
+    // Función para usar plantilla directamente
+    function useTemplate(templateId) {
+        window.location.href = `/asistencia/turnos/crear-horario/${templateId}/`;
+    }
+    
+    // Función para aplicar colores dinámicos
+    function applyDynamicColors() {
+        // Aplicar colores a badges de categoría
+        document.querySelectorAll('[data-primary-color]').forEach(element => {
+            const color = element.getAttribute('data-primary-color');
+            element.style.backgroundColor = color + '20';
+            element.style.color = color;
+        });
+        
+        // Aplicar colores a shift previews
+        document.querySelectorAll('[data-shift-color]').forEach(element => {
+            const color = element.getAttribute('data-shift-color');
+            element.style.borderLeftColor = color;
+        });
+        
+        // Aplicar colores a iconos
+        document.querySelectorAll('[data-icon-color]').forEach(element => {
+            const color = element.getAttribute('data-icon-color');
+            element.style.color = color;
+        });
+    }
+    
+    // Función para preview rápido
+    function quickPreview(templateId) {
+        // Implementar modal de preview rápido
+        console.log('Preview de plantilla:', templateId);
+    }
+</script>
+{% endblock %}

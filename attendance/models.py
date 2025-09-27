@@ -5,6 +5,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from employees.models import Employee
 from django.utils import timezone
+from django.core.exceptions import ValidationError
+from datetime import datetime, time, timedelta
 import json
 from .models_gps import WorkArea, EmployeeWorkArea, GPSTracking, LocationAlert
 
@@ -379,3 +381,283 @@ class AttendanceSettings(models.Model):
             return json.loads(self.work_locations)
         except json.JSONDecodeError:
             return []
+
+
+# ============================================================================
+# MODELOS PARA SISTEMA DE TURNOS Y HORARIOS
+# ============================================================================
+
+class ShiftTemplate(models.Model):
+    """
+    Plantillas de turnos predefinidas para facilitar la configuración
+    """
+    
+    SHIFT_TYPES = [
+        ('FIXED', 'Turno Fijo'),
+        ('ROTATING', 'Turno Rotativo'),
+        ('FLEXIBLE', 'Horario Flexible'),
+        ('SPLIT', 'Turno Dividido'),
+    ]
+    
+    TEMPLATE_CATEGORIES = [
+        ('STANDARD', 'Estándar (8 horas)'),
+        ('EXTENDED', 'Extendido (12 horas)'),
+        ('SECURITY', 'Seguridad (24/7)'),
+        ('OFFICE', 'Oficina'),
+        ('CUSTOM', 'Personalizado'),
+    ]
+    
+    name = models.CharField('Nombre de la Plantilla', max_length=100)
+    description = models.TextField('Descripción', blank=True)
+    category = models.CharField('Categoría', max_length=20, choices=TEMPLATE_CATEGORIES)
+    shift_type = models.CharField('Tipo de Turno', max_length=20, choices=SHIFT_TYPES)
+    
+    # Configuración de turnos
+    total_shifts_per_day = models.PositiveIntegerField('Turnos por Día', default=3)
+    hours_per_shift = models.DecimalField('Horas por Turno', max_digits=4, decimal_places=2, default=8.0)
+    
+    # Configuración de rotación (si aplica)
+    rotation_days = models.PositiveIntegerField('Días de Rotación', default=7, 
+                                               help_text="Cada cuántos días rota el turno")
+    
+    # Configuración visual
+    icon_name = models.CharField('Icono', max_length=50, default='fas fa-clock',
+                                help_text="Clase CSS del icono FontAwesome")
+    color_primary = models.CharField('Color Primario', max_length=7, default='#3b82f6')
+    color_secondary = models.CharField('Color Secundario', max_length=7, default='#1e40af')
+    
+    # Configuración JSON para turnos específicos
+    shifts_config = models.TextField('Configuración de Turnos', default='[]',
+                                   help_text="JSON con configuración detallada de cada turno")
+    
+    # Metadatos
+    is_active = models.BooleanField('Activo', default=True)
+    is_default = models.BooleanField('Plantilla por Defecto', default=False)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Plantilla de Turno'
+        verbose_name_plural = 'Plantillas de Turnos'
+        ordering = ['category', 'name']
+    
+    def __str__(self):
+        return f"{self.name} ({self.get_category_display()})"
+    
+    def get_shifts_config_list(self):
+        """Retorna la configuración de turnos como lista de Python"""
+        try:
+            return json.loads(self.shifts_config)
+        except json.JSONDecodeError:
+            return []
+    
+    def save(self, *args, **kwargs):
+        # Solo una plantilla puede ser default por categoría
+        if self.is_default:
+            ShiftTemplate.objects.filter(
+                category=self.category, 
+                is_default=True
+            ).exclude(pk=self.pk).update(is_default=False)
+        super().save(*args, **kwargs)
+
+
+class WorkSchedule(models.Model):
+    """
+    Horarios de trabajo para empleados o departamentos
+    """
+    
+    SCHEDULE_TYPES = [
+        ('INDIVIDUAL', 'Individual'),
+        ('DEPARTMENT', 'Por Departamento'),
+        ('POSITION', 'Por Puesto'),
+        ('GLOBAL', 'Global'),
+    ]
+    
+    name = models.CharField('Nombre del Horario', max_length=100)
+    description = models.TextField('Descripción', blank=True)
+    schedule_type = models.CharField('Tipo de Horario', max_length=20, choices=SCHEDULE_TYPES)
+    
+    # Relación con plantilla
+    shift_template = models.ForeignKey(ShiftTemplate, on_delete=models.CASCADE, 
+                                     related_name='work_schedules',
+                                     verbose_name='Plantilla de Turno')
+    
+    # Fechas de vigencia
+    start_date = models.DateField('Fecha de Inicio')
+    end_date = models.DateField('Fecha de Fin', null=True, blank=True,
+                               help_text="Dejar vacío para horario indefinido")
+    
+    # Configuración de horas extras
+    overtime_threshold_daily = models.DecimalField('Umbral Diario Horas Extras', 
+                                                  max_digits=4, decimal_places=2, default=8.0)
+    overtime_threshold_weekly = models.DecimalField('Umbral Semanal Horas Extras', 
+                                                   max_digits=4, decimal_places=2, default=40.0)
+    
+    # Configuración de horas nocturnas
+    night_shift_start = models.TimeField('Inicio Turno Nocturno', default=time(22, 0))
+    night_shift_end = models.TimeField('Fin Turno Nocturno', default=time(6, 0))
+    night_shift_multiplier = models.DecimalField('Multiplicador Nocturno', 
+                                                max_digits=3, decimal_places=2, default=1.25)
+    
+    # Configuración de descansos
+    break_duration_minutes = models.PositiveIntegerField('Duración Descanso (min)', default=60)
+    paid_break_minutes = models.PositiveIntegerField('Descanso Pagado (min)', default=15)
+    
+    # Estado
+    is_active = models.BooleanField('Activo', default=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Horario de Trabajo'
+        verbose_name_plural = 'Horarios de Trabajo'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.name} - {self.shift_template.name}"
+    
+    def is_night_time(self, check_time):
+        """Verifica si una hora específica está en turno nocturno"""
+        if isinstance(check_time, datetime):
+            check_time = check_time.time()
+        
+        if self.night_shift_start <= self.night_shift_end:
+            # Turno nocturno no cruza medianoche
+            return self.night_shift_start <= check_time <= self.night_shift_end
+        else:
+            # Turno nocturno cruza medianoche
+            return check_time >= self.night_shift_start or check_time <= self.night_shift_end
+
+
+class Shift(models.Model):
+    """
+    Turnos específicos dentro de un horario de trabajo
+    """
+    
+    SHIFT_NAMES = [
+        ('MORNING', 'Matutino'),
+        ('AFTERNOON', 'Vespertino'),
+        ('NIGHT', 'Nocturno'),
+        ('DAWN', 'Madrugada'),
+        ('CUSTOM', 'Personalizado'),
+    ]
+    
+    work_schedule = models.ForeignKey(WorkSchedule, on_delete=models.CASCADE, 
+                                    related_name='shifts', verbose_name='Horario de Trabajo')
+    
+    name = models.CharField('Nombre del Turno', max_length=20, choices=SHIFT_NAMES)
+    custom_name = models.CharField('Nombre Personalizado', max_length=50, blank=True)
+    
+    # Horarios
+    start_time = models.TimeField('Hora de Inicio')
+    end_time = models.TimeField('Hora de Fin')
+    
+    # Configuración
+    is_overnight = models.BooleanField('Turno Nocturno', default=False,
+                                     help_text="Marca si el turno cruza medianoche")
+    break_start_time = models.TimeField('Inicio de Descanso', null=True, blank=True)
+    break_end_time = models.TimeField('Fin de Descanso', null=True, blank=True)
+    
+    # Tolerancias
+    late_tolerance_minutes = models.PositiveIntegerField('Tolerancia Llegada Tarde (min)', default=15)
+    early_exit_tolerance_minutes = models.PositiveIntegerField('Tolerancia Salida Temprana (min)', default=15)
+    
+    # Configuración visual
+    color = models.CharField('Color del Turno', max_length=7, default='#3b82f6')
+    icon = models.CharField('Icono', max_length=50, default='fas fa-sun')
+    
+    # Estado
+    is_active = models.BooleanField('Activo', default=True)
+    order = models.PositiveIntegerField('Orden', default=1)
+    
+    class Meta:
+        verbose_name = 'Turno'
+        verbose_name_plural = 'Turnos'
+        ordering = ['work_schedule', 'order', 'start_time']
+        unique_together = ['work_schedule', 'order']
+    
+    def __str__(self):
+        name = self.custom_name if self.custom_name else self.get_name_display()
+        return f"{name} ({self.start_time.strftime('%H:%M')} - {self.end_time.strftime('%H:%M')})"
+    
+    def get_duration_hours(self):
+        """Calcula la duración del turno en horas"""
+        start_datetime = datetime.combine(datetime.today(), self.start_time)
+        end_datetime = datetime.combine(datetime.today(), self.end_time)
+        
+        if self.is_overnight:
+            end_datetime += timedelta(days=1)
+        
+        duration = end_datetime - start_datetime
+        return duration.total_seconds() / 3600
+    
+    def clean(self):
+        """Validaciones del modelo"""
+        if self.start_time == self.end_time:
+            raise ValidationError("La hora de inicio no puede ser igual a la hora de fin")
+        
+        if not self.is_overnight and self.start_time > self.end_time:
+            raise ValidationError("Para turnos que no cruzan medianoche, la hora de inicio debe ser menor a la de fin")
+
+
+class EmployeeShiftAssignment(models.Model):
+    """
+    Asignación de empleados a turnos específicos
+    """
+    
+    ASSIGNMENT_STATUS = [
+        ('ACTIVE', 'Activo'),
+        ('PENDING', 'Pendiente'),
+        ('COMPLETED', 'Completado'),
+        ('CANCELLED', 'Cancelado'),
+    ]
+    
+    employee = models.ForeignKey('employees.Employee', on_delete=models.CASCADE, 
+                               related_name='shift_assignments', verbose_name='Empleado')
+    shift = models.ForeignKey(Shift, on_delete=models.CASCADE, 
+                            related_name='employee_assignments', verbose_name='Turno')
+    
+    # Fechas de asignación
+    start_date = models.DateField('Fecha de Inicio')
+    end_date = models.DateField('Fecha de Fin', null=True, blank=True)
+    
+    # Configuración de rotación
+    rotation_pattern = models.TextField('Patrón de Rotación', blank=True,
+                                      help_text="JSON con patrón de rotación específico")
+    
+    # Estado
+    status = models.CharField('Estado', max_length=20, choices=ASSIGNMENT_STATUS, default='ACTIVE')
+    is_primary_shift = models.BooleanField('Turno Principal', default=True)
+    
+    # Metadatos
+    assigned_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
+                                  verbose_name='Asignado por')
+    notes = models.TextField('Notas', blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Asignación de Turno'
+        verbose_name_plural = 'Asignaciones de Turnos'
+        ordering = ['-created_at']
+        unique_together = ['employee', 'shift', 'start_date']
+    
+    def __str__(self):
+        return f"{self.employee.get_full_name()} - {self.shift} ({self.start_date})"
+    
+    def get_rotation_pattern_list(self):
+        """Retorna el patrón de rotación como lista de Python"""
+        try:
+            return json.loads(self.rotation_pattern) if self.rotation_pattern else []
+        except json.JSONDecodeError:
+            return []
+    
+    def is_active_on_date(self, check_date):
+        """Verifica si la asignación está activa en una fecha específica"""
+        if check_date < self.start_date:
+            return False
+        if self.end_date and check_date > self.end_date:
+            return False
+        return self.status == 'ACTIVE'
