@@ -108,10 +108,10 @@ def medical_dashboard(request):
                 created_at__month=timezone.now().month,
                 created_at__year=timezone.now().year
             ).count(),
-            'attendances_this_month': Attendance.objects.filter(
+            'attendances_this_month': AttendanceRecord.objects.filter(
                 employee=employee,
-                check_in_time__month=timezone.now().month,
-                check_in_time__year=timezone.now().year
+                timestamp__month=timezone.now().month,
+                timestamp__year=timezone.now().year
             ).count(),
             'medical_days_this_year': sum(
                 leave.total_days for leave in MedicalLeave.objects.filter(
