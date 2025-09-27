@@ -45,17 +45,28 @@ class DrClaudeService:
         
         # Inicializar cliente de Anthropic
         self.client = None
+        
+        # Logging detallado para diagnóstico
+        logger.info(f"🔍 DIAGNÓSTICO CLAUDE AI:")
+        logger.info(f"   - ANTHROPIC_AVAILABLE: {ANTHROPIC_AVAILABLE}")
+        logger.info(f"   - API_KEY configurada: {'Sí' if settings.ANTHROPIC_API_KEY else 'No'}")
+        logger.info(f"   - API_KEY length: {len(settings.ANTHROPIC_API_KEY) if settings.ANTHROPIC_API_KEY else 0}")
+        
         if ANTHROPIC_AVAILABLE and settings.ANTHROPIC_API_KEY:
             try:
                 self.client = anthropic.Anthropic(
                     api_key=settings.ANTHROPIC_API_KEY
                 )
-                logger.info("Cliente Anthropic Claude AI inicializado correctamente")
+                logger.info("✅ Cliente Anthropic Claude AI inicializado correctamente")
             except Exception as e:
-                logger.error(f"Error inicializando Anthropic: {e}")
+                logger.error(f"❌ Error inicializando Anthropic: {e}")
                 self.client = None
         else:
-            logger.warning("Claude AI no disponible - usando modo simulado")
+            if not ANTHROPIC_AVAILABLE:
+                logger.warning("❌ Anthropic no está disponible - biblioteca no instalada")
+            if not settings.ANTHROPIC_API_KEY:
+                logger.warning("❌ ANTHROPIC_API_KEY no configurada")
+            logger.warning("🔄 Claude AI no disponible - usando modo simulado")
     
     def _call_claude_ai(self, prompt: str, system_prompt: str = None) -> str:
         """Llamar a Claude AI con el prompt dado"""
