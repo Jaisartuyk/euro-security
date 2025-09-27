@@ -128,9 +128,19 @@
         <div class="row">
             <div class="col-md-8">
                 <h1 class="mb-2">
+                    {% if show_assignment %}
+                    <i class="fas fa-user-clock me-2"></i>Centro de Asignación de Empleados
+                    {% else %}
                     <i class="fas fa-calendar-alt me-2"></i>Horarios de Trabajo
+                    {% endif %}
                 </h1>
-                <p class="mb-0">Gestiona y supervisa todos los horarios de trabajo de tu organización</p>
+                <p class="mb-0">
+                    {% if show_assignment %}
+                    Selecciona un horario y haz clic en "Asignar Empleados" para gestionar las asignaciones
+                    {% else %}
+                    Gestiona y supervisa todos los horarios de trabajo de tu organización
+                    {% endif %}
+                </p>
             </div>
             <div class="col-md-4">
                 <div class="row">

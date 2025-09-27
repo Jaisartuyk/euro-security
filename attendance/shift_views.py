@@ -267,9 +267,9 @@ def create_work_schedule(request, template_id=None):
 
 @login_required
 @permission_required('supervisor')
-def work_schedules_list(request):
+def work_schedules_list(request, show_assignment=False):
     """
-    Lista de horarios de trabajo
+    Lista de horarios de trabajo con opción de mostrar modal de asignación
     """
     
     # Filtros
@@ -318,7 +318,8 @@ def work_schedules_list(request):
         'current_template': template_id,
         'current_search': search,
         'current_status': status,
-        'page_title': 'Horarios de Trabajo',
+        'show_assignment': show_assignment,
+        'page_title': 'Centro de Asignación de Empleados' if show_assignment else 'Horarios de Trabajo',
         'breadcrumb': [
             {'name': 'Inicio', 'url': '/'},
             {'name': 'Asistencia', 'url': '/asistencia/'},
