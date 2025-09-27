@@ -384,7 +384,8 @@ class AttendanceSettings(models.Model):
 
 
 # ============================================================================
-# MODELOS PARA SISTEMA DE TURNOS Y HORARIOS
+# MODELOS PARA SISTEMA DE TURNOS Y HORARIOS - EURO SECURITY
+# Actualizado: 2025-09-26 - Sistema profesional de gestión de turnos
 # ============================================================================
 
 class ShiftTemplate(models.Model):
