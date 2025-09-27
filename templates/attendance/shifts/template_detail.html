@@ -1,0 +1,424 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ template.name }} - Plantilla de Turno{% endblock %}
+
+{% block extra_css %}
+<style>
+    .template-header {
+        border-radius: 8px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .template-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2rem;
+        margin-right: 1.5rem;
+    }
+    
+    .shift-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+        background: white;
+    }
+    
+    .shift-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+    
+    .shift-time {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .shift-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    
+    .config-item {
+        background: #f8fafc;
+        border-radius: 6px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .action-buttons .btn {
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        text-align: center;
+        border: 1px solid #e5e7eb;
+        transition: all 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        color: #6b7280;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'attendance:shift_management_dashboard' %}">
+                    <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'attendance:shift_templates_list' %}">
+                    <i class="fas fa-list me-1"></i>Plantillas
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">{{ template.name }}</li>
+        </ol>
+    </nav>
+
+    <!-- Header de la plantilla -->
+    <div class="template-header" data-header-colors="{{ template.color_primary }},{{ template.color_secondary }}">
+        <div class="d-flex align-items-center">
+            <div class="template-icon" data-primary-color="{{ template.color_primary }}">
+                <i class="{{ template.icon_name }}"></i>
+            </div>
+            <div class="flex-grow-1">
+                <h1 class="mb-2">{{ template.name }}</h1>
+                <p class="text-muted mb-3">{{ template.description }}</p>
+                <div class="d-flex flex-wrap gap-2">
+                    <span class="badge bg-primary">{{ template.get_category_display }}</span>
+                    <span class="badge bg-secondary">{{ template.get_shift_type_display }}</span>
+                    {% if template.is_default %}
+                    <span class="badge bg-success">
+                        <i class="fas fa-star me-1"></i>Por Defecto
+                    </span>
+                    {% endif %}
+                    {% if template.is_active %}
+                    <span class="badge bg-success">Activo</span>
+                    {% else %}
+                    <span class="badge bg-danger">Inactivo</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number" data-stat-color="{{ template.color_primary }}">{{ template.total_shifts_per_day }}</div>
+            <div class="stat-label">Turnos por Día</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" data-stat-color="{{ template.color_primary }}">{{ template.hours_per_shift }}h</div>
+            <div class="stat-label">Horas por Turno</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" data-stat-color="{{ template.color_primary }}">{{ template.rotation_days }}</div>
+            <div class="stat-label">Días de Rotación</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" data-stat-color="{{ template.color_primary }}">{{ template.work_schedules.count }}</div>
+            <div class="stat-label">Horarios Creados</div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Configuración de Turnos -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clock me-2"></i>Configuración de Turnos
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if shifts_config %}
+                    <div class="row">
+                        {% for shift in shifts_config %}
+                        <div class="col-md-6 mb-3">
+                            <div class="shift-card" data-shift-color="{{ shift.color }}">
+                                <div class="d-flex align-items-center mb-3">
+                                    <i class="{{ shift.icon }} me-2" 
+                                       data-icon-color="{{ shift.color }}" 
+                                       style="font-size: 1.5rem;"></i>
+                                    <div>
+                                        <div class="shift-time">
+                                            {{ shift.start_time }} - {{ shift.end_time }}
+                                        </div>
+                                        <div class="fw-bold">
+                                            {{ shift.custom_name|default:shift.name }}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% if shift.is_overnight %}
+                                    <span class="shift-badge bg-dark text-white">
+                                        <i class="fas fa-moon me-1"></i>24h
+                                    </span>
+                                    {% endif %}
+                                    <span class="shift-badge" 
+                                          style="background-color: {{ shift.color }}20; color: {{ shift.color }};">
+                                        {{ shift.name|title }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-info-circle fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Configuración Básica</h5>
+                        <p class="text-muted">Esta plantilla usa configuración estándar sin turnos específicos definidos.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel de Acciones y Configuración -->
+        <div class="col-lg-4">
+            <!-- Acciones Rápidas -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-bolt me-2"></i>Acciones Rápidas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="action-buttons">
+                        <a href="{% url 'attendance:create_work_schedule_with_template' template.id %}" 
+                           class="btn btn-primary w-100 mb-2">
+                            <i class="fas fa-plus me-2"></i>Crear Horario
+                        </a>
+                        <a href="{% url 'attendance:shift_templates_list' %}" 
+                           class="btn btn-outline-secondary w-100 mb-2">
+                            <i class="fas fa-arrow-left me-2"></i>Volver a Lista
+                        </a>
+                        <button class="btn btn-outline-info w-100 mb-2" onclick="shareTemplate()">
+                            <i class="fas fa-share-alt me-2"></i>Compartir
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configuración Técnica -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-cogs me-2"></i>Configuración Técnica
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="config-item" data-border-color="{{ template.color_primary }}">
+                        <strong>Tipo de Turno:</strong><br>
+                        <span class="text-muted">{{ template.get_shift_type_display }}</span>
+                    </div>
+                    
+                    <div class="config-item" data-border-color="{{ template.color_primary }}">
+                        <strong>Categoría:</strong><br>
+                        <span class="text-muted">{{ template.get_category_display }}</span>
+                    </div>
+                    
+                    <div class="config-item" data-border-color="{{ template.color_primary }}">
+                        <strong>Rotación:</strong><br>
+                        <span class="text-muted">
+                            {% if template.rotation_days > 0 %}
+                                Cada {{ template.rotation_days }} días
+                            {% else %}
+                                Sin rotación
+                            {% endif %}
+                        </span>
+                    </div>
+                    
+                    <div class="config-item" data-border-color="{{ template.color_primary }}">
+                        <strong>Creado:</strong><br>
+                        <span class="text-muted">{{ template.created_at|date:"d/m/Y H:i" }}</span>
+                    </div>
+                    
+                    {% if template.created_by %}
+                    <div class="config-item" data-border-color="{{ template.color_primary }}">
+                        <strong>Creado por:</strong><br>
+                        <span class="text-muted">{{ template.created_by.get_full_name|default:template.created_by.username }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Horarios Existentes -->
+    {% if template.work_schedules.exists %}
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-calendar-alt me-2"></i>Horarios Creados con esta Plantilla
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Tipo</th>
+                            <th>Fecha Inicio</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for schedule in template.work_schedules.all|slice:":10" %}
+                        <tr>
+                            <td>
+                                <strong>{{ schedule.name }}</strong>
+                                {% if schedule.description %}
+                                <br><small class="text-muted">{{ schedule.description|truncatechars:50 }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ schedule.get_schedule_type_display }}</span>
+                            </td>
+                            <td>{{ schedule.start_date|date:"d/m/Y" }}</td>
+                            <td>
+                                {% if schedule.is_active %}
+                                <span class="badge bg-success">Activo</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inactivo</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'attendance:work_schedules_list' %}?schedule={{ schedule.id }}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                
+                {% if template.work_schedules.count > 10 %}
+                <div class="text-center mt-3">
+                    <a href="{% url 'attendance:work_schedules_list' %}?template={{ template.id }}" 
+                       class="btn btn-outline-primary">
+                        Ver todos los {{ template.work_schedules.count }} horarios
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Aplicar colores dinámicos
+        applyDynamicColors();
+    });
+    
+    // Función para aplicar colores dinámicos
+    function applyDynamicColors() {
+        // Aplicar colores a iconos de plantilla
+        document.querySelectorAll('[data-primary-color]').forEach(element => {
+            const color = element.getAttribute('data-primary-color');
+            element.style.backgroundColor = color;
+        });
+        
+        // Aplicar colores a headers con gradiente
+        document.querySelectorAll('[data-header-colors]').forEach(element => {
+            const colors = element.getAttribute('data-header-colors').split(',');
+            const primary = colors[0];
+            const secondary = colors[1];
+            element.style.background = `linear-gradient(135deg, ${primary}15, ${secondary}10)`;
+            element.style.borderLeft = `4px solid ${primary}`;
+        });
+        
+        // Aplicar colores a números de estadísticas
+        document.querySelectorAll('[data-stat-color]').forEach(element => {
+            const color = element.getAttribute('data-stat-color');
+            element.style.color = color;
+        });
+        
+        // Aplicar colores a bordes de config items
+        document.querySelectorAll('[data-border-color]').forEach(element => {
+            const color = element.getAttribute('data-border-color');
+            element.style.borderLeft = `3px solid ${color}`;
+        });
+        
+        // Aplicar colores a shift cards
+        document.querySelectorAll('[data-shift-color]').forEach(element => {
+            const color = element.getAttribute('data-shift-color');
+            element.style.borderLeftColor = color;
+        });
+        
+        // Aplicar colores a iconos de turnos
+        document.querySelectorAll('[data-icon-color]').forEach(element => {
+            const color = element.getAttribute('data-icon-color');
+            element.style.color = color;
+        });
+    }
+    
+    // Función para compartir plantilla
+    function shareTemplate() {
+        const url = window.location.href;
+        const title = '{{ template.name }} - Plantilla de Turno';
+        
+        if (navigator.share) {
+            navigator.share({
+                title: title,
+                url: url
+            });
+        } else {
+            // Fallback: copiar al portapapeles
+            navigator.clipboard.writeText(url).then(() => {
+                alert('✅ Enlace copiado al portapapeles');
+            });
+        }
+    }
+</script>
+{% endblock %}
