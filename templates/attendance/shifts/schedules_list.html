@@ -1,0 +1,349 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Horarios de Trabajo{% endblock %}
+
+{% block extra_css %}
+<style>
+    .schedule-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+        background: white;
+    }
+    
+    .schedule-card:hover {
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+    
+    .schedule-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .schedule-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+        margin-right: 1rem;
+    }
+    
+    .schedule-meta {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+    }
+    
+    .meta-item {
+        display: flex;
+        align-items: center;
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+    
+    .meta-item i {
+        margin-right: 0.5rem;
+        color: #9ca3af;
+    }
+    
+    .filter-section {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    
+    .stats-overview {
+        background: linear-gradient(135deg, #3b82f6, #1e40af);
+        color: white;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-item {
+        text-align: center;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        font-size: 0.875rem;
+        opacity: 0.9;
+    }
+    
+    .action-buttons .btn {
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #6b7280;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        color: #d1d5db;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'attendance:shift_management_dashboard' %}">
+                    <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Horarios de Trabajo</li>
+        </ol>
+    </nav>
+
+    <!-- Header con estadísticas -->
+    <div class="stats-overview">
+        <div class="row">
+            <div class="col-md-8">
+                <h1 class="mb-2">
+                    <i class="fas fa-calendar-alt me-2"></i>Horarios de Trabajo
+                </h1>
+                <p class="mb-0">Gestiona y supervisa todos los horarios de trabajo de tu organización</p>
+            </div>
+            <div class="col-md-4">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="stat-item">
+                            <div class="stat-number">{{ schedules.count }}</div>
+                            <div class="stat-label">Horarios Totales</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-item">
+                            <div class="stat-number">{{ active_schedules_count }}</div>
+                            <div class="stat-label">Activos</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros y Acciones -->
+    <div class="filter-section">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <form method="get" class="d-flex gap-3 align-items-end">
+                    <div class="flex-grow-1">
+                        <label for="search" class="form-label">Buscar Horarios</label>
+                        <input type="text" class="form-control" id="search" name="search" 
+                               value="{{ current_search }}" placeholder="Nombre, descripción...">
+                    </div>
+                    <div>
+                        <label for="schedule_type" class="form-label">Tipo</label>
+                        <select class="form-select" id="schedule_type" name="schedule_type">
+                            <option value="">Todos los tipos</option>
+                            <option value="INDIVIDUAL" {% if current_schedule_type == 'INDIVIDUAL' %}selected{% endif %}>Individual</option>
+                            <option value="DEPARTMENT" {% if current_schedule_type == 'DEPARTMENT' %}selected{% endif %}>Departamento</option>
+                            <option value="POSITION" {% if current_schedule_type == 'POSITION' %}selected{% endif %}>Por Puesto</option>
+                            <option value="GLOBAL" {% if current_schedule_type == 'GLOBAL' %}selected{% endif %}>Global</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="status" class="form-label">Estado</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="">Todos</option>
+                            <option value="active" {% if current_status == 'active' %}selected{% endif %}>Activos</option>
+                            <option value="inactive" {% if current_status == 'inactive' %}selected{% endif %}>Inactivos</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'attendance:create_work_schedule' %}" class="btn btn-success">
+                    <i class="fas fa-plus me-2"></i>Nuevo Horario
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Horarios -->
+    {% if schedules %}
+    <div class="row">
+        {% for schedule in schedules %}
+        <div class="col-lg-6 col-xl-4">
+            <div class="schedule-card" data-schedule-colors="{{ schedule.shift_template.color_primary }},{{ schedule.shift_template.color_secondary }}">
+                <div class="schedule-header">
+                    <div class="schedule-icon" data-primary-color="{{ schedule.shift_template.color_primary }}">
+                        <i class="{{ schedule.shift_template.icon_name }}"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h5 class="mb-1">{{ schedule.name }}</h5>
+                        <p class="text-muted mb-0">{{ schedule.shift_template.name }}</p>
+                    </div>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                                data-bs-toggle="dropdown">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-eye me-2"></i>Ver Detalles</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-edit me-2"></i>Editar</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-users me-2"></i>Asignar Empleados</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="#"><i class="fas fa-trash me-2"></i>Eliminar</a></li>
+                        </ul>
+                    </div>
+                </div>
+                
+                {% if schedule.description %}
+                <p class="text-muted mb-3">{{ schedule.description|truncatechars:100 }}</p>
+                {% endif %}
+                
+                <div class="schedule-meta">
+                    <div class="meta-item">
+                        <i class="fas fa-tag"></i>
+                        <span class="badge bg-primary">{{ schedule.get_schedule_type_display }}</span>
+                    </div>
+                    <div class="meta-item">
+                        <i class="fas fa-calendar-start"></i>
+                        {{ schedule.start_date|date:"d/m/Y" }}
+                    </div>
+                    {% if schedule.end_date %}
+                    <div class="meta-item">
+                        <i class="fas fa-calendar-times"></i>
+                        {{ schedule.end_date|date:"d/m/Y" }}
+                    </div>
+                    {% endif %}
+                    <div class="meta-item">
+                        <i class="fas fa-clock"></i>
+                        {{ schedule.shift_template.hours_per_shift }}h por turno
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        {% if schedule.is_active %}
+                        <span class="badge bg-success">
+                            <i class="fas fa-check-circle me-1"></i>Activo
+                        </span>
+                        {% else %}
+                        <span class="badge bg-secondary">
+                            <i class="fas fa-pause-circle me-1"></i>Inactivo
+                        </span>
+                        {% endif %}
+                        
+                        <span class="badge bg-info ms-1">
+                            {{ schedule.shifts.count }} turnos
+                        </span>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="btn btn-sm btn-outline-primary" title="Ver Detalles">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-success" title="Asignar Empleados">
+                            <i class="fas fa-users"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Paginación -->
+    {% if is_paginated %}
+    <nav aria-label="Paginación de horarios">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?{% if current_search %}search={{ current_search }}&{% endif %}{% if current_schedule_type %}schedule_type={{ current_schedule_type }}&{% endif %}{% if current_status %}status={{ current_status }}&{% endif %}page={{ page_obj.previous_page_number }}">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            </li>
+            {% endif %}
+            
+            {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <li class="page-item active">
+                <span class="page-link bg-primary border-primary">{{ num }}</span>
+            </li>
+            {% else %}
+            <li class="page-item">
+                <a class="page-link" href="?{% if current_search %}search={{ current_search }}&{% endif %}{% if current_schedule_type %}schedule_type={{ current_schedule_type }}&{% endif %}{% if current_status %}status={{ current_status }}&{% endif %}page={{ num }}">{{ num }}</a>
+            </li>
+            {% endif %}
+            {% endfor %}
+            
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?{% if current_search %}search={{ current_search }}&{% endif %}{% if current_schedule_type %}schedule_type={{ current_schedule_type }}&{% endif %}{% if current_status %}status={{ current_status }}&{% endif %}page={{ page_obj.next_page_number }}">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <!-- Estado vacío -->
+    <div class="empty-state">
+        <i class="fas fa-calendar-times"></i>
+        <h3>No hay horarios creados</h3>
+        <p>Comienza creando tu primer horario de trabajo</p>
+        <a href="{% url 'attendance:create_work_schedule' %}" class="btn btn-primary btn-lg">
+            <i class="fas fa-plus me-2"></i>Crear Primer Horario
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Aplicar colores dinámicos
+        applyDynamicColors();
+    });
+    
+    function applyDynamicColors() {
+        // Aplicar colores a iconos de horarios
+        document.querySelectorAll('[data-primary-color]').forEach(element => {
+            const color = element.getAttribute('data-primary-color');
+            element.style.backgroundColor = color;
+        });
+        
+        // Aplicar colores a cards de horarios
+        document.querySelectorAll('[data-schedule-colors]').forEach(element => {
+            const colors = element.getAttribute('data-schedule-colors').split(',');
+            const primary = colors[0];
+            element.style.borderLeftColor = primary;
+            element.style.borderLeftWidth = '4px';
+        });
+    }
+</script>
+{% endblock %}

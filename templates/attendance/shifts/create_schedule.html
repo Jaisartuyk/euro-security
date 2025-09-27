@@ -1,0 +1,410 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Crear Horario de Trabajo{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-wizard {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    
+    .wizard-header {
+        background: linear-gradient(135deg, #3b82f6, #1e40af);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+    }
+    
+    .template-preview {
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .template-preview:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+    }
+    
+    .template-preview.selected {
+        border-color: #3b82f6;
+        background: #eff6ff;
+    }
+    
+    .form-section {
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border-left: 4px solid #3b82f6;
+    }
+    
+    .btn-wizard {
+        padding: 0.75rem 2rem;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .schedule-type-card {
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 1.5rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-bottom: 1rem;
+    }
+    
+    .schedule-type-card:hover {
+        border-color: #3b82f6;
+        transform: translateY(-2px);
+    }
+    
+    .schedule-type-card.selected {
+        border-color: #3b82f6;
+        background: #eff6ff;
+    }
+    
+    .schedule-type-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        color: #6b7280;
+    }
+    
+    .schedule-type-card.selected .schedule-type-icon {
+        color: #3b82f6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'attendance:shift_management_dashboard' %}">
+                    <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Crear Horario</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="form-wizard">
+                <!-- Header -->
+                <div class="wizard-header">
+                    <h1 class="mb-2">
+                        <i class="fas fa-plus-circle me-2"></i>Crear Horario de Trabajo
+                    </h1>
+                    <p class="mb-0">Configure un nuevo horario para sus empleados</p>
+                </div>
+
+                <!-- Formulario -->
+                <div class="p-4">
+                    <form method="post" id="scheduleForm">
+                        {% csrf_token %}
+                        
+                        <!-- Paso 1: Información Básica -->
+                        <div class="form-section">
+                            <h4 class="mb-3">
+                                <i class="fas fa-info-circle me-2"></i>Información Básica
+                            </h4>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="name" class="form-label">Nombre del Horario *</label>
+                                        <input type="text" class="form-control" id="name" name="name" required>
+                                        <div class="form-text">Ej: Horario Seguridad Nocturna</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="start_date" class="form-label">Fecha de Inicio *</label>
+                                        <input type="date" class="form-control" id="start_date" name="start_date" required>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Descripción</label>
+                                <textarea class="form-control" id="description" name="description" rows="3" 
+                                         placeholder="Descripción opcional del horario..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Paso 2: Tipo de Horario -->
+                        <div class="form-section">
+                            <h4 class="mb-3">
+                                <i class="fas fa-users me-2"></i>Tipo de Horario
+                            </h4>
+                            
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="schedule-type-card" data-type="INDIVIDUAL">
+                                        <div class="schedule-type-icon">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                        <h6>Individual</h6>
+                                        <p class="text-muted small">Para un empleado específico</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="schedule-type-card" data-type="DEPARTMENT">
+                                        <div class="schedule-type-icon">
+                                            <i class="fas fa-building"></i>
+                                        </div>
+                                        <h6>Departamento</h6>
+                                        <p class="text-muted small">Para todo un departamento</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="schedule-type-card" data-type="POSITION">
+                                        <div class="schedule-type-icon">
+                                            <i class="fas fa-briefcase"></i>
+                                        </div>
+                                        <h6>Por Puesto</h6>
+                                        <p class="text-muted small">Para un puesto de trabajo</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="schedule-type-card" data-type="GLOBAL">
+                                        <div class="schedule-type-icon">
+                                            <i class="fas fa-globe"></i>
+                                        </div>
+                                        <h6>Global</h6>
+                                        <p class="text-muted small">Para toda la empresa</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <input type="hidden" id="schedule_type" name="schedule_type" required>
+                        </div>
+
+                        <!-- Paso 3: Seleccionar Plantilla -->
+                        {% if template %}
+                        <div class="form-section">
+                            <h4 class="mb-3">
+                                <i class="fas fa-template me-2"></i>Plantilla Seleccionada
+                            </h4>
+                            
+                            <div class="template-preview selected" data-template-colors="{{ template.color_primary }},{{ template.color_secondary }}">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        <div class="template-icon-small" data-primary-color="{{ template.color_primary }}">
+                                            <i class="{{ template.icon_name }}"></i>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h5 class="mb-1">{{ template.name }}</h5>
+                                        <p class="text-muted mb-2">{{ template.description }}</p>
+                                        <div class="d-flex gap-2">
+                                            <span class="badge bg-primary">{{ template.get_category_display }}</span>
+                                            <span class="badge bg-secondary">{{ template.total_shifts_per_day }} turnos</span>
+                                            <span class="badge bg-info">{{ template.hours_per_shift }}h cada uno</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <input type="hidden" name="shift_template" value="{{ template.id }}">
+                        </div>
+                        {% else %}
+                        <div class="form-section">
+                            <h4 class="mb-3">
+                                <i class="fas fa-template me-2"></i>Seleccionar Plantilla
+                            </h4>
+                            
+                            <div class="row">
+                                {% for tmpl in templates %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="template-preview" data-template="{{ tmpl.id }}" data-template-colors="{{ tmpl.color_primary }},{{ tmpl.color_secondary }}">
+                                        <div class="d-flex align-items-center">
+                                            <div class="me-3">
+                                                <div class="template-icon-small" data-primary-color="{{ tmpl.color_primary }}">
+                                                    <i class="{{ tmpl.icon_name }}"></i>
+                                                </div>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <h6 class="mb-1">{{ tmpl.name }}</h6>
+                                                <p class="text-muted small mb-2">{{ tmpl.description|truncatechars:60 }}</p>
+                                                <div class="d-flex gap-1">
+                                                    <span class="badge bg-primary small">{{ tmpl.get_category_display }}</span>
+                                                    <span class="badge bg-secondary small">{{ tmpl.total_shifts_per_day }} turnos</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <input type="hidden" id="shift_template" name="shift_template" required>
+                        </div>
+                        {% endif %}
+
+                        <!-- Configuración Avanzada -->
+                        <div class="form-section">
+                            <h4 class="mb-3">
+                                <i class="fas fa-cogs me-2"></i>Configuración Avanzada
+                            </h4>
+                            
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="overtime_threshold_daily" class="form-label">Umbral Horas Extras Diarias</label>
+                                        <input type="number" class="form-control" id="overtime_threshold_daily" 
+                                               name="overtime_threshold_daily" value="8" step="0.5" min="0">
+                                        <div class="form-text">Horas después de las cuales se consideran extras</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="break_duration_minutes" class="form-label">Duración Descanso (min)</label>
+                                        <input type="number" class="form-control" id="break_duration_minutes" 
+                                               name="break_duration_minutes" value="60" min="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="night_shift_multiplier" class="form-label">Multiplicador Nocturno</label>
+                                        <input type="number" class="form-control" id="night_shift_multiplier" 
+                                               name="night_shift_multiplier" value="1.25" step="0.05" min="1">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botones de Acción -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'attendance:shift_management_dashboard' %}" class="btn btn-outline-secondary btn-wizard">
+                                <i class="fas fa-arrow-left me-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-wizard">
+                                <i class="fas fa-save me-2"></i>Crear Horario
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Aplicar colores dinámicos
+        applyDynamicColors();
+        
+        // Configurar selección de tipo de horario
+        setupScheduleTypeSelection();
+        
+        // Configurar selección de plantilla
+        setupTemplateSelection();
+        
+        // Validar formulario
+        setupFormValidation();
+    });
+    
+    function applyDynamicColors() {
+        // Aplicar colores a iconos de plantilla
+        document.querySelectorAll('[data-primary-color]').forEach(element => {
+            const color = element.getAttribute('data-primary-color');
+            element.style.backgroundColor = color;
+            element.style.color = 'white';
+            element.style.width = '50px';
+            element.style.height = '50px';
+            element.style.borderRadius = '50%';
+            element.style.display = 'flex';
+            element.style.alignItems = 'center';
+            element.style.justifyContent = 'center';
+        });
+        
+        // Aplicar colores a previews de plantillas
+        document.querySelectorAll('[data-template-colors]').forEach(element => {
+            const colors = element.getAttribute('data-template-colors').split(',');
+            const primary = colors[0];
+            if (element.classList.contains('selected')) {
+                element.style.borderColor = primary;
+                element.style.background = `${primary}10`;
+            }
+        });
+    }
+    
+    function setupScheduleTypeSelection() {
+        const cards = document.querySelectorAll('.schedule-type-card');
+        const hiddenInput = document.getElementById('schedule_type');
+        
+        cards.forEach(card => {
+            card.addEventListener('click', function() {
+                // Remover selección anterior
+                cards.forEach(c => c.classList.remove('selected'));
+                
+                // Seleccionar actual
+                this.classList.add('selected');
+                hiddenInput.value = this.getAttribute('data-type');
+            });
+        });
+    }
+    
+    function setupTemplateSelection() {
+        const previews = document.querySelectorAll('.template-preview:not(.selected)');
+        const hiddenInput = document.getElementById('shift_template');
+        
+        previews.forEach(preview => {
+            preview.addEventListener('click', function() {
+                // Remover selección anterior
+                previews.forEach(p => p.classList.remove('selected'));
+                
+                // Seleccionar actual
+                this.classList.add('selected');
+                const templateId = this.getAttribute('data-template');
+                if (hiddenInput) {
+                    hiddenInput.value = templateId;
+                }
+                
+                // Aplicar colores
+                applyDynamicColors();
+            });
+        });
+    }
+    
+    function setupFormValidation() {
+        const form = document.getElementById('scheduleForm');
+        
+        form.addEventListener('submit', function(e) {
+            let isValid = true;
+            
+            // Validar tipo de horario
+            if (!document.getElementById('schedule_type').value) {
+                alert('Por favor selecciona un tipo de horario');
+                isValid = false;
+            }
+            
+            // Validar plantilla (si no está preseleccionada)
+            const templateInput = document.getElementById('shift_template');
+            if (templateInput && !templateInput.value) {
+                alert('Por favor selecciona una plantilla');
+                isValid = false;
+            }
+            
+            if (!isValid) {
+                e.preventDefault();
+            }
+        });
+    }
+</script>
+{% endblock %}
