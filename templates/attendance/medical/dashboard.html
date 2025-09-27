@@ -224,6 +224,18 @@
                                 <small class="text-muted">Días Médicos</small>
                             </div>
                         </div>
+                        <div class="col-6">
+                            <div class="stats-card">
+                                <span class="stats-number">{{ stats.attendances_this_month }}</span>
+                                <small class="text-muted">Asistencias Este Mes</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stats-card">
+                                <span class="stats-number">{{ stats.medical_days_this_year }}</span>
+                                <small class="text-muted">Días Médicos 2024</small>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -283,6 +295,151 @@
                         {% endfor %}
                     {% else %}
                         <p class="text-muted text-center">No hay documentos recientes</p>
+                    {% endif %}
+                </div>
+
+                <!-- Permisos Médicos Activos -->
+                <div class="medical-card">
+                    <h5 class="mb-3"><i class="fas fa-calendar-check me-2"></i>Permisos Médicos Activos</h5>
+                    {% if active_leaves %}
+                        {% for leave in active_leaves %}
+                        <div class="d-flex align-items-center mb-3 p-3 border rounded">
+                            <div class="me-3">
+                                <i class="fas fa-user-md text-primary"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">{{ leave.start_date|date:"d/m/Y" }} - {{ leave.end_date|date:"d/m/Y" }}</div>
+                                <small class="text-muted">{{ leave.total_days }} días • {{ leave.get_status_display }}</small>
+                                {% if leave.diagnosis %}
+                                    <br><small class="text-info">{{ leave.diagnosis }}</small>
+                                {% endif %}
+                            </div>
+                            <div>
+                                {% if leave.status == 'AI_APPROVED' %}
+                                    <span class="badge bg-success"><i class="fas fa-robot me-1"></i>IA Aprobado</span>
+                                {% elif leave.status == 'HR_APPROVED' %}
+                                    <span class="badge bg-primary"><i class="fas fa-user-tie me-1"></i>RRHH Aprobado</span>
+                                {% elif leave.status == 'HUMAN_REVIEW' %}
+                                    <span class="badge bg-warning"><i class="fas fa-clock me-1"></i>En Revisión</span>
+                                {% else %}
+                                    <span class="badge bg-info">{{ leave.get_status_display }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                        <div class="text-center mt-3">
+                            <a href="{% url 'attendance:medical_history' %}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-history me-1"></i>Ver Historial Completo
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-check-circle text-success" style="font-size: 3rem; opacity: 0.3;"></i>
+                            <p class="text-muted mt-2">No tienes permisos médicos activos</p>
+                            <small class="text-success">¡Excelente estado de salud!</small>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Asistencias Recientes -->
+                <div class="medical-card">
+                    <h5 class="mb-3"><i class="fas fa-clock me-2"></i>Asistencias Recientes (30 días)</h5>
+                    {% if recent_attendances %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Entrada</th>
+                                        <th>Salida</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for attendance in recent_attendances|slice:":10" %}
+                                    <tr>
+                                        <td>{{ attendance.check_in_time|date:"d/m/Y" }}</td>
+                                        <td>
+                                            <small class="text-success">
+                                                <i class="fas fa-sign-in-alt me-1"></i>
+                                                {{ attendance.check_in_time|date:"H:i" }}
+                                            </small>
+                                        </td>
+                                        <td>
+                                            {% if attendance.check_out_time %}
+                                                <small class="text-danger">
+                                                    <i class="fas fa-sign-out-alt me-1"></i>
+                                                    {{ attendance.check_out_time|date:"H:i" }}
+                                                </small>
+                                            {% else %}
+                                                <small class="text-muted">-</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if attendance.is_late %}
+                                                <span class="badge bg-warning">Tarde</span>
+                                            {% elif attendance.check_out_time %}
+                                                <span class="badge bg-success">Completo</span>
+                                            {% else %}
+                                                <span class="badge bg-info">En curso</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="text-center mt-3">
+                            <a href="{% url 'attendance:dashboard' %}" class="btn btn-outline-info btn-sm">
+                                <i class="fas fa-chart-line me-1"></i>Ver Dashboard Completo
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-calendar-times text-muted" style="font-size: 3rem; opacity: 0.3;"></i>
+                            <p class="text-muted mt-2">No hay asistencias registradas</p>
+                            <small class="text-info">Marca tu asistencia desde el dashboard principal</small>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Historial de Permisos Médicos -->
+                <div class="medical-card">
+                    <h5 class="mb-3"><i class="fas fa-history me-2"></i>Historial Médico (6 meses)</h5>
+                    {% if medical_leaves_history %}
+                        {% for leave in medical_leaves_history|slice:":5" %}
+                        <div class="d-flex align-items-center mb-2 p-2 bg-light rounded">
+                            <div class="me-3">
+                                {% if leave.status == 'AI_APPROVED' or leave.status == 'HR_APPROVED' %}
+                                    <i class="fas fa-check-circle text-success"></i>
+                                {% elif leave.status == 'HR_REJECTED' %}
+                                    <i class="fas fa-times-circle text-danger"></i>
+                                {% else %}
+                                    <i class="fas fa-clock text-warning"></i>
+                                {% endif %}
+                            </div>
+                            <div class="flex-grow-1">
+                                <small class="fw-bold">{{ leave.start_date|date:"d/m/Y" }} - {{ leave.end_date|date:"d/m/Y" }}</small>
+                                <br><small class="text-muted">{{ leave.total_days }} días • {{ leave.created_at|date:"d/m/Y" }}</small>
+                            </div>
+                            <div>
+                                <a href="{% url 'attendance:medical_leave_detail' leave.id %}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        <div class="text-center mt-3">
+                            <a href="{% url 'attendance:medical_history' %}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-list me-1"></i>Ver Todo el Historial
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-heart text-success" style="font-size: 3rem; opacity: 0.3;"></i>
+                            <p class="text-muted mt-2">No hay historial médico</p>
+                            <small class="text-success">¡Mantente saludable!</small>
+                        </div>
                     {% endif %}
                 </div>
             </div>

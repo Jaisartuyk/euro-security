@@ -227,6 +227,177 @@
                 </div>
             </div>
         </div>
+        
+        <!-- =================================================================== -->
+        <!-- SECCIÓN MÉDICA INTEGRADA -->
+        <!-- =================================================================== -->
+        
+        <!-- Acceso rápido a Dr. Claude -->
+        <div class="card mt-4">
+            <div class="card-header bg-gradient" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;">
+                <i class="fas fa-user-md me-2"></i>
+                Dr. Claude - Asistente Médico IA
+            </div>
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <div class="claude-avatar mx-auto mb-2" style="width: 60px; height: 60px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: white;">
+                        🤖
+                    </div>
+                    <h6 class="mb-1">Consulta Médica IA</h6>
+                    <small class="text-muted">Disponible 24/7 para consultas de salud</small>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <a href="{% url 'attendance:medical_dashboard' %}" class="btn btn-primary">
+                        <i class="fas fa-comments me-2"></i>
+                        Chatear con Dr. Claude
+                    </a>
+                    <a href="{% url 'attendance:upload_medical_document' %}" class="btn btn-outline-success">
+                        <i class="fas fa-upload me-2"></i>
+                        Subir Certificado Médico
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Estadísticas médicas -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <i class="fas fa-chart-pie me-2"></i>
+                Estado Médico
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <div class="medical-stat">
+                            <div class="stat-number text-success">{{ medical_stats.active_leaves }}</div>
+                            <small class="text-muted">Permisos Activos</small>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="medical-stat">
+                            <div class="stat-number text-warning">{{ medical_stats.pending_leaves }}</div>
+                            <small class="text-muted">En Revisión</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="medical-stat">
+                            <div class="stat-number text-danger">{{ medical_stats.rejected_leaves }}</div>
+                            <small class="text-muted">Rechazados</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="medical-stat">
+                            <div class="stat-number text-info">{{ medical_stats.total_medical_days_this_month }}</div>
+                            <small class="text-muted">Días Médicos</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Permisos médicos activos -->
+        {% if active_medical_leaves %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <i class="fas fa-calendar-check me-2"></i>
+                Permisos Médicos Activos
+            </div>
+            <div class="card-body">
+                {% for leave in active_medical_leaves %}
+                <div class="d-flex align-items-center mb-3 p-2 border rounded">
+                    <div class="me-3">
+                        <i class="fas fa-user-md text-primary"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="fw-bold">{{ leave.start_date|date:"d/m/Y" }} - {{ leave.end_date|date:"d/m/Y" }}</div>
+                        <small class="text-muted">{{ leave.total_days }} días</small>
+                        {% if leave.diagnosis %}
+                            <br><small class="text-info">{{ leave.diagnosis }}</small>
+                        {% endif %}
+                    </div>
+                    <div>
+                        {% if leave.status == 'AI_APPROVED' %}
+                            <span class="badge bg-success"><i class="fas fa-robot me-1"></i>IA Aprobado</span>
+                        {% elif leave.status == 'HR_APPROVED' %}
+                            <span class="badge bg-primary"><i class="fas fa-user-tie me-1"></i>RRHH</span>
+                        {% else %}
+                            <span class="badge bg-info">{{ leave.get_status_display }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Permisos pendientes -->
+        {% if pending_medical_leaves %}
+        <div class="card mt-4">
+            <div class="card-header bg-warning text-dark">
+                <i class="fas fa-clock me-2"></i>
+                Permisos en Revisión
+            </div>
+            <div class="card-body">
+                {% for leave in pending_medical_leaves %}
+                <div class="d-flex align-items-center mb-2 p-2 bg-light rounded">
+                    <div class="me-3">
+                        <i class="fas fa-hourglass-half text-warning"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <small class="fw-bold">{{ leave.start_date|date:"d/m/Y" }} - {{ leave.end_date|date:"d/m/Y" }}</small>
+                        <br><small class="text-muted">{{ leave.total_days }} días • Enviado {{ leave.created_at|date:"d/m/Y" }}</small>
+                    </div>
+                    <div>
+                        <span class="badge bg-warning text-dark">Pendiente</span>
+                    </div>
+                </div>
+                {% endfor %}
+                <div class="text-center mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        RRHH revisará tu solicitud en 24-48 horas
+                    </small>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Permisos rechazados -->
+        {% if rejected_medical_leaves %}
+        <div class="card mt-4">
+            <div class="card-header bg-danger text-white">
+                <i class="fas fa-times-circle me-2"></i>
+                Permisos Rechazados
+            </div>
+            <div class="card-body">
+                {% for leave in rejected_medical_leaves %}
+                <div class="d-flex align-items-center mb-2 p-2 bg-light rounded">
+                    <div class="me-3">
+                        <i class="fas fa-times-circle text-danger"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <small class="fw-bold">{{ leave.start_date|date:"d/m/Y" }} - {{ leave.end_date|date:"d/m/Y" }}</small>
+                        <br><small class="text-muted">{{ leave.total_days }} días</small>
+                        {% if leave.hr_notes %}
+                            <br><small class="text-danger">Motivo: {{ leave.hr_notes }}</small>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <span class="badge bg-danger">Rechazado</span>
+                    </div>
+                </div>
+                {% endfor %}
+                <div class="text-center mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-question-circle me-1"></i>
+                        ¿Tienes dudas? Consulta con Dr. Claude
+                    </small>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
     </div>
 </div>
 {% endblock %}
@@ -254,6 +425,16 @@
     
     .table-hover tbody tr:hover {
         background-color: rgba(0, 123, 255, 0.1);
+    }
+    
+    .medical-stat {
+        padding: 10px;
+    }
+    
+    .stat-number {
+        font-size: 1.8rem;
+        font-weight: bold;
+        display: block;
     }
 </style>
 {% endblock %}

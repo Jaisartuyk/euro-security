@@ -68,7 +68,32 @@ def medical_dashboard(request):
             ]
         ).order_by('-start_date')
         
-        # Estadísticas
+        # Historial de permisos médicos (últimos 6 meses)
+        six_months_ago = timezone.now() - timedelta(days=180)
+        medical_leaves_history = MedicalLeave.objects.filter(
+            employee=employee,
+            created_at__gte=six_months_ago
+        ).order_by('-created_at')[:10]
+        
+        # Asistencias recientes (últimos 30 días)
+        from .models import Attendance
+        thirty_days_ago = timezone.now() - timedelta(days=30)
+        recent_attendances = Attendance.objects.filter(
+            employee=employee,
+            check_in_time__gte=thirty_days_ago
+        ).order_by('-check_in_time')[:15]
+        
+        # Asistencias afectadas por permisos médicos
+        affected_attendances = []
+        for leave in active_leaves:
+            # Buscar asistencias en el rango del permiso
+            leave_attendances = Attendance.objects.filter(
+                employee=employee,
+                check_in_time__date__range=[leave.start_date, leave.end_date]
+            )
+            affected_attendances.extend(leave_attendances)
+        
+        # Estadísticas ampliadas
         stats = {
             'total_documents': MedicalDocument.objects.filter(employee=employee).count(),
             'pending_documents': MedicalDocument.objects.filter(
@@ -76,13 +101,37 @@ def medical_dashboard(request):
                 processed_by_ai=False
             ).count(),
             'active_leaves': active_leaves.count(),
-            'total_medical_days': sum(leave.total_days for leave in active_leaves)
+            'total_medical_days': sum(leave.total_days for leave in active_leaves),
+            'medical_leaves_this_month': MedicalLeave.objects.filter(
+                employee=employee,
+                created_at__month=timezone.now().month,
+                created_at__year=timezone.now().year
+            ).count(),
+            'attendances_this_month': Attendance.objects.filter(
+                employee=employee,
+                check_in_time__month=timezone.now().month,
+                check_in_time__year=timezone.now().year
+            ).count(),
+            'medical_days_this_year': sum(
+                leave.total_days for leave in MedicalLeave.objects.filter(
+                    employee=employee,
+                    created_at__year=timezone.now().year,
+                    status__in=[
+                        MedicalLeaveStatus.AI_APPROVED,
+                        MedicalLeaveStatus.HR_APPROVED,
+                        MedicalLeaveStatus.ACTIVE
+                    ]
+                )
+            )
         }
         
         context = {
             'employee': employee,
             'recent_documents': recent_documents,
             'active_leaves': active_leaves,
+            'medical_leaves_history': medical_leaves_history,
+            'recent_attendances': recent_attendances,
+            'affected_attendances': affected_attendances,
             'stats': stats,
             'medical_summary': medical_summary,
             'dr_claude_greeting': get_dr_claude().personality['greeting'],

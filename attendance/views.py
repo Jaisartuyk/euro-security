@@ -425,12 +425,87 @@ def my_attendance(request):
         'avg_work_hours': monthly_summaries.aggregate(Avg('total_work_hours'))['total_work_hours__avg'],
     }
     
+    # =============================================================================
+    # INFORMACIÓN MÉDICA INTEGRADA
+    # =============================================================================
+    
+    # Importar modelos médicos
+    from .models import MedicalLeave, MedicalDocument, MedicalLeaveStatus
+    
+    # Permisos médicos activos
+    active_medical_leaves = MedicalLeave.objects.filter(
+        employee=employee,
+        status__in=[
+            MedicalLeaveStatus.ACTIVE,
+            MedicalLeaveStatus.AI_APPROVED,
+            MedicalLeaveStatus.HR_APPROVED
+        ]
+    ).order_by('-start_date')
+    
+    # Permisos médicos pendientes
+    pending_medical_leaves = MedicalLeave.objects.filter(
+        employee=employee,
+        status=MedicalLeaveStatus.HUMAN_REVIEW
+    ).order_by('-created_at')
+    
+    # Permisos médicos rechazados (recientes)
+    rejected_medical_leaves = MedicalLeave.objects.filter(
+        employee=employee,
+        status=MedicalLeaveStatus.HR_REJECTED,
+        created_at__gte=start_of_month
+    ).order_by('-created_at')
+    
+    # Documentos médicos recientes
+    recent_medical_documents = MedicalDocument.objects.filter(
+        employee=employee
+    ).order_by('-uploaded_at')[:5]
+    
+    # Estadísticas médicas
+    medical_stats = {
+        'active_leaves': active_medical_leaves.count(),
+        'pending_leaves': pending_medical_leaves.count(),
+        'rejected_leaves': rejected_medical_leaves.count(),
+        'total_medical_days_this_month': sum(
+            leave.total_days for leave in MedicalLeave.objects.filter(
+                employee=employee,
+                created_at__gte=start_of_month,
+                status__in=[
+                    MedicalLeaveStatus.AI_APPROVED,
+                    MedicalLeaveStatus.HR_APPROVED,
+                    MedicalLeaveStatus.ACTIVE
+                ]
+            )
+        ),
+        'documents_pending': MedicalDocument.objects.filter(
+            employee=employee,
+            processed_by_ai=False
+        ).count()
+    }
+    
+    # Verificar si hay asistencias afectadas por permisos médicos
+    affected_days = []
+    for leave in active_medical_leaves:
+        # Obtener días del permiso que afectan asistencias
+        current_date = leave.start_date
+        while current_date <= leave.end_date:
+            affected_days.append(current_date)
+            current_date += timedelta(days=1)
+    
     context = {
         'employee': employee,
         'monthly_summaries': monthly_summaries,
         'today_records': today_records,
         'month_stats': month_stats,
         'current_month': today.strftime('%B %Y'),
+        
+        # Información médica
+        'active_medical_leaves': active_medical_leaves,
+        'pending_medical_leaves': pending_medical_leaves,
+        'rejected_medical_leaves': rejected_medical_leaves,
+        'recent_medical_documents': recent_medical_documents,
+        'medical_stats': medical_stats,
+        'affected_days': affected_days,
+        'has_medical_access': True,  # Todos los empleados tienen acceso
     }
     
     return render(request, 'attendance/my_attendance.html', context)
