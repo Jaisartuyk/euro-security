@@ -88,4 +88,10 @@ urlpatterns = [
     # Dashboard Médico para RRHH
     path('medico/rrhh/', medical_views.hr_medical_dashboard, name='hr_medical_dashboard'),
     path('medico/rrhh/aprobar/<int:leave_id>/', medical_views.approve_medical_leave, name='approve_medical_leave'),
+    
+    # Acciones Rápidas - Dashboard RRHH
+    path('medico/rrhh/aprobacion-masiva/', medical_views.bulk_approve_leaves, name='bulk_approve_leaves'),
+    path('medico/rrhh/generar-reporte/', medical_views.generate_medical_report, name='generate_medical_report'),
+    path('medico/rrhh/exportar-datos/', medical_views.export_medical_data, name='export_medical_data'),
+    path('medico/rrhh/configurar-ia/', medical_views.configure_claude_ai, name='configure_claude_ai'),
 ]

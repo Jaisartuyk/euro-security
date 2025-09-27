@@ -562,20 +562,131 @@
     
     function bulkApprove() {
         if (confirm('¿Deseas aprobar todos los permisos pendientes que Dr. Claude recomienda aprobar?')) {
-            alert('🤖 Procesando aprobaciones masivas...\n\nEn la versión completa, esto aprobaría automáticamente todos los casos recomendados por Dr. Claude.');
+            fetch('{% url "attendance:bulk_approve_leaves" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`🎉 ¡Éxito!\n\n${data.message}\n\nEmpleados aprobados:\n${data.employees.join('\n')}`);
+                    location.reload();
+                } else {
+                    alert(`❌ Error: ${data.error}`);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('❌ Error de conexión');
+            });
         }
     }
     
     function generateReport() {
-        alert('📊 Generando reporte médico...\n\nEn la versión completa, esto generaría un reporte completo con estadísticas, tendencias y análisis de Dr. Claude.');
+        // Abrir reporte PDF en nueva ventana
+        window.open('{% url "attendance:generate_medical_report" %}', '_blank');
     }
     
     function exportData() {
-        alert('📥 Exportando datos...\n\nEn la versión completa, esto exportaría todos los datos médicos en formato Excel o CSV.');
+        // Descargar archivo Excel
+        window.location.href = '{% url "attendance:export_medical_data" %}';
     }
     
     function configureAI() {
-        alert('⚙️ Configuración de Dr. Claude...\n\nEn la versión completa, esto abriría un panel para ajustar parámetros de la IA, umbrales de confianza, etc.');
+        // Obtener configuración actual
+        fetch('{% url "attendance:configure_claude_ai" %}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showConfigModal(data.config);
+            } else {
+                alert(`❌ Error: ${data.error}`);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('❌ Error de conexión');
+        });
+    }
+    
+    function showConfigModal(config) {
+        const modal = `
+            <div class="modal fade" id="configModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">⚙️ Configuración de Dr. Claude</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label">Modelo IA:</label>
+                                <input type="text" class="form-control" value="${config.model}" readonly>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Umbral de Confianza:</label>
+                                <input type="range" class="form-range" id="confidenceRange" 
+                                       min="0.5" max="1.0" step="0.1" value="${config.confidence_threshold}">
+                                <small class="text-muted">Actual: <span id="confidenceValue">${config.confidence_threshold}</span></small>
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="autoApprove" 
+                                           ${config.auto_approve_enabled ? 'checked' : ''}>
+                                    <label class="form-check-label">Aprobación automática habilitada</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="button" class="btn btn-primary" onclick="saveConfig()">Guardar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modal);
+        const modalInstance = new bootstrap.Modal(document.getElementById('configModal'));
+        modalInstance.show();
+        
+        // Actualizar valor en tiempo real
+        document.getElementById('confidenceRange').addEventListener('input', function() {
+            document.getElementById('confidenceValue').textContent = this.value;
+        });
+    }
+    
+    function saveConfig() {
+        const confidence = document.getElementById('confidenceRange').value;
+        const autoApprove = document.getElementById('autoApprove').checked;
+        
+        fetch('{% url "attendance:configure_claude_ai" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({
+                confidence_threshold: parseFloat(confidence),
+                auto_approve_enabled: autoApprove
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`✅ ${data.message}`);
+                bootstrap.Modal.getInstance(document.getElementById('configModal')).hide();
+            } else {
+                alert(`❌ Error: ${data.error}`);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('❌ Error de conexión');
+        });
     }
     
     // Auto-refresh cada 5 minutos

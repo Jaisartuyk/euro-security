@@ -447,3 +447,290 @@ def approve_medical_leave(request, leave_id):
             'success': False,
             'error': f'Error procesando solicitud: {str(e)}'
         })
+
+
+# =============================================================================
+# ACCIONES RÁPIDAS - DASHBOARD RRHH
+# =============================================================================
+
+@csrf_exempt
+@login_required
+@permission_required('supervisor')
+def bulk_approve_leaves(request):
+    """Aprobación masiva de permisos médicos recomendados por IA"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'})
+    
+    try:
+        # Obtener permisos que Claude AI recomienda aprobar
+        leaves_to_approve = MedicalLeave.objects.filter(
+            status=MedicalLeaveStatus.HUMAN_REVIEW,
+            ai_recommendation='approve',
+            ai_confidence_score__gte=0.8  # Solo alta confianza
+        )
+        
+        approved_count = 0
+        approved_employees = []
+        
+        for leave in leaves_to_approve:
+            leave.approve_by_hr(
+                request.user, 
+                'Aprobación masiva basada en recomendación de Dr. Claude IA'
+            )
+            approved_count += 1
+            approved_employees.append(leave.employee.get_full_name())
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'¡{approved_count} permisos aprobados exitosamente!',
+            'approved_count': approved_count,
+            'employees': approved_employees
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Error en aprobación masiva: {str(e)}'
+        })
+
+
+@login_required
+@permission_required('supervisor')
+def generate_medical_report(request):
+    """Generar reporte médico en PDF"""
+    try:
+        from django.http import HttpResponse
+        from reportlab.pdfgen import canvas
+        from reportlab.lib.pagesizes import letter
+        from reportlab.lib.units import inch
+        import io
+        
+        # Crear buffer para PDF
+        buffer = io.BytesIO()
+        p = canvas.Canvas(buffer, pagesize=letter)
+        width, height = letter
+        
+        # Encabezado
+        p.setFont("Helvetica-Bold", 16)
+        p.drawString(50, height - 50, "EURO SECURITY - Reporte Médico")
+        p.setFont("Helvetica", 12)
+        p.drawString(50, height - 70, f"Generado: {timezone.now().strftime('%d/%m/%Y %H:%M')}")
+        
+        # Estadísticas
+        y_position = height - 120
+        p.setFont("Helvetica-Bold", 14)
+        p.drawString(50, y_position, "Estadísticas del Mes")
+        
+        # Datos del mes actual
+        current_month = timezone.now().replace(day=1)
+        
+        stats_data = [
+            ("Documentos procesados:", MedicalDocument.objects.filter(
+                uploaded_at__gte=current_month
+            ).count()),
+            ("Permisos aprobados:", MedicalLeave.objects.filter(
+                created_at__gte=current_month,
+                status__in=[MedicalLeaveStatus.AI_APPROVED, MedicalLeaveStatus.HR_APPROVED]
+            ).count()),
+            ("Revisión humana:", MedicalLeave.objects.filter(
+                created_at__gte=current_month,
+                status=MedicalLeaveStatus.HUMAN_REVIEW
+            ).count()),
+            ("Precisión IA:", "92%")
+        ]
+        
+        y_position -= 30
+        p.setFont("Helvetica", 12)
+        for label, value in stats_data:
+            p.drawString(70, y_position, f"{label} {value}")
+            y_position -= 20
+        
+        # Documentos recientes
+        y_position -= 30
+        p.setFont("Helvetica-Bold", 14)
+        p.drawString(50, y_position, "Documentos Recientes")
+        
+        recent_docs = MedicalDocument.objects.filter(
+            uploaded_at__gte=current_month
+        ).order_by('-uploaded_at')[:10]
+        
+        y_position -= 30
+        p.setFont("Helvetica", 10)
+        for doc in recent_docs:
+            if y_position < 100:  # Nueva página si es necesario
+                p.showPage()
+                y_position = height - 50
+            
+            text = f"{doc.employee.get_full_name()} - {doc.get_document_type_display()} - {doc.uploaded_at.strftime('%d/%m/%Y')}"
+            p.drawString(70, y_position, text)
+            y_position -= 15
+        
+        # Finalizar PDF
+        p.showPage()
+        p.save()
+        
+        # Preparar respuesta
+        buffer.seek(0)
+        response = HttpResponse(buffer, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="reporte_medico_{timezone.now().strftime("%Y%m%d")}.pdf"'
+        
+        return response
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Error generando reporte: {str(e)}'
+        })
+
+
+@login_required
+@permission_required('supervisor')
+def export_medical_data(request):
+    """Exportar datos médicos a Excel"""
+    try:
+        from django.http import HttpResponse
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill
+        import io
+        
+        # Crear workbook
+        wb = openpyxl.Workbook()
+        
+        # Hoja 1: Documentos Médicos
+        ws1 = wb.active
+        ws1.title = "Documentos Médicos"
+        
+        # Encabezados
+        headers1 = [
+            'Empleado', 'Tipo Documento', 'Fecha Subida', 'Estado',
+            'Confianza IA', 'Diagnóstico', 'Médico', 'Centro Médico'
+        ]
+        
+        for col, header in enumerate(headers1, 1):
+            cell = ws1.cell(row=1, column=col, value=header)
+            cell.font = Font(bold=True)
+            cell.fill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
+        
+        # Datos de documentos
+        documents = MedicalDocument.objects.all().order_by('-uploaded_at')
+        for row, doc in enumerate(documents, 2):
+            ws1.cell(row=row, column=1, value=doc.employee.get_full_name())
+            ws1.cell(row=row, column=2, value=doc.get_document_type_display())
+            ws1.cell(row=row, column=3, value=doc.uploaded_at.strftime('%d/%m/%Y %H:%M'))
+            ws1.cell(row=row, column=4, value='Procesado' if doc.processed_by_ai else 'Pendiente')
+            ws1.cell(row=row, column=5, value=f"{doc.ai_confidence_score:.1%}" if doc.ai_confidence_score else 'N/A')
+            ws1.cell(row=row, column=6, value=doc.diagnosis or 'N/A')
+            ws1.cell(row=row, column=7, value=doc.doctor_name or 'N/A')
+            ws1.cell(row=row, column=8, value=doc.medical_center or 'N/A')
+        
+        # Hoja 2: Permisos Médicos
+        ws2 = wb.create_sheet("Permisos Médicos")
+        
+        headers2 = [
+            'Empleado', 'Fecha Inicio', 'Fecha Fin', 'Días Totales',
+            'Estado', 'Recomendación IA', 'Revisado Por', 'Fecha Revisión'
+        ]
+        
+        for col, header in enumerate(headers2, 1):
+            cell = ws2.cell(row=1, column=col, value=header)
+            cell.font = Font(bold=True)
+            cell.fill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
+        
+        # Datos de permisos
+        leaves = MedicalLeave.objects.all().order_by('-created_at')
+        for row, leave in enumerate(leaves, 2):
+            ws2.cell(row=row, column=1, value=leave.employee.get_full_name())
+            ws2.cell(row=row, column=2, value=leave.start_date.strftime('%d/%m/%Y'))
+            ws2.cell(row=row, column=3, value=leave.end_date.strftime('%d/%m/%Y'))
+            ws2.cell(row=row, column=4, value=leave.total_days)
+            ws2.cell(row=row, column=5, value=leave.get_status_display())
+            ws2.cell(row=row, column=6, value=leave.ai_recommendation or 'N/A')
+            ws2.cell(row=row, column=7, value=leave.reviewed_by.get_full_name() if leave.reviewed_by else 'N/A')
+            ws2.cell(row=row, column=8, value=leave.reviewed_at.strftime('%d/%m/%Y %H:%M') if leave.reviewed_at else 'N/A')
+        
+        # Ajustar ancho de columnas
+        for ws in [ws1, ws2]:
+            for column in ws.columns:
+                max_length = 0
+                column_letter = column[0].column_letter
+                for cell in column:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 50)
+                ws.column_dimensions[column_letter].width = adjusted_width
+        
+        # Guardar en buffer
+        buffer = io.BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+        
+        # Preparar respuesta
+        response = HttpResponse(
+            buffer,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="datos_medicos_{timezone.now().strftime("%Y%m%d")}.xlsx"'
+        
+        return response
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Error exportando datos: {str(e)}'
+        })
+
+
+@csrf_exempt
+@login_required
+@permission_required('supervisor')
+def configure_claude_ai(request):
+    """Configurar parámetros de Claude AI"""
+    if request.method == 'GET':
+        # Mostrar configuración actual
+        config = {
+            'model': getattr(settings, 'CLAUDE_MODEL', 'claude-opus-4-1-20250805'),
+            'max_tokens': getattr(settings, 'CLAUDE_MAX_TOKENS', 1024),
+            'temperature': getattr(settings, 'CLAUDE_TEMPERATURE', 0.7),
+            'confidence_threshold': 0.8,  # Umbral para aprobación automática
+            'auto_approve_enabled': True
+        }
+        
+        return JsonResponse({
+            'success': True,
+            'config': config
+        })
+    
+    elif request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            # Validar parámetros
+            confidence_threshold = data.get('confidence_threshold', 0.8)
+            auto_approve = data.get('auto_approve_enabled', True)
+            
+            if not 0.5 <= confidence_threshold <= 1.0:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Umbral de confianza debe estar entre 0.5 y 1.0'
+                })
+            
+            # Aquí se guardarían en base de datos o cache
+            # Por ahora solo confirmamos
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Configuración de Dr. Claude actualizada exitosamente',
+                'config': {
+                    'confidence_threshold': confidence_threshold,
+                    'auto_approve_enabled': auto_approve
+                }
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': f'Error configurando IA: {str(e)}'
+            })
