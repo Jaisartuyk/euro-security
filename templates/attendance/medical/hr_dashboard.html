@@ -259,10 +259,10 @@
                                     </div>
                                 </div>
                                 <div class="action-buttons">
-                                    <button class="btn btn-sm btn-approve" onclick="approveLeave({{ leave.id }})">
+                                    <button class="btn btn-sm btn-approve" onclick="approveLeave('{{ leave.id }}')">
                                         <i class="fas fa-check me-1"></i>Aprobar
                                     </button>
-                                    <button class="btn btn-sm btn-reject" onclick="rejectLeave({{ leave.id }})">
+                                    <button class="btn btn-sm btn-reject" onclick="rejectLeave('{{ leave.id }}')">
                                         <i class="fas fa-times me-1"></i>Rechazar
                                     </button>
                                     <a href="{% url 'attendance:medical_leave_detail' leave.id %}" class="btn btn-sm btn-outline-primary">
