@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Tuple, Optional
 from django.conf import settings
 from django.utils import timezone
-from .medical_models import (
+from .models import (
     MedicalDocument, MedicalLeave, DrClaudeConversation,
     MedicalDocumentType, MedicalLeaveStatus
 )
