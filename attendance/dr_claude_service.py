@@ -54,12 +54,15 @@ class DrClaudeService:
         
         if ANTHROPIC_AVAILABLE and settings.ANTHROPIC_API_KEY:
             try:
+                # Inicializar cliente con la nueva API de Anthropic
                 self.client = anthropic.Anthropic(
                     api_key=settings.ANTHROPIC_API_KEY
                 )
                 logger.info("✅ Cliente Anthropic Claude AI inicializado correctamente")
+                logger.info(f"   - Versión Anthropic: {anthropic.__version__ if hasattr(anthropic, '__version__') else 'N/A'}")
             except Exception as e:
                 logger.error(f"❌ Error inicializando Anthropic: {e}")
+                logger.error(f"   - Versión instalada: {anthropic.__version__ if hasattr(anthropic, '__version__') else 'N/A'}")
                 self.client = None
         else:
             if not ANTHROPIC_AVAILABLE:
