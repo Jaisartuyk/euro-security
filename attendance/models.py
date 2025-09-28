@@ -408,10 +408,64 @@ class ShiftTemplate(models.Model):
         ('CUSTOM', 'Personalizado'),
     ]
     
+    SHIFT_CATEGORIES = [
+        ('GENERAL', 'General'),
+        ('CARGA_NACIONAL', 'Carga Nacional'),
+        ('CARGA_INTERNACIONAL', 'Carga Internacional'),
+    ]
+    
     name = models.CharField('Nombre de la Plantilla', max_length=100)
     description = models.TextField('Descripción', blank=True)
     category = models.CharField('Categoría', max_length=20, choices=TEMPLATE_CATEGORIES)
     shift_type = models.CharField('Tipo de Turno', max_length=20, choices=SHIFT_TYPES)
+    
+    # Campos específicos para códigos de turno del cliente
+    shift_code = models.CharField(
+        'Código de Turno', 
+        max_length=5, 
+        blank=True, 
+        null=True,
+        help_text='Código específico del cliente (D, C, S, A, Y, etc.)'
+    )
+    shift_category = models.CharField(
+        'Categoría de Turno',
+        max_length=20,
+        choices=SHIFT_CATEGORIES,
+        default='GENERAL'
+    )
+    is_split_shift = models.BooleanField(
+        'Turno Dividido',
+        default=False,
+        help_text='Turno con descanso largo en el medio'
+    )
+    split_break_start = models.TimeField(
+        'Inicio Descanso Split',
+        null=True,
+        blank=True,
+        help_text='Hora de inicio del descanso largo'
+    )
+    split_break_end = models.TimeField(
+        'Fin Descanso Split',
+        null=True,
+        blank=True,
+        help_text='Hora de fin del descanso largo'
+    )
+    max_agents = models.PositiveIntegerField(
+        'Máximo Agentes',
+        default=999,
+        help_text='Máximo número de agentes para este turno'
+    )
+    weekday_schedule = models.JSONField(
+        'Horario por Día de Semana',
+        default=dict,
+        blank=True,
+        help_text='Horarios específicos por día: {1: "05:45-17:45", 6: "05:30-17:30"}'
+    )
+    is_variable_schedule = models.BooleanField(
+        'Horario Variable',
+        default=False,
+        help_text='Turno con horario variable según itinerario (TAMPA)'
+    )
     
     # Configuración de turnos
     total_shifts_per_day = models.PositiveIntegerField('Turnos por Día', default=3)
@@ -452,6 +506,58 @@ class ShiftTemplate(models.Model):
             return json.loads(self.shifts_config)
         except json.JSONDecodeError:
             return []
+    
+    def get_schedule_for_day(self, weekday):
+        """
+        Retorna horario específico según día de la semana
+        weekday: 1=Lunes, 7=Domingo
+        """
+        if self.weekday_schedule and str(weekday) in self.weekday_schedule:
+            schedule_str = self.weekday_schedule[str(weekday)]
+            if '-' in schedule_str:
+                start, end = schedule_str.split('-')
+                return {'start': start.strip(), 'end': end.strip()}
+        
+        # Retornar horario por defecto de la configuración
+        shifts_config = self.get_shifts_config_list()
+        if shifts_config:
+            first_shift = shifts_config[0]
+            return {
+                'start': first_shift.get('start_time', '08:00'),
+                'end': first_shift.get('end_time', '17:00')
+            }
+        
+        return {'start': '08:00', 'end': '17:00'}
+    
+    def get_display_name(self):
+        """Retorna nombre para mostrar con código si existe"""
+        if self.shift_code:
+            return f"{self.shift_code} - {self.name}"
+        return self.name
+    
+    def get_total_hours(self):
+        """Calcula horas totales considerando turnos divididos"""
+        if self.is_split_shift and self.split_break_start and self.split_break_end:
+            shifts_config = self.get_shifts_config_list()
+            total_minutes = 0
+            
+            for shift in shifts_config:
+                start_time = datetime.strptime(shift.get('start_time', '08:00'), '%H:%M').time()
+                end_time = datetime.strptime(shift.get('end_time', '17:00'), '%H:%M').time()
+                
+                # Calcular duración del segmento
+                start_datetime = datetime.combine(datetime.today(), start_time)
+                end_datetime = datetime.combine(datetime.today(), end_time)
+                
+                if end_time < start_time:  # Cruza medianoche
+                    end_datetime += timedelta(days=1)
+                
+                duration = end_datetime - start_datetime
+                total_minutes += duration.total_seconds() / 60
+            
+            return total_minutes / 60
+        
+        return float(self.hours_per_shift)
     
     def save(self, *args, **kwargs):
         # Solo una plantilla puede ser default por categoría
