@@ -512,11 +512,15 @@ class ShiftTemplate(models.Model):
         Retorna horario específico según día de la semana
         weekday: 1=Lunes, 7=Domingo
         """
-        if self.weekday_schedule and str(weekday) in self.weekday_schedule:
-            schedule_str = self.weekday_schedule[str(weekday)]
-            if '-' in schedule_str:
-                start, end = schedule_str.split('-')
-                return {'start': start.strip(), 'end': end.strip()}
+        try:
+            if (hasattr(self, 'weekday_schedule') and self.weekday_schedule and 
+                str(weekday) in self.weekday_schedule):
+                schedule_str = self.weekday_schedule[str(weekday)]
+                if '-' in schedule_str:
+                    start, end = schedule_str.split('-')
+                    return {'start': start.strip(), 'end': end.strip()}
+        except AttributeError:
+            pass
         
         # Retornar horario por defecto de la configuración
         shifts_config = self.get_shifts_config_list()
@@ -531,31 +535,39 @@ class ShiftTemplate(models.Model):
     
     def get_display_name(self):
         """Retorna nombre para mostrar con código si existe"""
-        if self.shift_code:
-            return f"{self.shift_code} - {self.name}"
+        try:
+            if hasattr(self, 'shift_code') and self.shift_code:
+                return f"{self.shift_code} - {self.name}"
+        except AttributeError:
+            pass
         return self.name
     
     def get_total_hours(self):
         """Calcula horas totales considerando turnos divididos"""
-        if self.is_split_shift and self.split_break_start and self.split_break_end:
-            shifts_config = self.get_shifts_config_list()
-            total_minutes = 0
-            
-            for shift in shifts_config:
-                start_time = datetime.strptime(shift.get('start_time', '08:00'), '%H:%M').time()
-                end_time = datetime.strptime(shift.get('end_time', '17:00'), '%H:%M').time()
+        try:
+            if (hasattr(self, 'is_split_shift') and self.is_split_shift and 
+                hasattr(self, 'split_break_start') and self.split_break_start and
+                hasattr(self, 'split_break_end') and self.split_break_end):
+                shifts_config = self.get_shifts_config_list()
+                total_minutes = 0
                 
-                # Calcular duración del segmento
-                start_datetime = datetime.combine(datetime.today(), start_time)
-                end_datetime = datetime.combine(datetime.today(), end_time)
+                for shift in shifts_config:
+                    start_time = datetime.strptime(shift.get('start_time', '08:00'), '%H:%M').time()
+                    end_time = datetime.strptime(shift.get('end_time', '17:00'), '%H:%M').time()
+                    
+                    # Calcular duración del segmento
+                    start_datetime = datetime.combine(datetime.today(), start_time)
+                    end_datetime = datetime.combine(datetime.today(), end_time)
+                    
+                    if end_time < start_time:  # Cruza medianoche
+                        end_datetime += timedelta(days=1)
+                    
+                    duration = end_datetime - start_datetime
+                    total_minutes += duration.total_seconds() / 60
                 
-                if end_time < start_time:  # Cruza medianoche
-                    end_datetime += timedelta(days=1)
-                
-                duration = end_datetime - start_datetime
-                total_minutes += duration.total_seconds() / 60
-            
-            return total_minutes / 60
+                return total_minutes / 60
+        except AttributeError:
+            pass
         
         return float(self.hours_per_shift)
     
