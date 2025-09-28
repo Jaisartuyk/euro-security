@@ -419,53 +419,54 @@ class ShiftTemplate(models.Model):
     category = models.CharField('Categoría', max_length=20, choices=TEMPLATE_CATEGORIES)
     shift_type = models.CharField('Tipo de Turno', max_length=20, choices=SHIFT_TYPES)
     
+    # CAMPOS TEMPORALMENTE COMENTADOS - ACTIVAR DESPUÉS DE MIGRAR
     # Campos específicos para códigos de turno del cliente
-    shift_code = models.CharField(
-        'Código de Turno', 
-        max_length=5, 
-        blank=True, 
-        null=True,
-        help_text='Código específico del cliente (D, C, S, A, Y, etc.)'
-    )
-    shift_category = models.CharField(
-        'Categoría de Turno',
-        max_length=20,
-        choices=SHIFT_CATEGORIES,
-        default='GENERAL'
-    )
-    is_split_shift = models.BooleanField(
-        'Turno Dividido',
-        default=False,
-        help_text='Turno con descanso largo en el medio'
-    )
-    split_break_start = models.TimeField(
-        'Inicio Descanso Split',
-        null=True,
-        blank=True,
-        help_text='Hora de inicio del descanso largo'
-    )
-    split_break_end = models.TimeField(
-        'Fin Descanso Split',
-        null=True,
-        blank=True,
-        help_text='Hora de fin del descanso largo'
-    )
-    max_agents = models.PositiveIntegerField(
-        'Máximo Agentes',
-        default=999,
-        help_text='Máximo número de agentes para este turno'
-    )
-    weekday_schedule = models.JSONField(
-        'Horario por Día de Semana',
-        default=dict,
-        blank=True,
-        help_text='Horarios específicos por día: {1: "05:45-17:45", 6: "05:30-17:30"}'
-    )
-    is_variable_schedule = models.BooleanField(
-        'Horario Variable',
-        default=False,
-        help_text='Turno con horario variable según itinerario (TAMPA)'
-    )
+    # shift_code = models.CharField(
+    #     'Código de Turno', 
+    #     max_length=5, 
+    #     blank=True, 
+    #     null=True,
+    #     help_text='Código específico del cliente (D, C, S, A, Y, etc.)'
+    # )
+    # shift_category = models.CharField(
+    #     'Categoría de Turno',
+    #     max_length=20,
+    #     choices=SHIFT_CATEGORIES,
+    #     default='GENERAL'
+    # )
+    # is_split_shift = models.BooleanField(
+    #     'Turno Dividido',
+    #     default=False,
+    #     help_text='Turno con descanso largo en el medio'
+    # )
+    # split_break_start = models.TimeField(
+    #     'Inicio Descanso Split',
+    #     null=True,
+    #     blank=True,
+    #     help_text='Hora de inicio del descanso largo'
+    # )
+    # split_break_end = models.TimeField(
+    #     'Fin Descanso Split',
+    #     null=True,
+    #     blank=True,
+    #     help_text='Hora de fin del descanso largo'
+    # )
+    # max_agents = models.PositiveIntegerField(
+    #     'Máximo Agentes',
+    #     default=999,
+    #     help_text='Máximo número de agentes para este turno'
+    # )
+    # weekday_schedule = models.JSONField(
+    #     'Horario por Día de Semana',
+    #     default=dict,
+    #     blank=True,
+    #     help_text='Horarios específicos por día: {1: "05:45-17:45", 6: "05:30-17:30"}'
+    # )
+    # is_variable_schedule = models.BooleanField(
+    #     'Horario Variable',
+    #     default=False,
+    #     help_text='Turno con horario variable según itinerario (TAMPA)'
+    # )
     
     # Configuración de turnos
     total_shifts_per_day = models.PositiveIntegerField('Turnos por Día', default=3)
