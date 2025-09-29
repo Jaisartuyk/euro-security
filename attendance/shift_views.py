@@ -414,7 +414,7 @@ def get_available_employees(request):
                 'employee_id': emp.employee_id,
                 'full_name': emp.get_full_name(),
                 'department': emp.department.name if emp.department else 'Sin departamento',
-                'position': emp.position.name if emp.position else 'Sin puesto',
+                'position': emp.position.title if emp.position else 'Sin puesto',
                 'photo_url': emp.photo.url if emp.photo else None,
                 'current_assignments': emp.shift_assignments.filter(status='ACTIVE').count()
             })
