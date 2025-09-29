@@ -1,5 +1,5 @@
-# EURO SECURITY - Minimal Requirements for Railway Deploy
-# Solo dependencias esenciales para que funcione el sistema básico
+# EURO SECURITY - Requirements for Railway Deploy
+# Dependencias limpias sin hashes para evitar errores de integridad
 
 # Core Django
 Django==5.2.6
@@ -15,32 +15,32 @@ django-import-export==3.3.1
 # Images & Files
 Pillow==10.1.0
 
-# Machine Learning & Computer Vision (for facial recognition)
+# Machine Learning & Computer Vision
 opencv-python-headless==4.9.0.80
 numpy>=1.21.0,<2.0.0
 scikit-learn>=1.0.0,<2.0.0
 
-# Reports & Export
+# PDF Generation
 reportlab==4.0.7
 openpyxl==3.1.2
 
-# Configuration
+# Environment & Config
 python-decouple==3.8
 
-# HTTP Requests (for APIs)
+# HTTP & API
 requests==2.31.0
 
-# AI Integration - Anthropic Claude - VERSIÓN ESTABLE
+# Claude AI
 anthropic>=0.40.0,<1.0.0
 
 # Production Server
 gunicorn==22.0.0
 
-# Database (Production)
+# Database
 psycopg2-binary==2.9.9
 
-# Static Files & Storage
+# Static Files
 whitenoise==6.7.0
 
-# Security
+# CORS
 django-cors-headers==4.4.0
