@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ schedule.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-calendar-alt me-2"></i>{{ schedule.name }}</h3>
+                </div>
+                <div class="card-body">
+                    <p><strong>Descripción:</strong> {{ schedule.description|default:"Sin descripción" }}</p>
+                    <p><strong>Plantilla:</strong> {{ schedule.shift_template.name }}</p>
+                    <p><strong>Fecha Inicio:</strong> {{ schedule.start_date }}</p>
+                    <p><strong>Fecha Fin:</strong> {{ schedule.end_date|default:"Sin fecha fin" }}</p>
+                    
+                    <h4>Estadísticas</h4>
+                    <ul>
+                        <li>Total de turnos: {{ stats.total_shifts }}</li>
+                        <li>Asignaciones activas: {{ stats.total_assignments }}</li>
+                        <li>Empleados activos: {{ stats.active_employees }}</li>
+                    </ul>
+                    
+                    <h4>Turnos</h4>
+                    {% for shift in shifts %}
+                        <div class="badge bg-primary me-2">
+                            {{ shift.name }}: {{ shift.start_time }} - {{ shift.end_time }}
+                        </div>
+                    {% endfor %}
+                    
+                    <h4>Asignaciones</h4>
+                    {% for assignment in assignments %}
+                        <div class="alert alert-info">
+                            <strong>{{ assignment.employee.get_full_name }}</strong> - 
+                            {{ assignment.shift.name }} 
+                            ({{ assignment.start_date }} - {{ assignment.end_date|default:"Indefinido" }})
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

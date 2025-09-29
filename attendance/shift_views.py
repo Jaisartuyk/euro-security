@@ -235,7 +235,7 @@ def create_work_schedule(request, template_id=None):
                     'redirect_url': f'/asistencia/turnos/horarios/{work_schedule.id}/'
                 })
             
-            return redirect('attendance:work_schedule_detail', schedule_id=work_schedule.id)
+            return redirect('attendance:work_schedules_list')
             
         except Exception as e:
             if request.content_type == 'application/json':

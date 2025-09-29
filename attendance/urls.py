@@ -48,6 +48,18 @@ urlpatterns = [
     # Vista personal del empleado
     path('mi-asistencia/', views.my_attendance, name='my_attendance'),
     
+    # Sistema de Turnos y Horarios
+    path('turnos/', shift_views.shift_management_dashboard, name='shift_management_dashboard'),
+    path('turnos/plantillas/', shift_views.shift_templates_list, name='shift_templates_list'),
+    path('turnos/plantillas/<int:template_id>/', shift_views.shift_template_detail, name='shift_template_detail'),
+    path('turnos/crear-horario/', shift_views.create_work_schedule, name='create_work_schedule'),
+    path('turnos/crear-horario/<int:template_id>/', shift_views.create_work_schedule, name='create_work_schedule_with_template'),
+    path('turnos/horarios/', shift_views.work_schedules_list, name='work_schedules_list'),
+    path('turnos/horarios/<int:schedule_id>/', shift_views.work_schedule_detail, name='work_schedule_detail'),
+    path('turnos/api/asignar-empleado/', shift_views.assign_employee_to_shift, name='assign_employee_to_shift'),
+    path('turnos/api/empleados-disponibles/', shift_views.get_available_employees, name='get_available_employees'),
+    path('turnos/api/asignacion-masiva/', shift_views.bulk_assign_employees, name='bulk_assign_employees'),
+    
     # Registro de perfil facial
     path('registro-facial/', views.facial_enrollment, name='facial_enrollment'),
     
