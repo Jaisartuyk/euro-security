@@ -250,7 +250,7 @@
                                 {% endfor %}
                             </div>
                             
-                            <input type="hidden" id="shift_template" name="shift_template" required>
+                            <input type="hidden" id="template_id" name="template_id" required>
                         </div>
                         {% endif %}
 
@@ -362,7 +362,7 @@
     
     function setupTemplateSelection() {
         const previews = document.querySelectorAll('.template-preview:not(.selected)');
-        const hiddenInput = document.getElementById('shift_template');
+        const hiddenInput = document.getElementById('template_id');
         
         previews.forEach(preview => {
             preview.addEventListener('click', function() {
@@ -395,7 +395,7 @@
             }
             
             // Validar plantilla (si no está preseleccionada)
-            const templateInput = document.getElementById('shift_template');
+            const templateInput = document.getElementById('template_id');
             if (templateInput && !templateInput.value) {
                 alert('Por favor selecciona una plantilla');
                 isValid = false;
