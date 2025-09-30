@@ -1,0 +1,362 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .payroll-container {
+        overflow-x: auto;
+        margin: 20px 0;
+    }
+    
+    .payroll-table {
+        min-width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 11px;
+        white-space: nowrap;
+    }
+    
+    .payroll-table th,
+    .payroll-table td {
+        border: 1px solid #dee2e6;
+        padding: 6px 4px;
+        text-align: center;
+        vertical-align: middle;
+    }
+    
+    .payroll-table thead th {
+        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+        color: white;
+        font-weight: 600;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+    }
+    
+    .employee-name-cell {
+        background: #f8fafc;
+        font-weight: 600;
+        text-align: left;
+        min-width: 180px;
+        max-width: 180px;
+        position: sticky;
+        left: 0;
+        z-index: 5;
+        border-right: 2px solid #1e3a8a;
+    }
+    
+    .day-cell {
+        min-width: 35px;
+        max-width: 35px;
+        height: 40px;
+        font-weight: 700;
+        font-size: 13px;
+        position: relative;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+    
+    .day-cell:hover {
+        transform: scale(1.1);
+        z-index: 100;
+        box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    }
+    
+    .shift-code {
+        display: block;
+        font-size: 12px;
+        font-weight: bold;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        color: white;
+    }
+    
+    .status-indicator {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        font-size: 10px;
+    }
+    
+    .late-indicator {
+        color: #fbbf24;
+        text-shadow: 0 0 3px rgba(0,0,0,0.5);
+    }
+    
+    .absent-indicator {
+        color: #ef4444;
+        text-shadow: 0 0 3px rgba(0,0,0,0.5);
+    }
+    
+    .present-indicator {
+        color: #10b981;
+        text-shadow: 0 0 3px rgba(0,0,0,0.5);
+    }
+    
+    .stats-cell {
+        background: #f1f5f9;
+        font-weight: 600;
+        border-left: 2px solid #1e3a8a;
+    }
+    
+    .legend {
+        background: white;
+        border-radius: 8px;
+        padding: 15px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .legend-item {
+        display: inline-block;
+        margin: 5px 10px 5px 0;
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        color: white;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
+    
+    .filter-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+        .payroll-table {
+            font-size: 8px;
+        }
+        .day-cell {
+            min-width: 25px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 no-print">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-calendar-alt text-primary me-2"></i>
+                Nómina Mensual - {{ department.name }}
+            </h1>
+            <p class="text-muted mb-0">{{ month_name }} {{ year }}</p>
+        </div>
+        <div>
+            <a href="{% url 'attendance:reports' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Volver
+            </a>
+            <button onclick="window.print()" class="btn btn-primary">
+                <i class="fas fa-print me-2"></i>Imprimir
+            </button>
+        </div>
+    </div>
+
+    <!-- Filtros de Mes/Año -->
+    <div class="filter-card no-print">
+        <form method="GET" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label"><i class="fas fa-calendar me-2"></i>Mes</label>
+                <select name="month" class="form-select">
+                    {% for m in "123456789" %}
+                        <option value="{{ forloop.counter }}" {% if forloop.counter == month %}selected{% endif %}>
+                            {{ "ENERO FEBRERO MARZO ABRIL MAYO JUNIO JULIO AGOSTO SEPTIEMBRE OCTUBRE NOVIEMBRE DICIEMBRE"|split:" "|slice:":forloop.counter"|last }}
+                        </option>
+                    {% endfor %}
+                    {% for m in "123" %}
+                        <option value="1{{ m }}" {% if "1"|add:m|add:"0" == month %}selected{% endif %}>
+                            {{ "ENERO FEBRERO MARZO ABRIL MAYO JUNIO JULIO AGOSTO SEPTIEMBRE OCTUBRE NOVIEMBRE DICIEMBRE"|split:" "|slice:"9:"|add:forloop.counter|last }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label"><i class="fas fa-calendar-check me-2"></i>Año</label>
+                <select name="year" class="form-select">
+                    {% for y in "2023 2024 2025 2026 2027"|split:" " %}
+                        <option value="{{ y }}" {% if y|add:"0" == year %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search me-2"></i>Buscar
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Leyenda de Códigos -->
+    <div class="legend no-print">
+        <h6 class="mb-3"><i class="fas fa-info-circle me-2"></i>Leyenda de Turnos:</h6>
+        <div class="d-flex flex-wrap">
+            <span class="legend-item" style="background-color: #10b981;">D - Diurno 12H</span>
+            <span class="legend-item" style="background-color: #3b82f6;">N - Nocturno 12H</span>
+            <span class="legend-item" style="background-color: #f59e0b;">C - Carga Nacional</span>
+            <span class="legend-item" style="background-color: #8b5cf6;">A - Carga Internacional</span>
+            <span class="legend-item" style="background-color: #06b6d4;">W - Split 8H</span>
+            <span class="legend-item" style="background-color: #ec4899;">Y - Variable</span>
+            <div class="ms-4">
+                <i class="fas fa-check-circle present-indicator"></i> Presente
+                <i class="fas fa-clock late-indicator ms-2"></i> Tarde
+                <i class="fas fa-times-circle absent-indicator ms-2"></i> Ausente
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de Nómina -->
+    <div class="payroll-container">
+        <table class="payroll-table table table-bordered">
+            <thead>
+                <tr>
+                    <th class="employee-name-cell">EMPLEADO</th>
+                    {% for day in days_list %}
+                        <th class="text-center">{{ day }}</th>
+                    {% endfor %}
+                    <th class="stats-cell">DÍAS</th>
+                    <th class="stats-cell">ASIST.</th>
+                    <th class="stats-cell">TARDE</th>
+                    <th class="stats-cell">AUSENT.</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for emp_data in employees_data %}
+                <tr>
+                    <td class="employee-name-cell">
+                        <div>
+                            <strong>{{ emp_data.employee.get_full_name }}</strong>
+                            <br>
+                            <small class="text-muted">
+                                {{ emp_data.employee.employee_id }}
+                                {% if emp_data.employee.position %}
+                                    - {{ emp_data.employee.position.title }}
+                                {% endif %}
+                            </small>
+                        </div>
+                    </td>
+                    {% for day_info in emp_data.days %}
+                        <td class="day-cell" 
+                            data-shift-color="{{ day_info.shift_color }}"
+                            title="{{ day_info.shift_name }} - {{ day_info.date|date:'d/m/Y' }}">
+                            {% if day_info.shift_code %}
+                                <span class="shift-code">{{ day_info.shift_code }}</span>
+                                {% if day_info.present %}
+                                    <i class="fas fa-check-circle status-indicator present-indicator"></i>
+                                {% elif day_info.late %}
+                                    <i class="fas fa-clock status-indicator late-indicator"></i>
+                                {% elif day_info.absent %}
+                                    <i class="fas fa-times-circle status-indicator absent-indicator"></i>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                    {% endfor %}
+                    <td class="stats-cell">{{ emp_data.stats.total_days }}</td>
+                    <td class="stats-cell text-success">{{ emp_data.stats.days_present }}</td>
+                    <td class="stats-cell text-warning">{{ emp_data.stats.days_late }}</td>
+                    <td class="stats-cell text-danger">{{ emp_data.stats.days_absent }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Resumen del Departamento -->
+    <div class="row mt-4 no-print">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-primary">{{ employees_data|length }}</h3>
+                    <p class="text-muted mb-0">Empleados</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-info">{{ days_list|length }}</h3>
+                    <p class="text-muted mb-0">Días en el Mes</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    {% with total_present=0 %}
+                        {% for emp in employees_data %}
+                            {% with total_present=total_present|add:emp.stats.days_present %}{% endwith %}
+                        {% endfor %}
+                    {% endwith %}
+                    <h3 class="text-success">
+                        {% widthratio employees_data|length 1 1 %}
+                    </h3>
+                    <p class="text-muted mb-0">Asistencias</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-warning">{{ month_name }}</h3>
+                    <p class="text-muted mb-0">Período</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Aplicar colores de fondo a las celdas
+    document.addEventListener('DOMContentLoaded', function() {
+        // Aplicar colores desde data attributes
+        const cells = document.querySelectorAll('.day-cell[data-shift-color]');
+        cells.forEach(cell => {
+            const color = cell.getAttribute('data-shift-color');
+            if (color) {
+                cell.style.backgroundColor = color;
+            }
+        });
+        
+        // Mejorar selección de mes
+        const monthNames = ['', 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 
+                           'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
+        const monthSelect = document.querySelector('select[name="month"]');
+        
+        if (monthSelect) {
+            monthSelect.innerHTML = '';
+            for (let i = 1; i <= 12; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = monthNames[i];
+                if (i === parseInt('{{ month }}')) {
+                    option.selected = true;
+                }
+                monthSelect.appendChild(option);
+            }
+        }
+        
+        // Tooltips para las celdas
+        const dayCells = document.querySelectorAll('.day-cell[title]');
+        dayCells.forEach(cell => {
+            cell.addEventListener('mouseenter', function() {
+                this.style.zIndex = '1000';
+            });
+            cell.addEventListener('mouseleave', function() {
+                this.style.zIndex = '';
+            });
+        });
+    });
+</script>
+{% endblock %}

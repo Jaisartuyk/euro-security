@@ -24,6 +24,7 @@ urlpatterns = [
     # Reportes
     path('reportes/', reports_views.attendance_reports, name='reports'),
     path('reportes/departamento/<int:department_id>/', reports_views.department_attendance_report, name='department_report'),
+    path('reportes/nomina-mensual/<int:department_id>/', reports_views.monthly_payroll_report, name='monthly_payroll_report'),
     path('reportes/exportar/', reports_views.export_attendance_report, name='export_report'),
     
     # Mapas y ubicaciones
