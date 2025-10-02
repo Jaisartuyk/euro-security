@@ -294,16 +294,18 @@
                     </div>
                     
                     <div class="action-buttons">
-                        <a href="{% url 'attendance:schedule_detail' schedule.id %}" 
+                        {% comment %}
+                        <a href="#" 
                            class="btn btn-sm btn-outline-primary" 
                            title="Ver Detalles">
                             <i class="fas fa-eye"></i>
                         </a>
-                        <a href="{% url 'attendance:edit_schedule' schedule.id %}" 
+                        <a href="#" 
                            class="btn btn-sm btn-outline-warning" 
                            title="Editar">
                             <i class="fas fa-edit"></i>
                         </a>
+                        {% endcomment %}
                         <button class="btn btn-sm btn-outline-success" 
                                 title="Asignar Empleados"
                                 onclick="openAssignModal({{ schedule.id }}, '{{ schedule.name|escapejs }}')">
