@@ -209,6 +209,16 @@
                         <i class="fas fa-file-pdf me-2"></i>
                         Reporte Ejecutivo
                     </button>
+                    
+                    <a href="{% url 'attendance:hr_medical_dashboard' %}" class="btn btn-outline-danger btn-sm">
+                        <i class="fas fa-hospital me-2"></i>
+                        Dashboard Médico Ejecutivo
+                    </a>
+                    
+                    <a href="{% url 'attendance:supervisor_leaves' %}" class="btn btn-outline-warning btn-sm">
+                        <i class="fas fa-clipboard-check me-2"></i>
+                        Gestión de Ausencias
+                    </a>
                 </div>
             </div>
         </div>
