@@ -29,11 +29,11 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between">
                     <div>
-                        <h4 class="mb-0">{{ stats.total_forms }}</h4>
-                        <p class="mb-0">Formularios Disponibles</p>
+                        <h4 class="mb-0">{{ stats.total_static_forms }}</h4>
+                        <p class="mb-0 small">Formularios PDF</p>
                     </div>
                     <div class="align-self-center">
-                        <i class="fas fa-file-alt fa-2x"></i>
+                        <i class="fas fa-file-pdf fa-2x"></i>
                     </div>
                 </div>
             </div>
@@ -44,26 +44,11 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between">
                     <div>
-                        <h4 class="mb-0">{{ stats.total_categories }}</h4>
-                        <p class="mb-0">Categorías</p>
+                        <h4 class="mb-0">{{ stats.total_dynamic_templates }}</h4>
+                        <p class="mb-0 small">Formularios Dinámicos</p>
                     </div>
                     <div class="align-self-center">
-                        <i class="fas fa-folder fa-2x"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card bg-info text-white">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h4 class="mb-0">{{ stats.total_downloads }}</h4>
-                        <p class="mb-0">Total Descargas</p>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-download fa-2x"></i>
+                        <i class="fas fa-edit fa-2x"></i>
                     </div>
                 </div>
             </div>
@@ -74,17 +59,97 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between">
                     <div>
-                        <h4 class="mb-0">{{ user_permission|title }}</h4>
-                        <p class="mb-0">Tu Nivel de Acceso</p>
+                        <h4 class="mb-0">{{ stats.pending_assignments }}</h4>
+                        <p class="mb-0 small">Pendientes por Completar</p>
                     </div>
                     <div class="align-self-center">
-                        <i class="fas fa-user-shield fa-2x"></i>
+                        <i class="fas fa-tasks fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0">{{ stats.total_submissions }}</h4>
+                        <p class="mb-0 small">Formularios Completados</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-check-circle fa-2x"></i>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Asignaciones Pendientes del Usuario -->
+{% if pending_assignments %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Formularios Asignados a Mí ({{ pending_assignments|length }})
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Formulario</th>
+                                <th>Asignado por</th>
+                                <th>Fecha Límite</th>
+                                <th>Prioridad</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for assignment in pending_assignments %}
+                            <tr>
+                                <td>
+                                    <strong>{{ assignment.template.title }}</strong><br>
+                                    <small class="text-muted">{{ assignment.template.code }}</small>
+                                </td>
+                                <td>{{ assignment.assigned_by.get_full_name }}</td>
+                                <td>
+                                    {% if assignment.due_date %}
+                                        <span class="badge bg-secondary">{{ assignment.due_date|date:"d/m/Y" }}</span>
+                                    {% else %}
+                                        <span class="text-muted">Sin fecha límite</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if assignment.priority == 'high' %}
+                                        <span class="badge bg-danger">Alta</span>
+                                    {% elif assignment.priority == 'medium' %}
+                                        <span class="badge bg-warning text-dark">Media</span>
+                                    {% else %}
+                                        <span class="badge bg-info">Baja</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'forms:fill_assigned_form' assignment.template.id assignment.id %}" 
+                                       class="btn btn-sm btn-primary">
+                                        <i class="fas fa-pencil-alt me-1"></i>
+                                        Completar
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <!-- Categorías de Formularios -->
 <div class="row mb-4">
@@ -123,13 +188,97 @@
     </div>
 </div>
 
+<!-- Formularios Dinámicos Disponibles -->
+{% if dynamic_templates %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-success">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-edit me-2"></i>
+                    Formularios Dinámicos Disponibles ({{ dynamic_templates|length }})
+                </h5>
+                {% if is_hr %}
+                <a href="{% url 'admin:forms_formtemplate_add' %}" class="btn btn-light btn-sm">
+                    <i class="fas fa-plus me-1"></i>
+                    Crear Nuevo
+                </a>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for template in dynamic_templates %}
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card h-100 border-success">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-file-alt text-success me-2"></i>
+                                    {{ template.title }}
+                                </h6>
+                                <small class="text-muted">{{ template.code }}</small>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text small">{{ template.description|truncatewords:15 }}</p>
+                                <div class="mb-2">
+                                    <span class="badge bg-{{ template.category.color }}">
+                                        {{ template.category.name }}
+                                    </span>
+                                    <span class="badge bg-secondary">
+                                        v{{ template.version }}
+                                    </span>
+                                    <span class="badge bg-info">
+                                        {{ template.fields.count }} campos
+                                    </span>
+                                </div>
+                                <small class="text-muted d-block mb-2">
+                                    <i class="fas fa-paper-plane me-1"></i>
+                                    {{ template.submission_count }} envíos
+                                </small>
+                            </div>
+                            <div class="card-footer bg-white">
+                                <div class="btn-group w-100" role="group">
+                                    <a href="{% url 'forms:template_detail' template.id %}" 
+                                       class="btn btn-sm btn-outline-primary" 
+                                       title="Vista Previa">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if is_hr %}
+                                    <a href="{% url 'admin:forms_formtemplate_change' template.id %}" 
+                                       class="btn btn-sm btn-outline-warning" 
+                                       title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'forms:assign_form' template.id %}" 
+                                       class="btn btn-sm btn-outline-success" 
+                                       title="Asignar">
+                                        <i class="fas fa-share"></i>
+                                    </a>
+                                    {% else %}
+                                    <a href="{% url 'forms:fill_form' template.id %}" 
+                                       class="btn btn-sm btn-success" 
+                                       title="Completar">
+                                        <i class="fas fa-pencil-alt"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <div class="row">
-    <!-- Formularios Recientes -->
+    <!-- Formularios PDF Recientes -->
     <div class="col-lg-8">
         <div class="card">
             <div class="card-header">
-                <i class="fas fa-clock me-1"></i>
-                Formularios Recientes
+                <i class="fas fa-file-pdf me-1"></i>
+                Formularios PDF Recientes
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -189,8 +338,79 @@
         </div>
     </div>
 
-    <!-- Actividad Reciente -->
+    <!-- Mis Envíos Completados -->
     <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <i class="fas fa-check-circle me-1"></i>
+                Mis Envíos Completados
+            </div>
+            <div class="card-body">
+                {% if my_submissions %}
+                    {% for submission in my_submissions %}
+                    <div class="d-flex align-items-start mb-3 pb-3 border-bottom">
+                        <div class="flex-shrink-0">
+                            {% if submission.status == 'approved' %}
+                                <i class="fas fa-check-circle text-success fa-2x"></i>
+                            {% elif submission.status == 'submitted' %}
+                                <i class="fas fa-clock text-warning fa-2x"></i>
+                            {% elif submission.status == 'rejected' %}
+                                <i class="fas fa-times-circle text-danger fa-2x"></i>
+                            {% else %}
+                                <i class="fas fa-file-alt text-secondary fa-2x"></i>
+                            {% endif %}
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-1">{{ submission.template.title }}</h6>
+                            <small class="text-muted d-block">{{ submission.template.code }}</small>
+                            <div class="mt-2">
+                                {% if submission.status == 'approved' %}
+                                    <span class="badge bg-success">Aprobado</span>
+                                {% elif submission.status == 'submitted' %}
+                                    <span class="badge bg-warning text-dark">En Revisión</span>
+                                {% elif submission.status == 'rejected' %}
+                                    <span class="badge bg-danger">Rechazado</span>
+                                {% elif submission.status == 'draft' %}
+                                    <span class="badge bg-secondary">Borrador</span>
+                                {% else %}
+                                    <span class="badge bg-info">{{ submission.get_status_display }}</span>
+                                {% endif %}
+                            </div>
+                            <small class="text-muted d-block mt-1">
+                                {{ submission.created_at|timesince }} atrás
+                            </small>
+                            <div class="mt-2">
+                                <a href="{% url 'forms:submission_detail' submission.id %}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye me-1"></i>
+                                    Ver
+                                </a>
+                                {% if submission.status == 'approved' %}
+                                <button class="btn btn-sm btn-outline-success" 
+                                        onclick="downloadSubmissionPDF({{ submission.id }})">
+                                    <i class="fas fa-download me-1"></i>
+                                    PDF
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-inbox fa-3x mb-3"></i>
+                        <p>No has completado ningún formulario aún</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Actividad Reciente (Solo para RRHH) -->
+{% if is_hr %}
+<div class="row mt-4">
+    <div class="col-lg-6">
         <div class="card">
             <div class="card-header">
                 <i class="fas fa-history me-1"></i>
