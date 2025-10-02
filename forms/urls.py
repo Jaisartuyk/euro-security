@@ -39,4 +39,9 @@ urlpatterns = [
     path('envio/<int:submission_id>/', views.submission_detail, name='submission_detail'),
     path('envio/<int:submission_id>/revisar/', views.review_submission, name='review_submission'),
     path('envio/<int:submission_id>/pdf/', views.export_submission_pdf, name='export_submission_pdf'),
+    
+    # Registro de Visitantes
+    path('registro-visitantes/<int:template_id>/', views.visitor_registry, name='visitor_registry'),
+    path('envio/<int:submission_id>/registrar-salida/', views.register_visitor_exit, name='register_visitor_exit'),
+    path('envio/<int:submission_id>/eliminar/', views.delete_visitor_entry, name='delete_visitor_entry'),
 ]

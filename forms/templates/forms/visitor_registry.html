@@ -1,0 +1,334 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Registro de Visitantes Urbanización{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header con Letterhead -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);">
+                    <img src="{% static 'images/branding/letterhead.jpg' %}" 
+                         alt="Euro Security" 
+                         class="img-fluid mb-3" 
+                         style="max-height: 100px;">
+                    <h2 class="text-white mb-0">REGISTRO DE VISITANTES URBANIZACIÓN XXXXX</h2>
+                    <p class="text-white-50 mb-0">Codificación: OPA-EUEC-12 | Versión: 09-09-2025 | Revisión: XXXXX</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botón para Registrar Nuevo Visitante -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4>
+                    <i class="fas fa-users me-2"></i>
+                    Registro de Visitantes
+                </h4>
+                <div>
+                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#newVisitorModal">
+                        <i class="fas fa-plus me-2"></i>
+                        Registrar Nuevo Visitante
+                    </button>
+                    <a href="{% url 'forms:dashboard' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Volver
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <input type="date" class="form-control" id="filterDate" placeholder="Filtrar por fecha">
+        </div>
+        <div class="col-md-4">
+            <input type="text" class="form-control" id="filterName" placeholder="Buscar por nombre...">
+        </div>
+        <div class="col-md-4">
+            <select class="form-select" id="filterStatus">
+                <option value="">Todos los estados</option>
+                <option value="inside">Dentro</option>
+                <option value="outside">Salió</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Tabla de Registro -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover" id="visitorsTable">
+                            <thead class="table-primary">
+                                <tr>
+                                    <th>FECHA</th>
+                                    <th>NOMBRES</th>
+                                    <th>APELLIDOS</th>
+                                    <th>RCI</th>
+                                    <th>M/ESCOLAR</th>
+                                    <th>PROPIETARIO</th>
+                                    <th>N.INMUEBLE</th>
+                                    <th>H.SALIDA</th>
+                                    <th>ESTADO</th>
+                                    <th>ACCIONES</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for submission in submissions %}
+                                <tr>
+                                    <td>{{ submission.form_data.fecha|default:"-" }}</td>
+                                    <td>{{ submission.form_data.nombres|default:"-" }}</td>
+                                    <td>{{ submission.form_data.apellidos|default:"-" }}</td>
+                                    <td>{{ submission.form_data.rci|default:"-" }}</td>
+                                    <td>{{ submission.form_data.m_escolar|default:"-" }}</td>
+                                    <td>{{ submission.form_data.propietario|default:"-" }}</td>
+                                    <td>{{ submission.form_data.n_inmueble|default:"-" }}</td>
+                                    <td>
+                                        {% if submission.form_data.h_salida %}
+                                            <span class="badge bg-success">{{ submission.form_data.h_salida }}</span>
+                                        {% else %}
+                                            <button class="btn btn-sm btn-warning" onclick="registerExit({{ submission.id }})">
+                                                <i class="fas fa-sign-out-alt"></i>
+                                                Registrar Salida
+                                            </button>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if submission.form_data.h_salida %}
+                                            <span class="badge bg-secondary">
+                                                <i class="fas fa-check-circle me-1"></i>
+                                                Salió
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-user-check me-1"></i>
+                                                Dentro
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'forms:submission_detail' submission.id %}" 
+                                               class="btn btn-outline-primary" 
+                                               title="Ver Detalles">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <button class="btn btn-outline-danger" 
+                                                    onclick="deleteEntry({{ submission.id }})"
+                                                    title="Eliminar">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="10" class="text-center text-muted">
+                                        <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
+                                        No hay visitantes registrados hoy
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h3 class="mb-0">{{ stats.total_today }}</h3>
+                    <p class="mb-0">Visitantes Hoy</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h3 class="mb-0">{{ stats.inside }}</h3>
+                    <p class="mb-0">Dentro Ahora</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-secondary text-white">
+                <div class="card-body">
+                    <h3 class="mb-0">{{ stats.exited }}</h3>
+                    <p class="mb-0">Salieron Hoy</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h3 class="mb-0">{{ stats.total_week }}</h3>
+                    <p class="mb-0">Esta Semana</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Registrar Nuevo Visitante -->
+<div class="modal fade" id="newVisitorModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-plus me-2"></i>
+                    Registrar Nuevo Visitante
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" id="visitorForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Fecha <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" name="fecha" required value="{{ today }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nombres <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="nombres" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Apellidos <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="apellidos" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">RCI / Cédula <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="rci" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">M/Escolar</label>
+                            <input type="text" class="form-control" name="m_escolar">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Propietario <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="propietario" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">N. Inmueble <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="n_inmueble" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save me-2"></i>
+                        Registrar Ingreso
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Filtros en tiempo real
+document.getElementById('filterDate').addEventListener('change', filterTable);
+document.getElementById('filterName').addEventListener('input', filterTable);
+document.getElementById('filterStatus').addEventListener('change', filterTable);
+
+function filterTable() {
+    const dateFilter = document.getElementById('filterDate').value;
+    const nameFilter = document.getElementById('filterName').value.toLowerCase();
+    const statusFilter = document.getElementById('filterStatus').value;
+    
+    const rows = document.querySelectorAll('#visitorsTable tbody tr');
+    
+    rows.forEach(row => {
+        if (row.cells.length === 1) return; // Skip empty row
+        
+        const date = row.cells[0].textContent;
+        const name = (row.cells[1].textContent + ' ' + row.cells[2].textContent).toLowerCase();
+        const hasExit = row.cells[7].textContent.trim() !== '';
+        const status = hasExit ? 'outside' : 'inside';
+        
+        let show = true;
+        
+        if (dateFilter && !date.includes(dateFilter)) show = false;
+        if (nameFilter && !name.includes(nameFilter)) show = false;
+        if (statusFilter && status !== statusFilter) show = false;
+        
+        row.style.display = show ? '' : 'none';
+    });
+}
+
+// Registrar salida
+function registerExit(submissionId) {
+    const time = prompt('Ingrese la hora de salida (HH:MM):');
+    if (time) {
+        fetch(`/formularios/envio/${submissionId}/registrar-salida/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({ h_salida: time })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error al registrar salida');
+            }
+        });
+    }
+}
+
+// Eliminar entrada
+function deleteEntry(submissionId) {
+    if (confirm('¿Está seguro de eliminar este registro?')) {
+        fetch(`/formularios/envio/${submissionId}/eliminar/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error al eliminar registro');
+            }
+        });
+    }
+}
+</script>
+
+<style>
+.table th {
+    background-color: #1e3a8a;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.badge {
+    font-size: 0.9em;
+}
+</style>
+{% endblock %}

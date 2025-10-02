@@ -400,3 +400,98 @@ def export_submission_pdf(request, submission_id):
     except Exception as e:
         messages.error(request, f'Error al generar el PDF: {str(e)}')
         return redirect('forms:submission_detail', submission_id=submission_id)
+
+
+@login_required
+def visitor_registry(request, template_id):
+    """Vista de registro de visitantes con lista completa"""
+    from datetime import datetime, timedelta
+    
+    template = get_object_or_404(FormTemplate, id=template_id, code='OPA-EUEC-12')
+    
+    # Procesar nuevo registro
+    if request.method == 'POST':
+        form_data = {
+            'fecha': request.POST.get('fecha'),
+            'nombres': request.POST.get('nombres'),
+            'apellidos': request.POST.get('apellidos'),
+            'rci': request.POST.get('rci'),
+            'm_escolar': request.POST.get('m_escolar', ''),
+            'propietario': request.POST.get('propietario'),
+            'n_inmueble': request.POST.get('n_inmueble'),
+            'h_salida': '',
+        }
+        
+        submission = FormSubmission.objects.create(
+            template=template,
+            submitted_by=request.user,
+            form_data=form_data,
+            status='approved',
+            submitted_at=timezone.now()
+        )
+        
+        messages.success(request, 'Visitante registrado exitosamente')
+        return redirect('forms:visitor_registry', template_id=template_id)
+    
+    # Obtener registros de hoy
+    today = timezone.now().date()
+    submissions = FormSubmission.objects.filter(
+        template=template,
+        created_at__date=today
+    ).order_by('-created_at')
+    
+    # Estadísticas
+    week_ago = today - timedelta(days=7)
+    stats = {
+        'total_today': submissions.count(),
+        'inside': submissions.filter(form_data__h_salida='').count(),
+        'exited': submissions.exclude(form_data__h_salida='').count(),
+        'total_week': FormSubmission.objects.filter(
+            template=template,
+            created_at__date__gte=week_ago
+        ).count()
+    }
+    
+    context = {
+        'template': template,
+        'submissions': submissions,
+        'stats': stats,
+        'today': today.isoformat(),
+        'is_hr': has_form_access(request.user, 'hr')
+    }
+    
+    return render(request, 'forms/visitor_registry.html', context)
+
+
+@login_required
+@require_http_methods(["POST"])
+def register_visitor_exit(request, submission_id):
+    """Registrar hora de salida de un visitante"""
+    import json
+    
+    submission = get_object_or_404(FormSubmission, id=submission_id)
+    
+    try:
+        data = json.loads(request.body)
+        h_salida = data.get('h_salida')
+        
+        # Actualizar form_data
+        submission.form_data['h_salida'] = h_salida
+        submission.save()
+        
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@login_required
+@require_http_methods(["DELETE"])
+def delete_visitor_entry(request, submission_id):
+    """Eliminar registro de visitante"""
+    if not has_form_access(request.user, 'hr'):
+        return JsonResponse({'success': False, 'error': 'Sin permisos'}, status=403)
+    
+    submission = get_object_or_404(FormSubmission, id=submission_id)
+    submission.delete()
+    
+    return JsonResponse({'success': True})
