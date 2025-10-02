@@ -146,11 +146,26 @@ def medical_dashboard(request):
         return redirect('attendance:dashboard')
 
 
-@csrf_exempt
 @login_required
 @employee_required
 def upload_medical_document(request):
     """Subir documento médico para análisis IA"""
+    
+    # GET: Mostrar formulario
+    if request.method == 'GET':
+        try:
+            employee = Employee.objects.get(user=request.user)
+        except Employee.DoesNotExist:
+            messages.error(request, "No tienes un perfil de empleado asociado.")
+            return redirect('employees:dashboard')
+        
+        context = {
+            'employee': employee,
+            'page_title': 'Subir Documento Médico',
+        }
+        return render(request, 'attendance/medical/upload_document.html', context)
+    
+    # POST: Procesar documento
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'Método no permitido'})
     
