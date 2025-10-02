@@ -76,7 +76,7 @@ class Command(BaseCommand):
                         if valid_entries.exists():
                             first_in = valid_entries.first()
                             old_first = summary.first_entry
-                            summary.first_entry = first_in.timestamp.time()
+                            summary.first_entry = first_in.timestamp  # Guardar datetime completo
                             self.stdout.write(
                                 f'  ✓ {summary.employee.get_full_name()} - {summary.date}: '
                                 f'Primera entrada {old_first} → {summary.first_entry}'
@@ -86,7 +86,7 @@ class Command(BaseCommand):
                             first_in = records.filter(attendance_type='IN').first()
                             if first_in:
                                 old_first = summary.first_entry
-                                summary.first_entry = first_in.timestamp.time()
+                                summary.first_entry = first_in.timestamp  # Guardar datetime completo
                                 self.stdout.write(
                                     self.style.WARNING(
                                         f'  ⚠️  {summary.employee.get_full_name()} - {summary.date}: '
@@ -98,7 +98,7 @@ class Command(BaseCommand):
                         last_out = records.filter(attendance_type='OUT').last()
                         if last_out:
                             old_last = summary.last_exit
-                            summary.last_exit = last_out.timestamp.time()
+                            summary.last_exit = last_out.timestamp  # Guardar datetime completo
                             self.stdout.write(
                                 f'  ✓ {summary.employee.get_full_name()} - {summary.date}: '
                                 f'Última salida {old_last} → {summary.last_exit}'
@@ -107,11 +107,8 @@ class Command(BaseCommand):
                         # Recalcular horas trabajadas
                         if summary.first_entry and summary.last_exit:
                             from datetime import timedelta
-                            first_entry_dt = datetime.combine(summary.date, summary.first_entry)
-                            last_exit_dt = datetime.combine(summary.date, summary.last_exit)
-                            
-                            work_duration = last_exit_dt - first_entry_dt
-                            max_hours = timedelta(hours=8)
+                            work_duration = summary.last_exit - summary.first_entry
+                            max_hours = timedelta(hours=24)
                             summary.total_work_hours = min(work_duration, max_hours)
                         
                         if not dry_run:
