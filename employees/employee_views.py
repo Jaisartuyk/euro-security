@@ -230,6 +230,8 @@ def get_dashboard_type(employee):
     # Otros departamentos
     if level == 'DIRECTOR':
         return 'director'
+    elif level == 'COORDINACION':
+        return 'manager'  # Coordinadores usan dashboard de manager
     elif level == 'MANAGER':
         return 'manager'
     elif level == 'LEAD':
