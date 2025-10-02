@@ -70,16 +70,16 @@ def forms_dashboard(request):
     # Obtener plantillas dinámicas activas
     dynamic_templates = FormTemplate.objects.filter(
         is_active=True
-    ).select_related('category', 'created_by')[:5]
+    ).select_related('category', 'created_by')[:10]
     
     # Obtener asignaciones pendientes para el usuario
     pending_assignments = FormAssignment.objects.filter(
         assigned_to=request.user,
         is_completed=False
-    ).select_related('template', 'assigned_by')[:5]
+    ).select_related('template', 'assigned_by').order_by('-created_at')[:5]
     
     # Obtener envíos recientes del usuario
-    recent_submissions = FormSubmission.objects.filter(
+    my_submissions = FormSubmission.objects.filter(
         submitted_by=request.user
     ).select_related('template').order_by('-created_at')[:5]
     
@@ -111,7 +111,7 @@ def forms_dashboard(request):
         'recent_forms': recent_forms,
         'dynamic_templates': dynamic_templates,
         'pending_assignments': pending_assignments,
-        'recent_submissions': recent_submissions,
+        'my_submissions': my_submissions,
         'stats': stats,
         'is_hr': has_form_access(request.user, 'hr'),
         'user_permission': Employee.objects.get(user=request.user).get_permission_level() if hasattr(request.user, 'employee') else 'basic'
