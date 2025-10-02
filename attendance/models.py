@@ -234,6 +234,21 @@ class FacialRecognitionProfile(models.Model):
     def __str__(self):
         return f"Perfil Facial - {self.employee.get_full_name()}"
     
+    def get_image_count(self):
+        """Cuenta cuántas imágenes de referencia tiene el perfil"""
+        count = 0
+        if self.image_1:
+            count += 1
+        if self.image_2:
+            count += 1
+        if self.image_3:
+            count += 1
+        if self.image_4:
+            count += 1
+        if self.image_5:
+            count += 1
+        return count
+    
     def get_success_rate(self):
         """Calcula la tasa de éxito del reconocimiento"""
         if self.total_recognitions == 0:
