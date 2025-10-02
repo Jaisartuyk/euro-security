@@ -222,11 +222,29 @@
                             <i class="fas fa-ellipsis-v"></i>
                         </button>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-eye me-2"></i>Ver Detalles</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-edit me-2"></i>Editar</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-users me-2"></i>Asignar Empleados</a></li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'attendance:schedule_detail' schedule.id %}">
+                                    <i class="fas fa-eye me-2"></i>Ver Detalles
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'attendance:edit_schedule' schedule.id %}">
+                                    <i class="fas fa-edit me-2"></i>Editar
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="#" 
+                                   onclick="event.preventDefault(); openAssignModal({{ schedule.id }}, '{{ schedule.name|escapejs }}');">
+                                    <i class="fas fa-users me-2"></i>Asignar Empleados
+                                </a>
+                            </li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-danger" href="#"><i class="fas fa-trash me-2"></i>Eliminar</a></li>
+                            <li>
+                                <a class="dropdown-item text-danger" href="#" 
+                                   onclick="event.preventDefault(); confirmDelete({{ schedule.id }}, '{{ schedule.name|escapejs }}');">
+                                    <i class="fas fa-trash me-2"></i>Eliminar
+                                </a>
+                            </li>
                         </ul>
                     </div>
                 </div>
@@ -274,12 +292,25 @@
                     </div>
                     
                     <div class="action-buttons">
-                        <button class="btn btn-sm btn-outline-primary" title="Ver Detalles">
+                        <a href="{% url 'attendance:schedule_detail' schedule.id %}" 
+                           class="btn btn-sm btn-outline-primary" 
+                           title="Ver Detalles">
                             <i class="fas fa-eye"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-success" title="Asignar Empleados"
+                        </a>
+                        <a href="{% url 'attendance:edit_schedule' schedule.id %}" 
+                           class="btn btn-sm btn-outline-warning" 
+                           title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <button class="btn btn-sm btn-outline-success" 
+                                title="Asignar Empleados"
                                 onclick="openAssignModal({{ schedule.id }}, '{{ schedule.name|escapejs }}')">
                             <i class="fas fa-users"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" 
+                                title="Eliminar"
+                                onclick="confirmDelete({{ schedule.id }}, '{{ schedule.name|escapejs }}')">
+                            <i class="fas fa-trash"></i>
                         </button>
                     </div>
                 </div>
@@ -732,6 +763,46 @@
             assignBtn.disabled = false;
             assignBtn.innerHTML = originalText;
         });
+    }
+    
+    // Función para confirmar eliminación de horario
+    function confirmDelete(scheduleId, scheduleName) {
+        if (confirm(`¿Estás seguro de que deseas eliminar el horario "${scheduleName}"?\n\nEsta acción no se puede deshacer.`)) {
+            // Deshabilitar todos los botones de eliminación temporalmente
+            document.querySelectorAll('.btn-outline-danger').forEach(btn => {
+                btn.disabled = true;
+            });
+            
+            // Enviar petición de eliminación
+            fetch(`/asistencia/turnos/horarios/${scheduleId}/eliminar/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('✅ Horario eliminado correctamente.');
+                    // Recargar la página
+                    window.location.reload();
+                } else {
+                    alert('❌ Error al eliminar: ' + (data.error || 'Error desconocido'));
+                    // Rehabilitar botones
+                    document.querySelectorAll('.btn-outline-danger').forEach(btn => {
+                        btn.disabled = false;
+                    });
+                }
+            })
+            .catch(error => {
+                alert('❌ Error de conexión: ' + error.message);
+                // Rehabilitar botones
+                document.querySelectorAll('.btn-outline-danger').forEach(btn => {
+                    btn.disabled = false;
+                });
+            });
+        }
     }
 </script>
 {% endblock %}
