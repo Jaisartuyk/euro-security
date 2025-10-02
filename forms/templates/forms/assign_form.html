@@ -112,7 +112,7 @@
                                 </thead>
                                 <tbody id="employeeList">
                                     {% for employee in employees %}
-                                    <tr class="employee-row" data-name="{{ employee.user.get_full_name|lower }}" data-code="{{ employee.employee_code|lower }}">
+                                    <tr class="employee-row" data-name="{{ employee.user.get_full_name|lower }}" data-code="{{ employee.employee_id|lower }}">
                                         <td>
                                             <input type="checkbox" 
                                                    class="employee-checkbox" 
@@ -120,7 +120,7 @@
                                                    value="{{ employee.id }}"
                                                    onchange="updateCount()">
                                         </td>
-                                        <td>{{ employee.employee_code }}</td>
+                                        <td>{{ employee.employee_id }}</td>
                                         <td>
                                             <strong>{{ employee.user.get_full_name }}</strong><br>
                                             <small class="text-muted">{{ employee.user.email }}</small>

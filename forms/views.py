@@ -364,7 +364,7 @@ def assign_form(request, template_id):
     
     # Obtener empleados activos
     from employees.models import Employee
-    employees = Employee.objects.filter(is_active=True).select_related('user').order_by('employee_code')
+    employees = Employee.objects.filter(is_active=True).select_related('user').order_by('employee_id')
     
     context = {
         'template': template,
