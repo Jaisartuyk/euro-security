@@ -255,42 +255,57 @@ def upload_medical_document(request):
 @employee_required
 def chat_with_claude(request):
     """Chat en tiempo real con Dr. Claude"""
-    if request.method != 'POST':
-        return JsonResponse({'success': False, 'error': 'Método no permitido'})
+    if request.method == 'GET':
+        # Mostrar página del chat
+        try:
+            employee = Employee.objects.get(user=request.user)
+            context = {
+                'employee': employee,
+                'session_id': str(uuid.uuid4())
+            }
+            return render(request, 'attendance/medical/chat_claude.html', context)
+        except Employee.DoesNotExist:
+            messages.error(request, 'Perfil de empleado no encontrado')
+            return redirect('attendance:medical_dashboard')
     
-    try:
-        employee = Employee.objects.get(user=request.user)
-        data = json.loads(request.body)
-        
-        message = data.get('message', '').strip()
-        session_id = data.get('session_id', str(uuid.uuid4()))
-        
-        if not message:
+    elif request.method == 'POST':
+        # Procesar mensaje del chat
+        try:
+            employee = Employee.objects.get(user=request.user)
+            data = json.loads(request.body)
+            
+            message = data.get('message', '').strip()
+            session_id = data.get('session_id', str(uuid.uuid4()))
+            
+            if not message:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Mensaje vacío'
+                })
+            
+            # Procesar con Dr. Claude
+            response = get_dr_claude().chat_with_employee(employee, message, session_id)
+            
+            return JsonResponse(response)
+            
+        except Employee.DoesNotExist:
             return JsonResponse({
                 'success': False,
-                'error': 'Mensaje vacío'
+                'error': 'Perfil de empleado no encontrado'
             })
-        
-        # Procesar con Dr. Claude
-        response = get_dr_claude().chat_with_employee(employee, message, session_id)
-        
-        return JsonResponse(response)
-        
-    except Employee.DoesNotExist:
-        return JsonResponse({
-            'success': False,
-            'error': 'Perfil de empleado no encontrado'
-        })
-    except json.JSONDecodeError:
-        return JsonResponse({
-            'success': False,
-            'error': 'Formato de datos inválido'
-        })
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'error': f'Error en chat: {str(e)}'
-        })
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'success': False,
+                'error': 'Formato de datos inválido'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': f'Error en chat: {str(e)}'
+            })
+    
+    else:
+        return JsonResponse({'success': False, 'error': 'Método no permitido'})
 
 
 @login_required
