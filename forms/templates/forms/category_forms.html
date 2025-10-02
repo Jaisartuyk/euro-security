@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ category.name }} - Formularios{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">
+                    <a href="{% url 'forms:dashboard' %}">
+                        <i class="fas fa-file-alt me-1"></i>Formularios
+                    </a>
+                </li>
+                <li class="breadcrumb-item active">{{ category.name }}</li>
+            </ol>
+        </nav>
+        <h1 class="h3 mb-0">
+            <i class="{{ category.icon }} text-{{ category.color }} me-2"></i>
+            {{ category.name }}
+        </h1>
+        <p class="text-muted mb-0">{{ category.description }}</p>
+    </div>
+    <div class="btn-group" role="group">
+        <a href="{% url 'forms:dashboard' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>
+            Volver
+        </a>
+    </div>
+</div>
+
+<!-- Formularios de la Categoría -->
+<div class="row">
+    {% for form in forms %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100 form-card">
+            <div class="card-header bg-{{ category.color }} text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="fas fa-file-pdf me-1"></i>
+                        {{ form.title|truncatechars:30 }}
+                    </h6>
+                    <span class="badge bg-light text-dark">v{{ form.version }}</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <p class="card-text">{{ form.description|truncatewords:20 }}</p>
+                
+                <div class="mb-3">
+                    <small class="text-muted">
+                        <i class="fas fa-shield-alt me-1"></i>
+                        <strong>Acceso:</strong> 
+                        {% if form.required_permission == 'admin' %}
+                            <span class="badge bg-danger">Solo Administradores</span>
+                        {% elif form.required_permission == 'hr' %}
+                            <span class="badge bg-warning">Recursos Humanos</span>
+                        {% elif form.required_permission == 'management' %}
+                            <span class="badge bg-info">Gerencia</span>
+                        {% elif form.required_permission == 'supervisor' %}
+                            <span class="badge bg-success">Supervisores</span>
+                        {% else %}
+                            <span class="badge bg-primary">Todos los empleados</span>
+                        {% endif %}
+                    </small>
+                </div>
+                
+                <div class="row text-center">
+                    <div class="col-6">
+                        <small class="text-muted">
+                            <i class="fas fa-download me-1"></i>
+                            {{ form.download_count }} descarga{{ form.download_count|pluralize }}
+                        </small>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">
+                            <i class="fas fa-file me-1"></i>
+                            {{ form.get_file_size_display }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="d-grid">
+                    <a href="{% url 'forms:download' form.id %}" class="btn btn-{{ category.color }}">
+                        <i class="fas fa-download me-2"></i>
+                        Descargar Formulario
+                    </a>
+                </div>
+                <div class="text-center mt-2">
+                    <small class="text-muted">
+                        <i class="fas fa-calendar me-1"></i>
+                        Subido {{ form.created_at|timesince }} ago
+                        {% if form.created_by %}
+                            por {{ form.created_by.get_full_name|default:form.created_by.username }}
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-folder-open fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted">No hay formularios disponibles</h4>
+                <p class="text-muted">
+                    No se encontraron formularios en la categoría "{{ category.name }}" 
+                    o no tienes permisos para verlos.
+                </p>
+                <a href="{% url 'forms:dashboard' %}" class="btn btn-primary">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    Volver al Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Paginación -->
+{% if forms.has_other_pages %}
+<div class="row mt-4">
+    <div class="col-12">
+        <nav aria-label="Paginación de formularios">
+            <ul class="pagination justify-content-center">
+                {% if forms.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ forms.previous_page_number }}">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    </li>
+                {% endif %}
+                
+                {% for num in forms.paginator.page_range %}
+                    {% if forms.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > forms.number|add:'-3' and num < forms.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if forms.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ forms.next_page_number }}">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ forms.paginator.num_pages }}">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        
+        <div class="text-center text-muted">
+            <small>
+                Mostrando {{ forms.start_index }}-{{ forms.end_index }} 
+                de {{ forms.paginator.count }} formulario{{ forms.paginator.count|pluralize }}
+            </small>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .form-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    .breadcrumb {
+        background: none;
+        padding: 0;
+        margin-bottom: 0.5rem;
+    }
+    
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "›";
+        color: #6c757d;
+    }
+    
+    .card-footer {
+        background-color: rgba(0, 0, 0, 0.03);
+        border-top: 1px solid rgba(0, 0, 0, 0.125);
+    }
+    
+    .badge {
+        font-size: 0.7em;
+    }
+</style>
+{% endblock %}
