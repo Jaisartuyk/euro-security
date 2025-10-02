@@ -57,14 +57,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
-    # Aplicaciones del sistema
+    # Local apps
     'core',
     'employees',
     'departments',
     'positions',
-    'dashboard',
-    'reports',
     'attendance',
+    'reports',
     'forms',
 ]
 
@@ -188,6 +187,29 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # Media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# Cloudinary Configuration (only if installed)
+try:
+    import cloudinary
+    import cloudinary.uploader
+    import cloudinary.api
+    
+    cloudinary.config(
+        cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME', 'demo'),
+        api_key=os.getenv('CLOUDINARY_API_KEY', ''),
+        api_secret=os.getenv('CLOUDINARY_API_SECRET', ''),
+        secure=True
+    )
+    
+    # Use Cloudinary for file storage in production
+    if not DEBUG:
+        DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+    else:
+        # Use local storage in development
+        DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+except ImportError:
+    # Cloudinary not installed, use default storage
+    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field

@@ -18,6 +18,10 @@ Pillow==10.1.0
 # PDF Generation
 reportlab==4.0.7
 
+# Cloud Storage
+django-cloudinary-storage==0.3.0
+cloudinary==1.36.0
+
 # Facial Recognition & ML
 opencv-python-headless==4.9.0.80
 numpy==1.26.4

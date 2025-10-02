@@ -1,7 +1,10 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import FormCategory, FormDocument, FormDownloadLog
-
+from .models import (
+    FormCategory, FormDocument, FormDownloadLog,
+    FormTemplate, FormField, FormSubmission, FormAssignment
+)
+import os
 
 @admin.register(FormCategory)
 class FormCategoryAdmin(admin.ModelAdmin):
@@ -79,3 +82,137 @@ class FormDownloadLogAdmin(admin.ModelAdmin):
     
     def has_change_permission(self, request, obj=None):
         return False  # Solo lectura
+
+
+# ============================================================================
+# ADMIN PARA FORMULARIOS DINÁMICOS
+# ============================================================================
+
+class FormFieldInline(admin.TabularInline):
+    model = FormField
+    extra = 1
+    fields = ['name', 'label', 'field_type', 'is_required', 'order', 'section']
+    ordering = ['order', 'name']
+
+
+@admin.register(FormTemplate)
+class FormTemplateAdmin(admin.ModelAdmin):
+    list_display = ['code', 'title', 'category', 'version', 'is_active', 'submission_count', 'created_at']
+    list_filter = ['category', 'is_active', 'requires_approval', 'required_permission', 'created_at']
+    search_fields = ['code', 'title', 'description']
+    readonly_fields = ['submission_count', 'created_at', 'updated_at']
+    inlines = [FormFieldInline]
+    
+    fieldsets = (
+        ('Información Básica', {
+            'fields': ('title', 'description', 'category', 'code', 'version')
+        }),
+        ('Configuración', {
+            'fields': ('is_active', 'requires_approval', 'allow_draft', 'required_permission')
+        }),
+        ('Estadísticas', {
+            'fields': ('submission_count',),
+            'classes': ('collapse',)
+        }),
+        ('Auditoría', {
+            'fields': ('created_by', 'created_at', 'updated_at'),
+            'classes': ('collapse',)
+        })
+    )
+    
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(FormField)
+class FormFieldAdmin(admin.ModelAdmin):
+    list_display = ['template', 'name', 'label', 'field_type', 'is_required', 'order', 'section']
+    list_filter = ['template', 'field_type', 'is_required', 'section']
+    search_fields = ['template__title', 'name', 'label']
+    ordering = ['template', 'order', 'name']
+    
+    fieldsets = (
+        ('Información Básica', {
+            'fields': ('template', 'name', 'label', 'field_type')
+        }),
+        ('Configuración', {
+            'fields': ('placeholder', 'help_text', 'is_required')
+        }),
+        ('Validaciones', {
+            'fields': ('min_length', 'max_length', 'choices'),
+            'classes': ('collapse',)
+        }),
+        ('Organización', {
+            'fields': ('order', 'section')
+        })
+    )
+
+
+@admin.register(FormSubmission)
+class FormSubmissionAdmin(admin.ModelAdmin):
+    list_display = ['template', 'submitted_by', 'status', 'submitted_at', 'reviewed_by', 'created_at']
+    list_filter = ['template', 'status', 'submitted_at', 'reviewed_at', 'created_at']
+    search_fields = ['template__title', 'submitted_by__username', 'submitted_by__first_name', 'submitted_by__last_name']
+    readonly_fields = ['form_data', 'created_at', 'updated_at']
+    
+    fieldsets = (
+        ('Información Básica', {
+            'fields': ('template', 'submitted_by', 'assigned_by')
+        }),
+        ('Estado', {
+            'fields': ('status', 'submitted_at', 'reviewed_by', 'reviewed_at')
+        }),
+        ('Datos del Formulario', {
+            'fields': ('form_data',),
+            'classes': ('collapse',)
+        }),
+        ('Comentarios', {
+            'fields': ('notes', 'review_comments')
+        }),
+        ('Archivos', {
+            'fields': ('attachments',),
+            'classes': ('collapse',)
+        }),
+        ('Auditoría', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        })
+    )
+    
+    def save_model(self, request, obj, form, change):
+        if 'status' in form.changed_data:
+            if obj.status in ['approved', 'rejected'] and not obj.reviewed_by:
+                obj.reviewed_by = request.user
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(FormAssignment)
+class FormAssignmentAdmin(admin.ModelAdmin):
+    list_display = ['template', 'assigned_to', 'assigned_by', 'priority', 'due_date', 'is_completed', 'created_at']
+    list_filter = ['template', 'priority', 'is_completed', 'due_date', 'created_at']
+    search_fields = ['template__title', 'assigned_to__username', 'assigned_to__first_name', 'assigned_to__last_name']
+    readonly_fields = ['is_completed', 'completed_at', 'submission', 'created_at']
+    
+    fieldsets = (
+        ('Asignación', {
+            'fields': ('template', 'assigned_to', 'assigned_by')
+        }),
+        ('Configuración', {
+            'fields': ('due_date', 'priority', 'instructions')
+        }),
+        ('Estado', {
+            'fields': ('is_completed', 'completed_at', 'submission'),
+            'classes': ('collapse',)
+        }),
+        ('Auditoría', {
+            'fields': ('created_at',),
+            'classes': ('collapse',)
+        })
+    )
+    
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.assigned_by = request.user
+        super().save_model(request, obj, form, change)
