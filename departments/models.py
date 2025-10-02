@@ -9,12 +9,15 @@ class Department(BaseModel):
     DEPARTMENT_TYPES = [
         ('RRHH', 'Recursos Humanos'),
         ('SISTEMAS', 'Sistemas'),
+        ('MARKETING', 'Marketing y Comunicaciones'),
+        ('DIGITAL', 'Transformación Digital'),
         ('OPERACIONES', 'Operaciones'),
         ('ADMINISTRACION', 'Administración'),
         ('SEGURIDAD', 'Seguridad Física'),
         ('FINANZAS', 'Finanzas'),
         ('LOGISTICA', 'Logística'),
         ('MANTENIMIENTO', 'Mantenimiento'),
+        ('COMERCIAL', 'Comercial y Ventas'),
     ]
     
     name = models.CharField('Nombre', max_length=100)
