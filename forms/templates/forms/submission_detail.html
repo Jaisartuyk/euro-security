@@ -1,0 +1,265 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Envío: {{ submission.template.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header con Letterhead -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);">
+                    <img src="{% static 'images/branding/letterhead.jpg' %}" 
+                         alt="Euro Security" 
+                         class="img-fluid mb-3" 
+                         style="max-height: 100px;">
+                    <h2 class="text-white mb-0">{{ submission.template.title }}</h2>
+                    <p class="text-white-50 mb-0">{{ submission.template.code }} - Envío #{{ submission.id }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-9">
+            <!-- Estado del Envío -->
+            <div class="card mb-4">
+                <div class="card-header 
+                    {% if submission.status == 'approved' %}bg-success text-white
+                    {% elif submission.status == 'submitted' %}bg-warning text-dark
+                    {% elif submission.status == 'rejected' %}bg-danger text-white
+                    {% elif submission.status == 'draft' %}bg-secondary text-white
+                    {% else %}bg-info text-white{% endif %}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            {% if submission.status == 'approved' %}
+                                <i class="fas fa-check-circle me-2"></i>Formulario Aprobado
+                            {% elif submission.status == 'submitted' %}
+                                <i class="fas fa-clock me-2"></i>En Revisión
+                            {% elif submission.status == 'rejected' %}
+                                <i class="fas fa-times-circle me-2"></i>Formulario Rechazado
+                            {% elif submission.status == 'draft' %}
+                                <i class="fas fa-file-alt me-2"></i>Borrador
+                            {% else %}
+                                <i class="fas fa-info-circle me-2"></i>{{ submission.get_status_display }}
+                            {% endif %}
+                        </h5>
+                        <span class="badge 
+                            {% if submission.status == 'approved' %}bg-light text-success
+                            {% elif submission.status == 'submitted' %}bg-dark
+                            {% elif submission.status == 'rejected' %}bg-light text-danger
+                            {% else %}bg-light text-dark{% endif %}">
+                            {{ submission.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <strong>Enviado por:</strong>
+                            <p class="mb-0">{{ submission.submitted_by.get_full_name }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>Fecha de Envío:</strong>
+                            <p class="mb-0">
+                                {% if submission.submitted_at %}
+                                    {{ submission.submitted_at|date:"d/m/Y H:i" }}
+                                {% else %}
+                                    <span class="text-muted">No enviado aún</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        {% if submission.reviewed_by %}
+                        <div class="col-md-6 mb-3">
+                            <strong>Revisado por:</strong>
+                            <p class="mb-0">{{ submission.reviewed_by.get_full_name }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>Fecha de Revisión:</strong>
+                            <p class="mb-0">{{ submission.reviewed_at|date:"d/m/Y H:i" }}</p>
+                        </div>
+                        {% endif %}
+                        {% if submission.review_comments %}
+                        <div class="col-12">
+                            <strong>Comentarios de Revisión:</strong>
+                            <div class="alert alert-info mt-2">
+                                {{ submission.review_comments }}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Datos del Formulario -->
+            {% regroup submission.template.fields.all by section as field_sections %}
+            
+            {% for section in field_sections %}
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-folder-open me-2"></i>
+                        {{ section.grouper|default:"Información General" }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for field in section.list %}
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">
+                                {{ field.label }}
+                                {% if field.is_required %}
+                                    <span class="text-danger">*</span>
+                                {% endif %}
+                            </label>
+                            
+                            {% with value=submission.form_data|get_item:field.name %}
+                                {% if field.field_type == 'signature' %}
+                                    {% if value %}
+                                    <div class="border rounded p-2 bg-light">
+                                        <img src="{{ value }}" alt="Firma" class="img-fluid" style="max-height: 150px;">
+                                    </div>
+                                    {% else %}
+                                    <p class="text-muted">Sin firma</p>
+                                    {% endif %}
+                                {% elif field.field_type == 'file' %}
+                                    {% if value %}
+                                    <div class="alert alert-success mb-0">
+                                        <i class="fas fa-file me-2"></i>
+                                        Archivo adjunto: {{ value }}
+                                    </div>
+                                    {% else %}
+                                    <p class="text-muted">Sin archivo</p>
+                                    {% endif %}
+                                {% elif field.field_type == 'checkbox' %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" {% if value %}checked{% endif %} disabled>
+                                        <label class="form-check-label">
+                                            {% if value %}Sí{% else %}No{% endif %}
+                                        </label>
+                                    </div>
+                                {% else %}
+                                    <p class="border rounded p-2 bg-light mb-0">
+                                        {{ value|default:"<em class='text-muted'>Sin respuesta</em>"|safe }}
+                                    </p>
+                                {% endif %}
+                            {% endwith %}
+                            
+                            {% if field.help_text %}
+                                <small class="form-text text-muted d-block mt-1">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    {{ field.help_text }}
+                                </small>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Sidebar con Acciones -->
+        <div class="col-lg-3">
+            <div class="card mb-3 sticky-top" style="top: 20px;">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-cogs me-2"></i>
+                        Acciones
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% if submission.status == 'approved' %}
+                        <button class="btn btn-success" onclick="downloadPDF()">
+                            <i class="fas fa-download me-2"></i>
+                            Descargar PDF
+                        </button>
+                        {% endif %}
+                        
+                        {% if is_hr and submission.status == 'submitted' %}
+                        <form method="post" action="{% url 'forms:review_submission' submission.id %}">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label class="form-label">Comentarios:</label>
+                                <textarea name="comments" class="form-control" rows="3"></textarea>
+                            </div>
+                            <button type="submit" name="action" value="approve" class="btn btn-success w-100 mb-2">
+                                <i class="fas fa-check me-2"></i>
+                                Aprobar
+                            </button>
+                            <button type="submit" name="action" value="reject" class="btn btn-danger w-100">
+                                <i class="fas fa-times me-2"></i>
+                                Rechazar
+                            </button>
+                        </form>
+                        {% endif %}
+                        
+                        {% if submission.status == 'draft' and submission.submitted_by == request.user %}
+                        <a href="{% url 'forms:fill_form' submission.template.id %}" class="btn btn-warning">
+                            <i class="fas fa-edit me-2"></i>
+                            Continuar Editando
+                        </a>
+                        {% endif %}
+                        
+                        <a href="{% url 'forms:dashboard' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Volver al Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información del Formulario -->
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Información
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="small mb-2">
+                        <strong>Formulario:</strong><br>
+                        {{ submission.template.title }}
+                    </p>
+                    <p class="small mb-2">
+                        <strong>Código:</strong><br>
+                        {{ submission.template.code }}
+                    </p>
+                    <p class="small mb-2">
+                        <strong>Versión:</strong><br>
+                        <span class="badge bg-secondary">{{ submission.template.version }}</span>
+                    </p>
+                    <p class="small mb-2">
+                        <strong>Categoría:</strong><br>
+                        <span class="badge bg-{{ submission.template.category.color }}">
+                            {{ submission.template.category.name }}
+                        </span>
+                    </p>
+                    <p class="small mb-0">
+                        <strong>Creado:</strong><br>
+                        {{ submission.created_at|date:"d/m/Y H:i" }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function downloadPDF() {
+    // TODO: Implementar descarga de PDF con datos
+    alert('Generando PDF con los datos del formulario...');
+    window.location.href = '/formularios/envio/{{ submission.id }}/pdf/';
+}
+</script>
+
+<style>
+.sticky-top {
+    position: sticky;
+    z-index: 1020;
+}
+</style>
+{% endblock %}

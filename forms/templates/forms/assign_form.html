@@ -1,0 +1,376 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Asignar: {{ template.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header con Letterhead -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);">
+                    <img src="{% static 'images/branding/letterhead.jpg' %}" 
+                         alt="Euro Security" 
+                         class="img-fluid mb-3" 
+                         style="max-height: 100px;">
+                    <h2 class="text-white mb-0">Asignar Formulario</h2>
+                    <p class="text-white-50 mb-0">{{ template.title }} - {{ template.code }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form method="post" id="assignForm">
+        {% csrf_token %}
+        
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- Información del Formulario -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-file-alt me-2"></i>
+                            Información del Formulario
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <strong>Título:</strong>
+                                <p class="mb-0">{{ template.title }}</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <strong>Código:</strong>
+                                <p class="mb-0">{{ template.code }}</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <strong>Categoría:</strong>
+                                <span class="badge bg-{{ template.category.color }}">
+                                    {{ template.category.name }}
+                                </span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <strong>Campos Totales:</strong>
+                                <span class="badge bg-info">{{ template.fields.count }}</span>
+                            </div>
+                            <div class="col-12">
+                                <strong>Descripción:</strong>
+                                <p class="text-muted mt-2">{{ template.description }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Selección de Empleados -->
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-users me-2"></i>
+                            Seleccionar Empleados
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-search"></i>
+                                </span>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="searchEmployee" 
+                                       placeholder="Buscar empleado por nombre o código...">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <button type="button" class="btn btn-sm btn-outline-primary me-2" onclick="selectAll()">
+                                <i class="fas fa-check-square me-1"></i>
+                                Seleccionar Todos
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAll()">
+                                <i class="fas fa-square me-1"></i>
+                                Deseleccionar Todos
+                            </button>
+                            <span class="ms-3 text-muted">
+                                <strong id="selectedCount">0</strong> empleado(s) seleccionado(s)
+                            </span>
+                        </div>
+
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-hover">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th width="50">
+                                            <input type="checkbox" id="selectAllCheckbox" onchange="toggleAll(this)">
+                                        </th>
+                                        <th>Código</th>
+                                        <th>Nombre</th>
+                                        <th>Departamento</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="employeeList">
+                                    {% for employee in employees %}
+                                    <tr class="employee-row" data-name="{{ employee.user.get_full_name|lower }}" data-code="{{ employee.employee_code|lower }}">
+                                        <td>
+                                            <input type="checkbox" 
+                                                   class="employee-checkbox" 
+                                                   name="employees" 
+                                                   value="{{ employee.id }}"
+                                                   onchange="updateCount()">
+                                        </td>
+                                        <td>{{ employee.employee_code }}</td>
+                                        <td>
+                                            <strong>{{ employee.user.get_full_name }}</strong><br>
+                                            <small class="text-muted">{{ employee.user.email }}</small>
+                                        </td>
+                                        <td>{{ employee.department|default:"Sin departamento" }}</td>
+                                        <td>
+                                            {% if employee.is_active %}
+                                                <span class="badge bg-success">Activo</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Inactivo</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted">
+                                            No hay empleados disponibles
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Configuración de Asignación -->
+                <div class="card mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">
+                            <i class="fas fa-cog me-2"></i>
+                            Configuración de Asignación
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="due_date" class="form-label">
+                                    <i class="fas fa-calendar me-1"></i>
+                                    Fecha Límite
+                                </label>
+                                <input type="date" 
+                                       class="form-control" 
+                                       id="due_date" 
+                                       name="due_date">
+                                <small class="form-text text-muted">Opcional: Fecha límite para completar el formulario</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="priority" class="form-label">
+                                    <i class="fas fa-flag me-1"></i>
+                                    Prioridad
+                                </label>
+                                <select class="form-select" id="priority" name="priority">
+                                    <option value="low">Baja</option>
+                                    <option value="medium" selected>Media</option>
+                                    <option value="high">Alta</option>
+                                </select>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label for="instructions" class="form-label">
+                                    <i class="fas fa-comment me-1"></i>
+                                    Instrucciones Adicionales
+                                </label>
+                                <textarea class="form-control" 
+                                          id="instructions" 
+                                          name="instructions" 
+                                          rows="4"
+                                          placeholder="Instrucciones o comentarios para los empleados..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar con Resumen y Acciones -->
+            <div class="col-lg-4">
+                <div class="card mb-3 sticky-top" style="top: 20px;">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0">
+                            <i class="fas fa-clipboard-check me-2"></i>
+                            Resumen de Asignación
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong id="summaryCount">0</strong> empleado(s) recibirán este formulario
+                        </div>
+                        
+                        <div class="mb-3">
+                            <strong>Formulario:</strong>
+                            <p class="mb-0 small">{{ template.title }}</p>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <strong>Campos a completar:</strong>
+                            <p class="mb-0">
+                                <span class="badge bg-info">{{ template.fields.count }}</span>
+                            </p>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <strong>Tiempo estimado:</strong>
+                            <p class="mb-0 small text-muted">
+                                {% widthratio template.fields.count 1 2 %} - {% widthratio template.fields.count 1 3 %} minutos
+                            </p>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-paper-plane me-2"></i>
+                                Asignar Formulario
+                            </button>
+                            <a href="{% url 'forms:template_detail' template.id %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Cancelar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notificaciones -->
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0">
+                            <i class="fas fa-bell me-2"></i>
+                            Notificaciones
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="notify_email" checked>
+                            <label class="form-check-label" for="notify_email">
+                                Notificar por Email
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="notify_system" checked>
+                            <label class="form-check-label" for="notify_system">
+                                Notificación en Sistema
+                            </label>
+                        </div>
+                        <small class="text-muted d-block mt-2">
+                            Los empleados recibirán una notificación cuando se les asigne el formulario.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+// Búsqueda de empleados
+document.getElementById('searchEmployee').addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    const rows = document.querySelectorAll('.employee-row');
+    
+    rows.forEach(row => {
+        const name = row.dataset.name;
+        const code = row.dataset.code;
+        
+        if (name.includes(searchTerm) || code.includes(searchTerm)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+
+// Seleccionar todos
+function selectAll() {
+    const checkboxes = document.querySelectorAll('.employee-checkbox');
+    const visibleCheckboxes = Array.from(checkboxes).filter(cb => {
+        return cb.closest('tr').style.display !== 'none';
+    });
+    
+    visibleCheckboxes.forEach(cb => cb.checked = true);
+    updateCount();
+}
+
+// Deseleccionar todos
+function deselectAll() {
+    const checkboxes = document.querySelectorAll('.employee-checkbox');
+    checkboxes.forEach(cb => cb.checked = false);
+    updateCount();
+}
+
+// Toggle todos
+function toggleAll(checkbox) {
+    if (checkbox.checked) {
+        selectAll();
+    } else {
+        deselectAll();
+    }
+}
+
+// Actualizar contador
+function updateCount() {
+    const checked = document.querySelectorAll('.employee-checkbox:checked').length;
+    document.getElementById('selectedCount').textContent = checked;
+    document.getElementById('summaryCount').textContent = checked;
+    
+    // Actualizar checkbox de seleccionar todos
+    const total = document.querySelectorAll('.employee-checkbox').length;
+    document.getElementById('selectAllCheckbox').checked = (checked === total && total > 0);
+}
+
+// Validación del formulario
+document.getElementById('assignForm').addEventListener('submit', function(e) {
+    const checked = document.querySelectorAll('.employee-checkbox:checked').length;
+    
+    if (checked === 0) {
+        e.preventDefault();
+        alert('Por favor, selecciona al menos un empleado para asignar el formulario.');
+        return false;
+    }
+    
+    if (!confirm(`¿Estás seguro de asignar este formulario a ${checked} empleado(s)?`)) {
+        e.preventDefault();
+        return false;
+    }
+});
+
+// Inicializar contador
+updateCount();
+</script>
+
+<style>
+.sticky-top {
+    position: sticky;
+    z-index: 1020;
+}
+
+.employee-row {
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.employee-row:hover {
+    background-color: #f8f9fa;
+}
+
+.table thead.sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: #f8f9fa;
+}
+</style>
+{% endblock %}
