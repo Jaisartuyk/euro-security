@@ -6,6 +6,7 @@ from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from .models import AttendanceRecord, AttendanceSummary, FacialRecognitionProfile, AttendanceSettings
+from .models import LeaveRequest, LeaveType, LeaveStatus
 from .models_gps import GPSTracking, WorkArea, EmployeeWorkArea, LocationAlert
 
 
@@ -349,3 +350,135 @@ class LocationAlertAdmin(admin.ModelAdmin):
     
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('employee', 'work_area', 'gps_tracking')
+
+
+# ============================================================================
+# SISTEMA DE AUSENCIAS Y PERMISOS LABORALES
+# ============================================================================
+
+@admin.register(LeaveRequest)
+class LeaveRequestAdmin(admin.ModelAdmin):
+    """Admin para solicitudes de ausencia laboral"""
+    
+    list_display = ('request_number', 'employee', 'leave_type', 'status_badge', 
+                   'permission_mode', 'total_days_hours', 'submitted_at', 'ai_badge')
+    list_filter = ('status', 'leave_type', 'permission_mode', 'ai_generated', 
+                  'submitted_at', 'created_at')
+    search_fields = ('request_number', 'employee__first_name', 'employee__last_name',
+                    'employee__employee_id', 'reason_description')
+    readonly_fields = ('request_number', 'created_at', 'updated_at', 'employee_code',
+                      'ai_generated', 'ai_confidence', 'submitted_at')
+    date_hierarchy = 'created_at'
+    ordering = ('-created_at',)
+    
+    fieldsets = (
+        ('📋 Datos de la Solicitud', {
+            'fields': ('request_number', 'status', 'submitted_at')
+        }),
+        ('👤 Empleado Solicitante', {
+            'fields': ('employee', 'employee_code', 'project', 'area', 'immediate_supervisor')
+        }),
+        ('📝 Tipo de Permiso', {
+            'fields': ('leave_type', 'permission_mode', 'reason_description')
+        }),
+        ('📅 Duración - Por Días', {
+            'fields': ('start_date', 'end_date', 'total_days'),
+            'classes': ('collapse',)
+        }),
+        ('⏰ Duración - Por Horas', {
+            'fields': ('permission_date', 'start_time', 'end_time', 'total_hours'),
+            'classes': ('collapse',)
+        }),
+        ('📄 Documentación', {
+            'fields': ('supporting_document',)
+        }),
+        ('🤖 Integración Dr. Claude IA', {
+            'fields': ('medical_leave', 'ai_generated', 'ai_confidence', 'ai_recommendation'),
+            'classes': ('collapse',)
+        }),
+        ('✅ Aprobación Jefe Inmediato', {
+            'fields': ('supervisor_reviewed_by', 'supervisor_comments', 
+                      'supervisor_decision_date', 'supervisor_signature_date')
+        }),
+        ('✅ Aprobación RRHH', {
+            'fields': ('hr_reviewed_by', 'hr_comments', 
+                      'hr_decision_date', 'hr_signature_date')
+        }),
+        ('🔄 Impacto en Turnos', {
+            'fields': ('affects_shifts', 'shifts_affected', 'requires_coverage', 'replacement_employee'),
+            'classes': ('collapse',)
+        }),
+        ('🕐 Metadatos', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        })
+    )
+    
+    def status_badge(self, obj):
+        """Badge de estado con colores"""
+        color = obj.get_status_color()
+        return format_html(
+            '<span class="badge bg-{}">{}</span>',
+            color, obj.get_status_display()
+        )
+    status_badge.short_description = 'Estado'
+    
+    def ai_badge(self, obj):
+        """Badge si fue generado por IA"""
+        if obj.ai_generated:
+            return format_html(
+                '<span class="badge bg-info" title="Confianza: {:.0%}">🤖 IA</span>',
+                obj.ai_confidence
+            )
+        return '-'
+    ai_badge.short_description = 'IA'
+    
+    def total_days_hours(self, obj):
+        """Muestra días u horas según el modo"""
+        if obj.permission_mode == 'DAYS':
+            return f"{obj.total_days} días"
+        else:
+            return f"{obj.total_hours} horas"
+    total_days_hours.short_description = 'Duración'
+    
+    actions = ['approve_by_supervisor_action', 'approve_by_hr_action', 'reject_action']
+    
+    def approve_by_supervisor_action(self, request, queryset):
+        """Aprobar solicitudes como jefe"""
+        count = 0
+        for leave in queryset:
+            if leave.status == LeaveStatus.PENDING_SUPERVISOR:
+                leave.approve_by_supervisor(request.user, "Aprobado desde admin")
+                count += 1
+        self.message_user(request, f"{count} solicitudes aprobadas por jefe.")
+    approve_by_supervisor_action.short_description = "✅ Aprobar como Jefe"
+    
+    def approve_by_hr_action(self, request, queryset):
+        """Aprobar solicitudes como RRHH"""
+        count = 0
+        for leave in queryset:
+            if leave.status == LeaveStatus.PENDING_HR:
+                leave.approve_by_hr(request.user, "Aprobado desde admin")
+                count += 1
+        self.message_user(request, f"{count} solicitudes aprobadas por RRHH.")
+    approve_by_hr_action.short_description = "✅ Aprobar como RRHH"
+    
+    def reject_action(self, request, queryset):
+        """Rechazar solicitudes"""
+        count = 0
+        for leave in queryset:
+            if leave.status in [LeaveStatus.PENDING_SUPERVISOR, LeaveStatus.PENDING_HR]:
+                if leave.status == LeaveStatus.PENDING_SUPERVISOR:
+                    leave.reject_by_supervisor(request.user, "Rechazado desde admin")
+                else:
+                    leave.reject_by_hr(request.user, "Rechazado desde admin")
+                count += 1
+        self.message_user(request, f"{count} solicitudes rechazadas.")
+    reject_action.short_description = "❌ Rechazar"
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related(
+            'employee', 'area', 'immediate_supervisor',
+            'supervisor_reviewed_by', 'hr_reviewed_by',
+            'medical_leave', 'replacement_employee'
+        )

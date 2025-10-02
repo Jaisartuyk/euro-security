@@ -1083,6 +1083,482 @@ class MedicalAnalytics(models.Model):
         
     def __str__(self):
         return f"Analytics {self.date}"
+
+
+# =============================================================================
+# SISTEMA DE GESTIÓN DE AUSENCIAS Y PERMISOS LABORALES
+# =============================================================================
+
+class LeaveType(models.TextChoices):
+    """Tipos de ausencias laborales"""
+    # Médicas (manejadas por Dr. Claude IA)
+    MEDICAL_DISABILITY = 'medical_disability', 'Incapacidad Médica'
+    MEDICAL_APPOINTMENT = 'medical_appointment', 'Cita Médica'
+    MEDICAL_EMERGENCY = 'medical_emergency', 'Emergencia Médica'
+    
+    # Personales
+    DOMESTIC_CALAMITY = 'domestic_calamity', 'Calamidad Doméstica'
+    PERSONAL_MATTER = 'personal_matter', 'Asunto Personal'
+    PERSONAL_ERRAND = 'personal_errand', 'Diligencia Personal'
+    MARRIAGE_PERMIT = 'marriage_permit', 'Permiso Matrimonio'
+    BEREAVEMENT = 'bereavement', 'Duelo Familiar'
+    
+    # Educativas
+    STUDY_PERMIT = 'study_permit', 'Permiso Estudio'
+    ACADEMIC_EXAM = 'academic_exam', 'Examen Académico'
+    TRAINING = 'training', 'Capacitación'
+    
+    # Legales
+    COURT_SUMMONS = 'court_summons', 'Citación Judicial'
+    LEGAL_PROCEDURE = 'legal_procedure', 'Trámite Legal'
+    MANDATORY_APPEARANCE = 'mandatory_appearance', 'Comparecencia Obligatoria'
+    
+    # Otros
+    PAID_LEAVE = 'paid_leave', 'Permiso Remunerado'
+    COMPENSATORY_DAY = 'compensatory_day', 'Día Compensatorio'
+    SPECIAL_LICENSE = 'special_license', 'Licencia Especial'
+    UNPAID_LEAVE = 'unpaid_leave', 'Licencia No Remunerada'
+    VACATION = 'vacation', 'Vacaciones'
+
+
+class LeaveStatus(models.TextChoices):
+    """Estados del proceso de aprobación"""
+    DRAFT = 'draft', 'Borrador'
+    PENDING_SUPERVISOR = 'pending_supervisor', 'Pendiente Jefe'
+    APPROVED_SUPERVISOR = 'approved_supervisor', 'Aprobado por Jefe'
+    REJECTED_SUPERVISOR = 'rejected_supervisor', 'Rechazado por Jefe'
+    PENDING_HR = 'pending_hr', 'Pendiente RRHH'
+    APPROVED_HR = 'approved_hr', 'Aprobado por RRHH'
+    REJECTED_HR = 'rejected_hr', 'Rechazado por RRHH'
+    ACTIVE = 'active', 'Activo'
+    COMPLETED = 'completed', 'Completado'
+    CANCELLED = 'cancelled', 'Cancelado'
+
+
+class LeaveRequest(models.Model):
+    """
+    Solicitud de Ausencia Laboral - Sistema completo de permisos
+    Integra con Dr. Claude IA para permisos médicos
+    """
+    
+    PERMISSION_MODE_CHOICES = [
+        ('DAYS', 'Por Días'),
+        ('HOURS', 'Por Horas'),
+    ]
+    
+    # =========================================================================
+    # DATOS DEL EMPLEADO SOLICITANTE
+    # =========================================================================
+    employee = models.ForeignKey(
+        Employee,
+        on_delete=models.CASCADE,
+        related_name='leave_requests',
+        verbose_name='Empleado'
+    )
+    employee_code = models.CharField(
+        'Código Empleado',
+        max_length=20,
+        blank=True
+    )
+    project = models.CharField(
+        'Proyecto',
+        max_length=100,
+        blank=True,
+        help_text='Proyecto o cliente asignado'
+    )
+    area = models.ForeignKey(
+        'departments.Department',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='Área/Departamento'
+    )
+    immediate_supervisor = models.ForeignKey(
+        Employee,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='supervised_leave_requests',
+        verbose_name='Jefe Inmediato'
+    )
+    
+    # =========================================================================
+    # TIPO DE PERMISO
+    # =========================================================================
+    leave_type = models.CharField(
+        'Tipo de Ausencia',
+        max_length=30,
+        choices=LeaveType.choices
+    )
+    permission_mode = models.CharField(
+        'Modo de Permiso',
+        max_length=10,
+        choices=PERMISSION_MODE_CHOICES,
+        default='DAYS'
+    )
+    
+    # =========================================================================
+    # DURACIÓN DEL PERMISO - POR DÍAS
+    # =========================================================================
+    start_date = models.DateField(
+        'Fecha Desde',
+        null=True,
+        blank=True
+    )
+    end_date = models.DateField(
+        'Fecha Hasta',
+        null=True,
+        blank=True
+    )
+    total_days = models.IntegerField(
+        'Total Días',
+        default=0
+    )
+    
+    # =========================================================================
+    # DURACIÓN DEL PERMISO - POR HORAS
+    # =========================================================================
+    permission_date = models.DateField(
+        'Fecha del Permiso',
+        null=True,
+        blank=True,
+        help_text='Para permisos por horas'
+    )
+    start_time = models.TimeField(
+        'Hora Desde',
+        null=True,
+        blank=True
+    )
+    end_time = models.TimeField(
+        'Hora Hasta',
+        null=True,
+        blank=True
+    )
+    total_hours = models.DecimalField(
+        'Total Horas',
+        max_digits=5,
+        decimal_places=2,
+        default=0
+    )
+    
+    # =========================================================================
+    # JUSTIFICACIÓN Y DOCUMENTOS
+    # =========================================================================
+    reason_description = models.TextField(
+        'Descripción del Motivo',
+        help_text='Explique brevemente el motivo de la ausencia'
+    )
+    supporting_document = models.FileField(
+        'Documento de Soporte',
+        upload_to='leave_requests/%Y/%m/',
+        null=True,
+        blank=True,
+        help_text='Certificado, constancia, etc.'
+    )
+    
+    # =========================================================================
+    # INTEGRACIÓN CON DR. CLAUDE IA (Solo para ausencias médicas)
+    # =========================================================================
+    medical_leave = models.ForeignKey(
+        MedicalLeave,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='leave_request',
+        verbose_name='Permiso Médico IA',
+        help_text='Vinculado si fue generado por Dr. Claude'
+    )
+    ai_generated = models.BooleanField(
+        'Generado por IA',
+        default=False,
+        help_text='Si Dr. Claude auto-llenó este formulario'
+    )
+    ai_confidence = models.FloatField(
+        'Confianza IA',
+        default=0.0,
+        help_text='Nivel de confianza de Dr. Claude (0.0 - 1.0)'
+    )
+    ai_recommendation = models.CharField(
+        'Recomendación IA',
+        max_length=100,
+        blank=True,
+        help_text='Recomendación de Dr. Claude'
+    )
+    
+    # =========================================================================
+    # ESTADO Y FLUJO DE APROBACIÓN
+    # =========================================================================
+    status = models.CharField(
+        'Estado',
+        max_length=30,
+        choices=LeaveStatus.choices,
+        default=LeaveStatus.DRAFT
+    )
+    
+    # =========================================================================
+    # FIRMAS DIGITALES Y FECHAS
+    # =========================================================================
+    employee_signature_date = models.DateTimeField(
+        'Fecha Firma Empleado',
+        null=True,
+        blank=True
+    )
+    supervisor_signature_date = models.DateTimeField(
+        'Fecha Firma Jefe',
+        null=True,
+        blank=True
+    )
+    hr_signature_date = models.DateTimeField(
+        'Fecha Firma RRHH',
+        null=True,
+        blank=True
+    )
+    
+    # =========================================================================
+    # REVISIÓN Y COMENTARIOS
+    # =========================================================================
+    supervisor_reviewed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='supervisor_reviewed_leaves',
+        verbose_name='Revisado por Jefe'
+    )
+    supervisor_comments = models.TextField(
+        'Comentarios del Jefe',
+        blank=True
+    )
+    supervisor_decision_date = models.DateTimeField(
+        'Fecha Decisión Jefe',
+        null=True,
+        blank=True
+    )
+    
+    hr_reviewed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='hr_reviewed_leaves',
+        verbose_name='Revisado por RRHH'
+    )
+    hr_comments = models.TextField(
+        'Comentarios de RRHH',
+        blank=True
+    )
+    hr_decision_date = models.DateTimeField(
+        'Fecha Decisión RRHH',
+        null=True,
+        blank=True
+    )
+    
+    # =========================================================================
+    # IMPACTO EN TURNOS Y ASISTENCIA
+    # =========================================================================
+    affects_shifts = models.BooleanField(
+        'Afecta Turnos',
+        default=True,
+        help_text='Si esta ausencia afecta turnos asignados'
+    )
+    shifts_affected = models.JSONField(
+        'Turnos Afectados',
+        default=list,
+        help_text='IDs de turnos afectados'
+    )
+    requires_coverage = models.BooleanField(
+        'Requiere Reemplazo',
+        default=False,
+        help_text='Si se necesita cubrir el turno'
+    )
+    replacement_employee = models.ForeignKey(
+        Employee,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='replacement_leaves',
+        verbose_name='Empleado Reemplazo'
+    )
+    
+    # =========================================================================
+    # METADATOS
+    # =========================================================================
+    request_number = models.CharField(
+        'Número de Solicitud',
+        max_length=20,
+        unique=True,
+        blank=True,
+        help_text='Código único de la solicitud'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    submitted_at = models.DateTimeField(
+        'Fecha de Envío',
+        null=True,
+        blank=True
+    )
+    
+    class Meta:
+        verbose_name = 'Solicitud de Ausencia'
+        verbose_name_plural = 'Solicitudes de Ausencia'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['employee', 'status']),
+            models.Index(fields=['leave_type', 'status']),
+            models.Index(fields=['-created_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.request_number or 'SIN-NUM'} - {self.employee.get_full_name()} - {self.get_leave_type_display()}"
+    
+    def save(self, *args, **kwargs):
+        # Generar número de solicitud único
+        if not self.request_number:
+            today = timezone.now()
+            prefix = f"AUS-{today.year}-"
+            last_request = LeaveRequest.objects.filter(
+                request_number__startswith=prefix
+            ).order_by('-request_number').first()
+            
+            if last_request:
+                try:
+                    last_num = int(last_request.request_number.split('-')[-1])
+                    new_num = last_num + 1
+                except:
+                    new_num = 1
+            else:
+                new_num = 1
+            
+            self.request_number = f"{prefix}{new_num:05d}"
+        
+        # Auto-llenar código de empleado
+        if not self.employee_code and self.employee:
+            self.employee_code = self.employee.employee_id
+        
+        # Calcular total de días o horas
+        if self.permission_mode == 'DAYS' and self.start_date and self.end_date:
+            self.total_days = (self.end_date - self.start_date).days + 1
+        elif self.permission_mode == 'HOURS' and self.start_time and self.end_time:
+            start_dt = datetime.combine(datetime.today(), self.start_time)
+            end_dt = datetime.combine(datetime.today(), self.end_time)
+            duration = end_dt - start_dt
+            self.total_hours = duration.total_seconds() / 3600
+        
+        super().save(*args, **kwargs)
+    
+    def is_medical_leave(self):
+        """Verifica si es una ausencia médica"""
+        medical_types = [
+            LeaveType.MEDICAL_DISABILITY,
+            LeaveType.MEDICAL_APPOINTMENT,
+            LeaveType.MEDICAL_EMERGENCY,
+        ]
+        return self.leave_type in medical_types
+    
+    def requires_supervisor_approval(self):
+        """Verifica si requiere aprobación del jefe"""
+        # Citaciones judiciales van directo a RRHH
+        if self.leave_type == LeaveType.COURT_SUMMONS:
+            return False
+        # Todo lo demás requiere aprobación del jefe
+        return True
+    
+    def can_auto_approve(self):
+        """Verifica si puede ser auto-aprobado por IA"""
+        return self.is_medical_leave() and self.ai_confidence >= 0.85
+    
+    def submit(self):
+        """Enviar solicitud para aprobación"""
+        self.submitted_at = timezone.now()
+        self.employee_signature_date = timezone.now()
+        
+        if self.can_auto_approve():
+            self.status = LeaveStatus.APPROVED_SUPERVISOR
+            self.supervisor_comments = "Auto-aprobado por Dr. Claude IA"
+            self.supervisor_signature_date = timezone.now()
+        elif not self.requires_supervisor_approval():
+            self.status = LeaveStatus.PENDING_HR
+        else:
+            self.status = LeaveStatus.PENDING_SUPERVISOR
+        
+        self.save()
+    
+    def approve_by_supervisor(self, user, comments=""):
+        """Aprobar por jefe inmediato"""
+        self.status = LeaveStatus.APPROVED_SUPERVISOR
+        self.supervisor_reviewed_by = user
+        self.supervisor_comments = comments
+        self.supervisor_decision_date = timezone.now()
+        self.supervisor_signature_date = timezone.now()
+        # Pasa a RRHH
+        self.status = LeaveStatus.PENDING_HR
+        self.save()
+    
+    def reject_by_supervisor(self, user, comments=""):
+        """Rechazar por jefe inmediato"""
+        self.status = LeaveStatus.REJECTED_SUPERVISOR
+        self.supervisor_reviewed_by = user
+        self.supervisor_comments = comments
+        self.supervisor_decision_date = timezone.now()
+        self.save()
+    
+    def approve_by_hr(self, user, comments=""):
+        """Aprobar por RRHH - Aprobación final"""
+        self.status = LeaveStatus.APPROVED_HR
+        self.hr_reviewed_by = user
+        self.hr_comments = comments
+        self.hr_decision_date = timezone.now()
+        self.hr_signature_date = timezone.now()
+        
+        # Si las fechas ya pasaron o están en curso, marcar como activo
+        today = timezone.now().date()
+        if self.permission_mode == 'DAYS':
+            if self.start_date <= today <= self.end_date:
+                self.status = LeaveStatus.ACTIVE
+            elif self.end_date < today:
+                self.status = LeaveStatus.COMPLETED
+        
+        self.save()
+    
+    def reject_by_hr(self, user, comments=""):
+        """Rechazar por RRHH"""
+        self.status = LeaveStatus.REJECTED_HR
+        self.hr_reviewed_by = user
+        self.hr_comments = comments
+        self.hr_decision_date = timezone.now()
+        self.save()
+    
+    def cancel(self):
+        """Cancelar solicitud"""
+        self.status = LeaveStatus.CANCELLED
+        self.save()
+    
+    def get_status_color(self):
+        """Color para el badge de estado"""
+        colors = {
+            LeaveStatus.DRAFT: 'secondary',
+            LeaveStatus.PENDING_SUPERVISOR: 'warning',
+            LeaveStatus.APPROVED_SUPERVISOR: 'info',
+            LeaveStatus.REJECTED_SUPERVISOR: 'danger',
+            LeaveStatus.PENDING_HR: 'warning',
+            LeaveStatus.APPROVED_HR: 'success',
+            LeaveStatus.REJECTED_HR: 'danger',
+            LeaveStatus.ACTIVE: 'primary',
+            LeaveStatus.COMPLETED: 'secondary',
+            LeaveStatus.CANCELLED: 'dark',
+        }
+        return colors.get(self.status, 'secondary')
+    
+    def get_approval_level(self):
+        """Nivel actual de aprobación"""
+        if self.status in [LeaveStatus.DRAFT, LeaveStatus.PENDING_SUPERVISOR]:
+            return 1  # Pendiente jefe
+        elif self.status in [LeaveStatus.APPROVED_SUPERVISOR, LeaveStatus.PENDING_HR]:
+            return 2  # Pendiente RRHH
+        elif self.status in [LeaveStatus.APPROVED_HR, LeaveStatus.ACTIVE, LeaveStatus.COMPLETED]:
+            return 3  # Aprobado final
+        else:
+            return 0  # Rechazado/Cancelado
         """Verifica si la asignación está activa en una fecha específica"""
         if check_date < self.start_date:
             return False
