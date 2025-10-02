@@ -5,8 +5,10 @@ import logging
 import base64
 from io import BytesIO
 import os
+import json
 from django.conf import settings
 from django.core.files.storage import default_storage
+from django.utils import timezone
 from .models import FacialRecognitionProfile
 
 # Importaciones con manejo de errores
