@@ -1,7 +1,7 @@
-# EURO SECURITY - Requirements for Railway Deploy
-# Dependencias limpias sin hashes para evitar errores de integridad
+# EURO SECURITY HR SYSTEM - Production Dependencies
+# Railway Deployment - Clean requirements without hashes
 
-# Core Django
+# Django Core Framework
 Django==5.2.6
 django-extensions==3.2.3
 django-crispy-forms==2.1
@@ -9,38 +9,38 @@ crispy-bootstrap5==0.7
 django-widget-tweaks==1.5.0
 django-filter==23.5
 
-# Database & Models
+# Import/Export Excel
 django-import-export==3.3.1
 
-# Images & Files
+# Image Processing
 Pillow==10.1.0
 
-# Machine Learning & Computer Vision
+# Facial Recognition & ML
 opencv-python-headless==4.9.0.80
-numpy>=1.21.0,<2.0.0
-scikit-learn>=1.0.0,<2.0.0
+numpy==1.26.4
+scikit-learn==1.5.1
 
-# PDF Generation
+# Reports & Documents
 reportlab==4.0.7
 openpyxl==3.1.2
 
-# Environment & Config
+# Configuration
 python-decouple==3.8
 
-# HTTP & API
+# HTTP Requests
 requests==2.31.0
 
-# Claude AI
-anthropic>=0.40.0,<1.0.0
+# AI - Claude Opus 4.1
+anthropic==0.40.0
 
-# Production Server
+# WSGI Server
 gunicorn==22.0.0
 
-# Database
+# PostgreSQL Driver
 psycopg2-binary==2.9.9
 
-# Static Files
+# Static Files Serving
 whitenoise==6.7.0
 
-# CORS
+# CORS Headers
 django-cors-headers==4.4.0
