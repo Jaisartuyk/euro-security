@@ -183,23 +183,47 @@ def record_attendance(request):
         if not facial_image:
             return JsonResponse({'success': False, 'error': 'Imagen facial requerida'})
         
+        # SEGURIDAD: Verificar que el empleado logueado es el mismo que intenta marcar
+        logged_user = request.user
+        if logged_user != employee.user:
+            logger.error(f"⚠️ INTENTO DE FRAUDE: Usuario {logged_user.username} intentó marcar como {employee.employee_id}")
+            return JsonResponse({
+                'success': False,
+                'error': '⚠️ Error de seguridad: No puedes marcar asistencia por otra persona.',
+                'security_alert': True
+            })
+        
         # Procesar imagen facial con sistema real
         try:
-            logger.info(f"Iniciando verificación facial para empleado: {employee.employee_id}")
-            logger.info(f"Tamaño de imagen recibida: {len(facial_image) if facial_image else 0} caracteres")
+            logger.info(f"🔍 Iniciando verificación facial para: {employee.get_full_name()} ({employee.employee_id})")
+            logger.info(f"Tamaño de imagen: {len(facial_image) if facial_image else 0} caracteres")
             
             # Verificar identidad usando reconocimiento facial real
             verification_result = verify_employee_identity(facial_image, employee)
             
-            logger.info(f"Resultado de verificación: {verification_result}")
+            logger.info(f"Resultado verificación: Success={verification_result['success']}, Confianza={verification_result.get('confidence', 0):.2f}")
             
             if not verification_result['success']:
-                logger.warning(f"Verificación fallida: {verification_result['error']}")
+                # Registrar intento fallido
+                logger.warning(f"❌ Verificación FALLIDA para {employee.employee_id}: {verification_result['error']}")
+                
+                # Verificar si es alerta de seguridad (posible fraude)
+                if verification_result.get('security_alert', False):
+                    logger.error(f"🚨 ALERTA DE SEGURIDAD: Posible intento de fraude por {employee.employee_id}")
+                
+                # Mensaje amigable para el usuario
+                error_message = verification_result['error']
+                
+                # Si requiere enrollment, dar instrucciones claras
+                if verification_result.get('requires_enrollment', False):
+                    error_message += '\n\n📸 Ve a "Registrar Rostro" en el menú para configurar tu perfil facial.'
+                
                 return JsonResponse({
                     'success': False, 
-                    'error': verification_result['error'],
+                    'error': error_message,
                     'requires_enrollment': verification_result.get('requires_enrollment', False),
-                    'confidence': verification_result['confidence']
+                    'confidence': verification_result['confidence'],
+                    'help_text': 'Asegúrate de estar bien iluminado, mirando a la cámara y sin obstrucciones.'
                 })
             
             facial_confidence = verification_result['confidence']
