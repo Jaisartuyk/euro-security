@@ -10,7 +10,8 @@ urlpatterns = [
     # Formularios por categoría
     path('categoria/<int:category_id>/', views.forms_by_category, name='category'),
     
-    # Descargar formulario
+    # Vista previa y descarga de formulario
+    path('preview/<int:form_id>/', views.preview_form, name='preview'),
     path('descargar/<int:form_id>/', views.download_form, name='download'),
     
     # Búsqueda

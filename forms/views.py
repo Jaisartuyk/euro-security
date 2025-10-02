@@ -128,6 +128,36 @@ def forms_by_category(request, category_id):
 
 
 @login_required
+def preview_form(request, form_id):
+    """Vista previa del formulario en el navegador"""
+    form = get_object_or_404(FormDocument, id=form_id, is_active=True)
+    
+    # Verificar permisos
+    if not has_form_access(request.user, form.required_permission):
+        messages.error(request, 'No tienes permisos para ver este formulario.')
+        return redirect('forms:dashboard')
+    
+    # Verificar que el archivo existe
+    if not form.file or not os.path.exists(form.file.path):
+        messages.error(request, 'El archivo no existe o no está disponible.')
+        return redirect('forms:dashboard')
+    
+    try:
+        # Preparar respuesta para vista previa
+        with open(form.file.path, 'rb') as file:
+            response = HttpResponse(
+                file.read(),
+                content_type='application/pdf'
+            )
+            response['Content-Disposition'] = f'inline; filename="{os.path.basename(form.file.name)}"'
+            return response
+            
+    except Exception as e:
+        messages.error(request, f'Error al mostrar el archivo: {str(e)}')
+        return redirect('forms:dashboard')
+
+
+@login_required
 def download_form(request, form_id):
     """Descargar formulario"""
     form = get_object_or_404(FormDocument, id=form_id, is_active=True)
@@ -158,7 +188,7 @@ def download_form(request, form_id):
         with open(form.file.path, 'rb') as file:
             response = HttpResponse(
                 file.read(),
-                content_type='application/octet-stream'
+                content_type='application/pdf'
             )
             response['Content-Disposition'] = f'attachment; filename="{os.path.basename(form.file.name)}"'
             return response
