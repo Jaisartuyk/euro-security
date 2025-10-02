@@ -228,6 +228,16 @@
                         Generar Reporte
                     </button>
                     
+                    <a href="{% url 'attendance:hr_medical_dashboard' %}" class="btn btn-danger btn-sm">
+                        <i class="fas fa-hospital me-2"></i>
+                        Dashboard Médico HR
+                    </a>
+                    
+                    <a href="{% url 'attendance:supervisor_leaves' %}" class="btn btn-outline-danger btn-sm">
+                        <i class="fas fa-clipboard-check me-2"></i>
+                        Aprobar Ausencias
+                    </a>
+                    
                     <a href="{% url 'employees:profile' %}" class="btn btn-outline-secondary btn-sm">
                         <i class="fas fa-user me-2"></i>
                         Mi Perfil
