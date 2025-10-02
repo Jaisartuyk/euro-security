@@ -471,6 +471,38 @@
 
 {% block extra_js %}
 <script>
+    // Función para obtener cookies
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    // Función para obtener CSRF token
+    function getCSRFToken() {
+        // Intentar desde cookie primero
+        let token = getCookie('csrftoken');
+        
+        // Si no está en cookie, intentar desde el DOM
+        if (!token) {
+            const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (csrfInput) {
+                token = csrfInput.value;
+            }
+        }
+        
+        return token;
+    }
+    
     document.addEventListener('DOMContentLoaded', function() {
         // Aplicar colores dinámicos
         applyDynamicColors();
@@ -724,12 +756,21 @@
         assignBtn.disabled = true;
         assignBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Asignando...';
         
+        // Obtener token CSRF
+        const csrfToken = getCSRFToken();
+        if (!csrfToken) {
+            alert('❌ Error: No se encontró el token de seguridad. Por favor recarga la página.');
+            assignBtn.disabled = false;
+            assignBtn.innerHTML = originalText;
+            return;
+        }
+        
         // Enviar asignación
         fetch('/asistencia/api/asignacion-masiva/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                'X-CSRFToken': csrfToken
             },
             body: JSON.stringify({
                 employee_ids: selectedEmployees,
@@ -772,8 +813,8 @@
     // Función para confirmar eliminación de horario
     function confirmDelete(scheduleId, scheduleName) {
         if (confirm(`¿Estás seguro de que deseas eliminar el horario "${scheduleName}"?\n\nEsta acción no se puede deshacer.`)) {
-            // Validar que el token CSRF existe
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+            // Obtener token CSRF
+            const csrfToken = getCSRFToken();
             if (!csrfToken) {
                 alert('❌ Error: No se encontró el token de seguridad. Por favor recarga la página.');
                 return;
