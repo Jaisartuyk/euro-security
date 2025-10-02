@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mis Solicitudes de Ausencia - EURO SECURITY{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-calendar-check text-primary me-2"></i>
+                Mis Solicitudes de Ausencia
+            </h1>
+            <p class="text-muted mb-0">Gestiona tus permisos y ausencias laborales</p>
+        </div>
+        <div>
+            <a href="{% url 'attendance:leave_request_form' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Nueva Solicitud
+            </a>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-file-alt fa-2x text-primary mb-2"></i>
+                    <h4 class="mb-0">{{ stats.total }}</h4>
+                    <small class="text-muted">Total Solicitudes</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-clock fa-2x text-warning mb-2"></i>
+                    <h4 class="mb-0">{{ stats.pending }}</h4>
+                    <small class="text-muted">Pendientes</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                    <h4 class="mb-0">{{ stats.approved }}</h4>
+                    <small class="text-muted">Aprobadas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-times-circle fa-2x text-danger mb-2"></i>
+                    <h4 class="mb-0">{{ stats.rejected }}</h4>
+                    <small class="text-muted">Rechazadas</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Estado</label>
+                    <select name="status" class="form-select">
+                        <option value="">Todos</option>
+                        {% for value, label in leave_statuses %}
+                            <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-filter me-2"></i>Filtrar
+                    </button>
+                    <a href="{% url 'attendance:my_leave_requests' %}" class="btn btn-secondary ms-2">
+                        <i class="fas fa-times me-2"></i>Limpiar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista de solicitudes -->
+    <div class="card">
+        <div class="card-header">
+            <i class="fas fa-list me-2"></i>
+            Historial de Solicitudes
+        </div>
+        <div class="card-body">
+            {% if requests %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>N° Solicitud</th>
+                                <th>Tipo</th>
+                                <th>Periodo</th>
+                                <th>Estado</th>
+                                <th>Fecha Solicitud</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for request in requests %}
+                            <tr>
+                                <td>
+                                    <strong>{{ request.request_number }}</strong>
+                                    {% if request.ai_generated %}
+                                        <span class="badge bg-info ms-1" title="Generado por Dr. Claude IA">
+                                            🤖 IA
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">
+                                        {{ request.get_leave_type_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if request.permission_mode == 'DAYS' %}
+                                        {{ request.start_date|date:"d/m/Y" }} - {{ request.end_date|date:"d/m/Y" }}
+                                        <br><small class="text-muted">({{ request.total_days }} días)</small>
+                                    {% else %}
+                                        {{ request.permission_date|date:"d/m/Y" }}
+                                        <br><small class="text-muted">({{ request.total_hours }} horas)</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ request.get_status_color }}">
+                                        {{ request.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>{{ request.submitted_at|date:"d/m/Y H:i"|default:"No enviada" }}</td>
+                                <td>
+                                    <a href="{% url 'attendance:leave_request_detail' request.id %}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+                    <p class="text-muted">No tienes solicitudes de ausencia.</p>
+                    <a href="{% url 'attendance:leave_request_form' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Crear Primera Solicitud
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

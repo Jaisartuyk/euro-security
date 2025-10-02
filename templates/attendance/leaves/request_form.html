@@ -1,0 +1,357 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Solicitar Ausencia Laboral - EURO SECURITY{% endblock %}
+
+{% block extra_css %}
+<style>
+    .section-header {
+        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px 8px 0 0;
+        font-weight: 600;
+        text-align: center;
+        margin-top: 20px;
+    }
+    
+    .form-section {
+        background: #f8fafc;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .info-box {
+        background: white;
+        border-left: 4px solid #3b82f6;
+        padding: 15px;
+        margin-bottom: 15px;
+        border-radius: 4px;
+    }
+    
+    .permission-type-radio {
+        display: inline-block;
+        margin-right: 30px;
+    }
+    
+    .permission-type-radio input[type="radio"] {
+        margin-right: 8px;
+    }
+    
+    .field-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+    
+    @media (max-width: 768px) {
+        .field-row {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            
+            <!-- Header -->
+            <div class="text-center mb-4">
+                <h1 class="h3 mb-2">
+                    <i class="fas fa-file-signature text-primary me-2"></i>
+                    EUROSECURITY CIA.LTDA.
+                </h1>
+                <div class="section-header">
+                    SOLICITUD POR AUSENCIA LABORAL
+                </div>
+            </div>
+
+            <!-- Formulario -->
+            <form method="POST" enctype="multipart/form-data" id="leaveRequestForm">
+                {% csrf_token %}
+                
+                <!-- DATOS DEL EMPLEADO SOLICITANTE -->
+                <div class="section-header">
+                    DATOS DEL EMPLEADO SOLICITANTE
+                </div>
+                <div class="form-section">
+                    <div class="field-row">
+                        <div>
+                            <label class="form-label"><strong>NOMBRES Y APELLIDOS:</strong></label>
+                            <input type="text" class="form-control" 
+                                   value="{{ employee.get_full_name }}" readonly>
+                        </div>
+                        <div>
+                            <label class="form-label"><strong>CÓDIGO:</strong></label>
+                            <input type="text" class="form-control" 
+                                   value="{{ employee.employee_id }}" readonly>
+                        </div>
+                    </div>
+                    
+                    <div class="field-row">
+                        <div>
+                            <label class="form-label"><strong>PROYECTO:</strong></label>
+                            <input type="text" class="form-control" name="project" 
+                                   placeholder="Nombre del proyecto o cliente">
+                        </div>
+                        <div>
+                            <label class="form-label"><strong>N° DE CÉDULA:</strong></label>
+                            <input type="text" class="form-control" 
+                                   value="{{ employee.national_id }}" readonly>
+                        </div>
+                    </div>
+                    
+                    <div class="field-row">
+                        <div>
+                            <label class="form-label"><strong>CARGO:</strong></label>
+                            <input type="text" class="form-control" 
+                                   value="{{ employee.position.title|default:'Sin cargo' }}" readonly>
+                        </div>
+                        <div>
+                            <label class="form-label"><strong>ÁREA:</strong></label>
+                            <input type="text" class="form-control" 
+                                   value="{{ employee.department.name|default:'Sin departamento' }}" readonly>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="form-label"><strong>NOMBRE DE JEFE INMEDIATO:</strong></label>
+                        <input type="text" class="form-control" 
+                               value="{{ employee.department.head.get_full_name|default:'Sin jefe asignado' }}" readonly>
+                    </div>
+                </div>
+
+                <!-- DATOS DEL PERMISO SOLICITADO -->
+                <div class="section-header">
+                    DATOS DEL PERMISO SOLICITADO
+                </div>
+                <div class="form-section">
+                    
+                    <!-- Tipo de permiso -->
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Tipo de Permiso: *</strong></label>
+                        <div class="permission-type-radio">
+                            <input type="radio" name="permission_mode" value="DAYS" id="modeDays" checked>
+                            <label for="modeDays">Permiso por días</label>
+                        </div>
+                        <div class="permission-type-radio">
+                            <input type="radio" name="permission_mode" value="HOURS" id="modeHours">
+                            <label for="modeHours">Permiso por horas</label>
+                        </div>
+                    </div>
+                    
+                    <!-- Permiso por días -->
+                    <div id="daysModeSection">
+                        <div class="field-row">
+                            <div>
+                                <label class="form-label"><strong>Desde: *</strong></label>
+                                <input type="date" class="form-control" name="start_date" 
+                                       id="startDate" required>
+                            </div>
+                            <div>
+                                <label class="form-label"><strong>Hasta: *</strong></label>
+                                <input type="date" class="form-control" name="end_date" 
+                                       id="endDate" required>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label"><strong>Total días:</strong></label>
+                            <input type="text" class="form-control" id="totalDays" 
+                                   value="0 días" readonly>
+                        </div>
+                    </div>
+                    
+                    <!-- Permiso por horas -->
+                    <div id="hoursModeSection" style="display: none;">
+                        <div class="field-row">
+                            <div>
+                                <label class="form-label"><strong>Fecha: *</strong></label>
+                                <input type="date" class="form-control" name="permission_date" 
+                                       id="permissionDate">
+                            </div>
+                            <div></div>
+                        </div>
+                        <div class="field-row">
+                            <div>
+                                <label class="form-label"><strong>A partir de: *</strong></label>
+                                <input type="time" class="form-control" name="start_time" 
+                                       id="startTime" value="08:00">
+                            </div>
+                            <div>
+                                <label class="form-label"><strong>Hasta las: *</strong></label>
+                                <input type="time" class="form-control" name="end_time" 
+                                       id="endTime" value="10:00">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label"><strong>Total horas:</strong></label>
+                            <input type="text" class="form-control" id="totalHours" 
+                                   value="2 horas" readonly>
+                        </div>
+                    </div>
+                    
+                    <!-- Motivo del permiso -->
+                    <div class="mt-3">
+                        <label class="form-label"><strong>Motivo del permiso: *</strong></label>
+                        <select class="form-select" name="leave_type" id="leaveType" required>
+                            <option value="">Seleccione un motivo...</option>
+                            <optgroup label="🏥 MÉDICAS">
+                                <option value="medical_disability">Incapacidad Médica</option>
+                                <option value="medical_appointment">Cita Médica</option>
+                                <option value="medical_emergency">Emergencia Médica</option>
+                            </optgroup>
+                            <optgroup label="👨‍👩‍👧 PERSONALES">
+                                <option value="domestic_calamity">Calamidad Doméstica</option>
+                                <option value="personal_matter">Asunto Personal</option>
+                                <option value="personal_errand">Diligencia Personal</option>
+                                <option value="marriage_permit">Permiso Matrimonio</option>
+                                <option value="bereavement">Duelo Familiar</option>
+                            </optgroup>
+                            <optgroup label="📚 EDUCATIVAS">
+                                <option value="study_permit">Permiso Estudio</option>
+                                <option value="academic_exam">Examen Académico</option>
+                                <option value="training">Capacitación</option>
+                            </optgroup>
+                            <optgroup label="⚖️ LEGALES">
+                                <option value="court_summons">Citación Judicial</option>
+                                <option value="legal_procedure">Trámite Legal</option>
+                                <option value="mandatory_appearance">Comparecencia Obligatoria</option>
+                            </optgroup>
+                            <optgroup label="🎉 OTROS">
+                                <option value="paid_leave">Permiso Remunerado</option>
+                                <option value="compensatory_day">Día Compensatorio</option>
+                                <option value="special_license">Licencia Especial</option>
+                                <option value="vacation">Vacaciones</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    
+                    <!-- Descripción -->
+                    <div class="mt-3">
+                        <label class="form-label"><strong>Descripción detallada: *</strong></label>
+                        <textarea class="form-control" name="reason_description" rows="3" 
+                                  placeholder="Explique brevemente el motivo de su ausencia..." required></textarea>
+                    </div>
+                    
+                    <!-- Soporte/Justificación anexada -->
+                    <div class="mt-3">
+                        <label class="form-label"><strong>Soporte/Justificación anexada:</strong></label>
+                        <input type="file" class="form-control" name="supporting_document" 
+                               accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+                        <small class="text-muted">
+                            Documento certificado por las entidades autorizadas. 
+                            Formatos: PDF, Imagen, Word (máx. 10MB)
+                        </small>
+                    </div>
+                </div>
+
+                <!-- Información importante -->
+                <div class="info-box">
+                    <h6><i class="fas fa-info-circle text-primary me-2"></i>Información Importante:</h6>
+                    <ul class="mb-0">
+                        <li>Todos los campos marcados con (*) son obligatorios.</li>
+                        <li>Para permisos médicos, debe adjuntar el certificado correspondiente.</li>
+                        <li>La solicitud será revisada por su jefe inmediato y luego por RRHH.</li>
+                        <li>Recibirá notificaciones sobre el estado de su solicitud.</li>
+                    </ul>
+                </div>
+
+                <!-- Botones -->
+                <div class="d-flex justify-content-between mb-4">
+                    <a href="{% url 'attendance:my_leave_requests' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-paper-plane me-2"></i>Enviar Solicitud
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Cambio entre días y horas
+    document.querySelectorAll('input[name="permission_mode"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const daysSection = document.getElementById('daysModeSection');
+            const hoursSection = document.getElementById('hoursModeSection');
+            
+            if (this.value === 'DAYS') {
+                daysSection.style.display = 'block';
+                hoursSection.style.display = 'none';
+                document.getElementById('startDate').required = true;
+                document.getElementById('endDate').required = true;
+                document.getElementById('permissionDate').required = false;
+                document.getElementById('startTime').required = false;
+                document.getElementById('endTime').required = false;
+            } else {
+                daysSection.style.display = 'none';
+                hoursSection.style.display = 'block';
+                document.getElementById('startDate').required = false;
+                document.getElementById('endDate').required = false;
+                document.getElementById('permissionDate').required = true;
+                document.getElementById('startTime').required = true;
+                document.getElementById('endTime').required = true;
+            }
+        });
+    });
+    
+    // Calcular total de días
+    function calculateDays() {
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        
+        if (startDate && endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            const diffTime = Math.abs(end - start);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            document.getElementById('totalDays').value = diffDays + ' días';
+        }
+    }
+    
+    document.getElementById('startDate').addEventListener('change', calculateDays);
+    document.getElementById('endDate').addEventListener('change', calculateDays);
+    
+    // Calcular total de horas
+    function calculateHours() {
+        const startTime = document.getElementById('startTime').value;
+        const endTime = document.getElementById('endTime').value;
+        
+        if (startTime && endTime) {
+            const [startHour, startMin] = startTime.split(':').map(Number);
+            const [endHour, endMin] = endTime.split(':').map(Number);
+            
+            const startMinutes = startHour * 60 + startMin;
+            const endMinutes = endHour * 60 + endMin;
+            const diffMinutes = endMinutes - startMinutes;
+            const hours = Math.floor(diffMinutes / 60);
+            const minutes = diffMinutes % 60;
+            
+            document.getElementById('totalHours').value = hours + ' horas' + (minutes > 0 ? ' ' + minutes + ' min' : '');
+        }
+    }
+    
+    document.getElementById('startTime').addEventListener('change', calculateHours);
+    document.getElementById('endTime').addEventListener('change', calculateHours);
+    
+    // Validación del formulario
+    document.getElementById('leaveRequestForm').addEventListener('submit', function(e) {
+        const leaveType = document.getElementById('leaveType').value;
+        if (!leaveType) {
+            e.preventDefault();
+            alert('Por favor seleccione el motivo del permiso.');
+            return false;
+        }
+    });
+</script>
+{% endblock %}

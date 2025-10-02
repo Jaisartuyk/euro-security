@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ leave.request_number }} - Detalle Solicitud{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-file-alt text-primary me-2"></i>
+                Solicitud de Ausencia
+            </h1>
+            <p class="text-muted mb-0">{{ leave.request_number }}</p>
+        </div>
+        <div>
+            <a href="javascript:history.back()" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Volver
+            </a>
+            <button onclick="window.print()" class="btn btn-outline-primary">
+                <i class="fas fa-print me-2"></i>Imprimir
+            </button>
+        </div>
+    </div>
+
+    <!-- Estado y Badges -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h5 class="mb-2">Estado Actual</h5>
+                    <h3>
+                        <span class="badge bg-{{ leave.get_status_color }} fs-5">
+                            {{ leave.get_status_display }}
+                        </span>
+                    </h3>
+                </div>
+                <div class="col-md-6 text-end">
+                    {% if leave.ai_generated %}
+                        <span class="badge bg-info fs-6">
+                            🤖 Procesado por Dr. Claude IA
+                            <br>Confianza: {{ leave.ai_confidence|floatformat:0 }}%
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Columna Izquierda -->
+        <div class="col-lg-8">
+            
+            <!-- Datos del Empleado -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <i class="fas fa-user me-2"></i>Datos del Empleado
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Nombre Completo:</strong><br>{{ leave.employee.get_full_name }}</p>
+                            <p><strong>Código:</strong><br>{{ leave.employee_code }}</p>
+                            <p><strong>Cédula:</strong><br>{{ leave.employee.national_id }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Cargo:</strong><br>{{ leave.employee.position.title|default:"Sin cargo" }}</p>
+                            <p><strong>Área:</strong><br>{{ leave.area.name|default:"Sin área" }}</p>
+                            <p><strong>Jefe Inmediato:</strong><br>{{ leave.immediate_supervisor.get_full_name|default:"Sin jefe" }}</p>
+                        </div>
+                    </div>
+                    {% if leave.project %}
+                        <p><strong>Proyecto:</strong><br>{{ leave.project }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Detalles del Permiso -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <i class="fas fa-calendar-check me-2"></i>Detalles del Permiso
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Tipo de Ausencia:</strong><br>
+                                <span class="badge bg-secondary fs-6">{{ leave.get_leave_type_display }}</span>
+                            </p>
+                            <p><strong>Modo:</strong><br>{{ leave.get_permission_mode_display }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            {% if leave.permission_mode == 'DAYS' %}
+                                <p><strong>Desde:</strong><br>{{ leave.start_date|date:"d/m/Y" }}</p>
+                                <p><strong>Hasta:</strong><br>{{ leave.end_date|date:"d/m/Y" }}</p>
+                                <p><strong>Total:</strong><br><span class="badge bg-info">{{ leave.total_days }} días</span></p>
+                            {% else %}
+                                <p><strong>Fecha:</strong><br>{{ leave.permission_date|date:"d/m/Y" }}</p>
+                                <p><strong>Horario:</strong><br>{{ leave.start_time|time:"H:i" }} - {{ leave.end_time|time:"H:i" }}</p>
+                                <p><strong>Total:</strong><br><span class="badge bg-info">{{ leave.total_hours }} horas</span></p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <p><strong>Descripción del Motivo:</strong></p>
+                    <div class="alert alert-light">
+                        {{ leave.reason_description }}
+                    </div>
+                    
+                    {% if leave.supporting_document %}
+                        <p><strong>Documento Adjunto:</strong></p>
+                        <a href="{{ leave.supporting_document.url }}" target="_blank" class="btn btn-outline-primary">
+                            <i class="fas fa-file-download me-2"></i>Descargar Documento
+                        </a>
+                    {% endif %}
+                    
+                    {% if leave.ai_recommendation %}
+                        <hr>
+                        <p><strong>Recomendación Dr. Claude IA:</strong></p>
+                        <div class="alert alert-info">
+                            <i class="fas fa-robot me-2"></i>{{ leave.ai_recommendation }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Impacto en Turnos -->
+            {% if leave.affects_shifts %}
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <i class="fas fa-clock me-2"></i>Impacto en Turnos
+                </div>
+                <div class="card-body">
+                    <p><strong>Afecta Turnos:</strong> Sí</p>
+                    {% if leave.requires_coverage %}
+                        <p><strong>Requiere Reemplazo:</strong> Sí</p>
+                        {% if leave.replacement_employee %}
+                            <p><strong>Empleado Reemplazo:</strong><br>
+                                {{ leave.replacement_employee.get_full_name }}
+                            </p>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+
+        <!-- Columna Derecha - Flujo de Aprobación -->
+        <div class="col-lg-4">
+            
+            <!-- Flujo de Aprobación -->
+            <div class="card mb-4">
+                <div class="card-header bg-dark text-white">
+                    <i class="fas fa-check-double me-2"></i>Flujo de Aprobación
+                </div>
+                <div class="card-body">
+                    
+                    <!-- Empleado -->
+                    <div class="mb-3">
+                        <h6><i class="fas fa-user text-primary me-2"></i>Empleado</h6>
+                        <p class="mb-1"><strong>{{ leave.employee.get_full_name }}</strong></p>
+                        {% if leave.employee_signature_date %}
+                            <small class="text-success">
+                                <i class="fas fa-check-circle"></i>
+                                Firmado: {{ leave.employee_signature_date|date:"d/m/Y H:i" }}
+                            </small>
+                        {% else %}
+                            <small class="text-muted">Sin firmar</small>
+                        {% endif %}
+                    </div>
+
+                    <hr>
+
+                    <!-- Supervisor -->
+                    <div class="mb-3">
+                        <h6><i class="fas fa-user-tie text-info me-2"></i>Jefe Inmediato</h6>
+                        {% if leave.immediate_supervisor %}
+                            <p class="mb-1"><strong>{{ leave.immediate_supervisor.get_full_name }}</strong></p>
+                        {% else %}
+                            <p class="mb-1 text-muted">Sin jefe asignado</p>
+                        {% endif %}
+                        
+                        {% if leave.supervisor_reviewed_by %}
+                            {% if leave.status == 'approved_supervisor' or leave.status == 'pending_hr' or leave.status == 'approved_hr' %}
+                                <span class="badge bg-success">Aprobado</span>
+                                <br><small>{{ leave.supervisor_decision_date|date:"d/m/Y H:i" }}</small>
+                            {% elif leave.status == 'rejected_supervisor' %}
+                                <span class="badge bg-danger">Rechazado</span>
+                                <br><small>{{ leave.supervisor_decision_date|date:"d/m/Y H:i" }}</small>
+                            {% endif %}
+                            
+                            {% if leave.supervisor_comments %}
+                                <div class="alert alert-light mt-2 mb-0">
+                                    <small><strong>Comentarios:</strong><br>{{ leave.supervisor_comments }}</small>
+                                </div>
+                            {% endif %}
+                        {% elif leave.status == 'pending_supervisor' %}
+                            <span class="badge bg-warning">Pendiente</span>
+                        {% else %}
+                            <small class="text-muted">Sin revisar</small>
+                        {% endif %}
+                    </div>
+
+                    <hr>
+
+                    <!-- RRHH -->
+                    <div class="mb-3">
+                        <h6><i class="fas fa-users-cog text-danger me-2"></i>Recursos Humanos</h6>
+                        
+                        {% if leave.hr_reviewed_by %}
+                            <p class="mb-1"><strong>{{ leave.hr_reviewed_by.get_full_name }}</strong></p>
+                            {% if leave.status == 'approved_hr' or leave.status == 'active' or leave.status == 'completed' %}
+                                <span class="badge bg-success">Aprobado</span>
+                                <br><small>{{ leave.hr_decision_date|date:"d/m/Y H:i" }}</small>
+                            {% elif leave.status == 'rejected_hr' %}
+                                <span class="badge bg-danger">Rechazado</span>
+                                <br><small>{{ leave.hr_decision_date|date:"d/m/Y H:i" }}</small>
+                            {% endif %}
+                            
+                            {% if leave.hr_comments %}
+                                <div class="alert alert-light mt-2 mb-0">
+                                    <small><strong>Comentarios:</strong><br>{{ leave.hr_comments }}</small>
+                                </div>
+                            {% endif %}
+                        {% elif leave.status == 'pending_hr' %}
+                            <span class="badge bg-warning">Pendiente</span>
+                        {% else %}
+                            <small class="text-muted">Sin revisar</small>
+                        {% endif %}
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Información Adicional -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-info-circle me-2"></i>Información
+                </div>
+                <div class="card-body">
+                    <p><small><strong>Creado:</strong><br>{{ leave.created_at|date:"d/m/Y H:i" }}</small></p>
+                    <p><small><strong>Enviado:</strong><br>{{ leave.submitted_at|date:"d/m/Y H:i"|default:"No enviado" }}</small></p>
+                    <p><small><strong>Última Actualización:</strong><br>{{ leave.updated_at|date:"d/m/Y H:i" }}</small></p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}

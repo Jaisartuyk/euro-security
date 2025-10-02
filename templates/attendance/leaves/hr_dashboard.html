@@ -1,0 +1,360 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Gestión de Ausencias - RRHH - EURO SECURITY{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-users-cog text-primary me-2"></i>
+                Gestión de Ausencias y Permisos - RRHH
+            </h1>
+            <p class="text-muted mb-0">Panel completo de administración</p>
+        </div>
+    </div>
+
+    <!-- Estadísticas Generales -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card text-center border-warning">
+                <div class="card-body">
+                    <i class="fas fa-clock fa-2x text-warning mb-2"></i>
+                    <h4 class="mb-0 text-warning">{{ stats.pending_hr }}</h4>
+                    <small>Pendientes RRHH</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center border-info">
+                <div class="card-body">
+                    <i class="fas fa-user-clock fa-2x text-info mb-2"></i>
+                    <h4 class="mb-0 text-info">{{ stats.pending_supervisor }}</h4>
+                    <small>Pendientes Jefe</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center border-success">
+                <div class="card-body">
+                    <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                    <h4 class="mb-0 text-success">{{ stats.approved_today }}</h4>
+                    <small>Aprobadas Hoy</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center border-primary">
+                <div class="card-body">
+                    <i class="fas fa-robot fa-2x text-primary mb-2"></i>
+                    <h4 class="mb-0 text-primary">{{ stats.ai_processed }}</h4>
+                    <small>Procesadas IA</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-hospital fa-2x text-danger mb-2"></i>
+                    <h4 class="mb-0">{{ stats.medical }}</h4>
+                    <small>Médicas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-user-friends fa-2x text-secondary mb-2"></i>
+                    <h4 class="mb-0">{{ stats.personal }}</h4>
+                    <small>Personales</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acciones Rápidas -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-filter me-2"></i>Filtros y Búsqueda
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Estado</label>
+                    <select name="status" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="pending_hr" {% if current_status == 'pending_hr' %}selected{% endif %}>
+                            ⏳ Pendientes RRHH
+                        </option>
+                        <option value="pending_supervisor" {% if current_status == 'pending_supervisor' %}selected{% endif %}>
+                            👔 Pendientes Jefe
+                        </option>
+                        <option value="ai_approved" {% if current_status == 'ai_approved' %}selected{% endif %}>
+                            🤖 Pre-aprobadas IA
+                        </option>
+                        {% for value, label in leave_statuses %}
+                            <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Tipo de Ausencia</label>
+                    <select name="leave_type" class="form-select">
+                        <option value="">Todos los tipos</option>
+                        {% for value, label in leave_types %}
+                            <option value="{{ value }}" {% if current_type == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-filter me-2"></i>Filtrar
+                    </button>
+                    <a href="{% url 'attendance:hr_leave_dashboard' %}" class="btn btn-secondary">
+                        <i class="fas fa-times me-2"></i>Limpiar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista de Solicitudes -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>
+                <i class="fas fa-list me-2"></i>
+                Solicitudes ({{ requests|length }})
+            </span>
+            <span class="badge bg-primary">
+                Mostrando primeras 50
+            </span>
+        </div>
+        <div class="card-body p-0">
+            {% if requests %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>N° Solicitud</th>
+                                <th>Empleado</th>
+                                <th>Tipo</th>
+                                <th>Periodo</th>
+                                <th>Estado</th>
+                                <th>IA</th>
+                                <th>Fecha</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for request in requests %}
+                            <tr class="{% if request.status == 'pending_hr' %}table-warning{% endif %}">
+                                <td>
+                                    <strong>{{ request.request_number }}</strong>
+                                </td>
+                                <td>
+                                    <strong>{{ request.employee.get_full_name }}</strong>
+                                    <br>
+                                    <small class="text-muted">
+                                        {{ request.employee.employee_id }}
+                                        {% if request.area %}
+                                            - {{ request.area.name }}
+                                        {% endif %}
+                                    </small>
+                                </td>
+                                <td>
+                                    {% if request.leave_type in 'medical_disability,medical_appointment,medical_emergency' %}
+                                        <span class="badge bg-danger">
+                                            🏥 {{ request.get_leave_type_display }}
+                                        </span>
+                                    {% elif request.leave_type in 'court_summons,legal_procedure,mandatory_appearance' %}
+                                        <span class="badge bg-dark">
+                                            ⚖️ {{ request.get_leave_type_display }}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">
+                                            {{ request.get_leave_type_display }}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if request.permission_mode == 'DAYS' %}
+                                        {{ request.start_date|date:"d/m/Y" }}<br>
+                                        {{ request.end_date|date:"d/m/Y" }}
+                                        <br><small class="text-muted">({{ request.total_days }} días)</small>
+                                    {% else %}
+                                        {{ request.permission_date|date:"d/m/Y" }}
+                                        <br><small class="text-muted">({{ request.total_hours }} hrs)</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ request.get_status_color }}">
+                                        {{ request.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if request.ai_generated %}
+                                        <span class="badge bg-info" title="Confianza: {{ request.ai_confidence|floatformat:0 }}%">
+                                            🤖 {{ request.ai_confidence|floatformat:0 }}%
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small>{{ request.submitted_at|date:"d/m/Y H:i"|default:"N/A" }}</small>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'attendance:leave_request_detail' request.id %}" 
+                                           class="btn btn-outline-primary" title="Ver detalle">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if request.status == 'pending_hr' %}
+                                            <button type="button" class="btn btn-outline-success" 
+                                                    onclick="approveLeave('{{ request.id }}')" title="Aprobar">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-danger" 
+                                                    onclick="rejectLeave('{{ request.id }}')" title="Rechazar">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+                    <p class="text-muted">No hay solicitudes con los filtros seleccionados.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Estadísticas por Tipo -->
+    {% if by_type %}
+    <div class="card mt-4">
+        <div class="card-header">
+            <i class="fas fa-chart-pie me-2"></i>Top 5 Tipos de Ausencia
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Tipo</th>
+                            <th class="text-end">Cantidad</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in by_type %}
+                        <tr>
+                            <td>{{ item.leave_type }}</td>
+                            <td class="text-end"><strong>{{ item.count }}</strong></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- Modal para aprobar -->
+<div class="modal fade" id="approveModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-check-circle me-2"></i>Aprobar Solicitud
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="approveForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>¿Está seguro de aprobar esta solicitud de ausencia?</p>
+                    <div class="mb-3">
+                        <label class="form-label">Comentarios (opcional)</label>
+                        <textarea class="form-control" name="comments" rows="3" 
+                                  placeholder="Comentarios adicionales..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check me-2"></i>Aprobar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para rechazar -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-times-circle me-2"></i>Rechazar Solicitud
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="rejectForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>¿Está seguro de rechazar esta solicitud de ausencia?</p>
+                    <div class="mb-3">
+                        <label class="form-label">Motivo del rechazo *</label>
+                        <textarea class="form-control" name="comments" rows="3" 
+                                  placeholder="Debe proporcionar un motivo..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-times me-2"></i>Rechazar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let approveModal, rejectModal;
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        approveModal = new bootstrap.Modal(document.getElementById('approveModal'));
+        rejectModal = new bootstrap.Modal(document.getElementById('rejectModal'));
+    });
+    
+    function approveLeave(leaveId) {
+        const form = document.getElementById('approveForm');
+        form.action = `/asistencia/ausencias/rrhh/aprobar/${leaveId}/`;
+        approveModal.show();
+    }
+    
+    function rejectLeave(leaveId) {
+        const form = document.getElementById('rejectForm');
+        form.action = `/asistencia/ausencias/rrhh/rechazar/${leaveId}/`;
+        rejectModal.show();
+    }
+</script>
+{% endblock %}

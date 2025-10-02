@@ -7,6 +7,7 @@ from . import reports_views
 from . import gps_views
 from . import shift_views
 from . import medical_views
+from . import leave_views
 
 app_name = 'attendance'
 
@@ -101,6 +102,25 @@ urlpatterns = [
     # Dashboard Médico para RRHH
     path('medico/rrhh/', medical_views.hr_medical_dashboard, name='hr_medical_dashboard'),
     path('medico/rrhh/aprobar/<int:leave_id>/', medical_views.approve_medical_leave, name='approve_medical_leave'),
+    
+    # =========================================================================
+    # SISTEMA DE AUSENCIAS Y PERMISOS LABORALES
+    # =========================================================================
+    
+    # Empleados - Mis solicitudes
+    path('ausencias/solicitar/', leave_views.leave_request_form, name='leave_request_form'),
+    path('ausencias/mis-solicitudes/', leave_views.my_leave_requests, name='my_leave_requests'),
+    path('ausencias/<int:leave_id>/', leave_views.leave_request_detail, name='leave_request_detail'),
+    
+    # Supervisores - Gestión de equipo
+    path('ausencias/supervisor/', leave_views.supervisor_leave_dashboard, name='supervisor_leave_dashboard'),
+    path('ausencias/supervisor/aprobar/<int:leave_id>/', leave_views.supervisor_approve_leave, name='supervisor_approve_leave'),
+    path('ausencias/supervisor/rechazar/<int:leave_id>/', leave_views.supervisor_reject_leave, name='supervisor_reject_leave'),
+    
+    # RRHH - Gestión completa
+    path('ausencias/rrhh/', leave_views.hr_leave_dashboard, name='hr_leave_dashboard'),
+    path('ausencias/rrhh/aprobar/<int:leave_id>/', leave_views.hr_approve_leave, name='hr_approve_leave'),
+    path('ausencias/rrhh/rechazar/<int:leave_id>/', leave_views.hr_reject_leave, name='hr_reject_leave'),
     
     # Acciones Rápidas - Dashboard RRHH
     path('medico/rrhh/aprobacion-masiva/', medical_views.bulk_approve_leaves, name='bulk_approve_leaves'),
