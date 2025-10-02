@@ -143,10 +143,15 @@ class Employee(BaseModel):
     
     def get_permission_level(self):
         """Retorna el nivel de permisos del empleado"""
+        # Superusers siempre tienen permisos completos
+        if self.user and self.user.is_superuser:
+            return 'full'
+        
         if not self.position:
             return 'basic'
         
         level_permissions = {
+            'EXECUTIVE': 'full',  # Nivel ejecutivo (CEO, CFO, etc.)
             'DIRECTOR': 'full',
             'MANAGER': 'management',
             'LEAD': 'supervisor',
