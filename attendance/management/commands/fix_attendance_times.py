@@ -41,14 +41,21 @@ class Command(BaseCommand):
                 
                 # Verificar si first_entry necesita corrección
                 if summary.first_entry:
-                    # Si first_entry es medianoche (00:00), probablemente está mal
-                    if summary.first_entry.hour == 0 and summary.first_entry.minute < 30:
+                    # Si first_entry es de madrugada (00:00-06:00), probablemente es prueba/error
+                    # Las entradas normales son después de las 6:00 AM
+                    if summary.first_entry.hour < 6:
                         needs_correction = True
+                        self.stdout.write(
+                            self.style.WARNING(
+                                f'  🔍 Detectada entrada sospechosa: {summary.employee.get_full_name()} - '
+                                f'{summary.date}: {summary.first_entry} (madrugada)'
+                            )
+                        )
                 
                 # Verificar si last_exit necesita corrección
                 if summary.last_exit:
-                    # Si last_exit es medianoche (00:00), probablemente está mal
-                    if summary.last_exit.hour == 0 and summary.last_exit.minute < 30:
+                    # Si last_exit es de madrugada (00:00-06:00), probablemente está mal
+                    if summary.last_exit.hour < 6:
                         needs_correction = True
                 
                 if needs_correction:
@@ -59,15 +66,33 @@ class Command(BaseCommand):
                     ).order_by('timestamp')
                     
                     if records.exists():
-                        # Encontrar primera entrada
-                        first_in = records.filter(attendance_type='IN').first()
-                        if first_in:
+                        # Encontrar primera entrada VÁLIDA (después de las 6:00 AM)
+                        # Ignorar entradas de madrugada que son pruebas/errores
+                        valid_entries = records.filter(
+                            attendance_type='IN',
+                            timestamp__hour__gte=6  # Solo entradas después de las 6:00 AM
+                        )
+                        
+                        if valid_entries.exists():
+                            first_in = valid_entries.first()
                             old_first = summary.first_entry
                             summary.first_entry = first_in.timestamp.time()
                             self.stdout.write(
                                 f'  ✓ {summary.employee.get_full_name()} - {summary.date}: '
                                 f'Primera entrada {old_first} → {summary.first_entry}'
                             )
+                        else:
+                            # Si no hay entradas válidas, usar la primera que haya
+                            first_in = records.filter(attendance_type='IN').first()
+                            if first_in:
+                                old_first = summary.first_entry
+                                summary.first_entry = first_in.timestamp.time()
+                                self.stdout.write(
+                                    self.style.WARNING(
+                                        f'  ⚠️  {summary.employee.get_full_name()} - {summary.date}: '
+                                        f'Solo hay entradas de madrugada: {old_first} → {summary.first_entry}'
+                                    )
+                                )
                         
                         # Encontrar última salida
                         last_out = records.filter(attendance_type='OUT').last()
