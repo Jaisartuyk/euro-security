@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.conf import settings
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib import colors
@@ -63,6 +63,19 @@ class Command(BaseCommand):
         
         # Contenido del PDF
         story = []
+        
+        # Agregar letterhead si existe
+        letterhead_path = os.path.join(settings.STATICFILES_DIRS[0], 'images', 'branding', 'letterhead.jpg')
+        if os.path.exists(letterhead_path):
+            try:
+                letterhead = Image(letterhead_path)
+                letterhead.drawHeight = 1.5*inch
+                letterhead.drawWidth = 7*inch
+                letterhead.hAlign = 'CENTER'
+                story.append(letterhead)
+                story.append(Spacer(1, 20))
+            except Exception as e:
+                self.stdout.write(self.style.WARNING(f'⚠️  No se pudo cargar letterhead: {e}'))
         
         # Encabezado con información del formulario
         header_data = [
