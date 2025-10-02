@@ -1,0 +1,373 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Registrar Rostro - Reconocimiento Facial{% endblock %}
+
+{% block extra_css %}
+<style>
+    .enrollment-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    
+    .upload-zone {
+        border: 3px dashed #0d6efd;
+        border-radius: 12px;
+        padding: 40px;
+        text-align: center;
+        background: #f8f9fa;
+        transition: all 0.3s;
+        cursor: pointer;
+    }
+    
+    .upload-zone:hover {
+        background: #e7f1ff;
+        border-color: #0a58ca;
+    }
+    
+    .upload-zone.dragover {
+        background: #cfe2ff;
+        border-color: #084298;
+    }
+    
+    .preview-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+    }
+    
+    .preview-item {
+        position: relative;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .preview-item img {
+        width: 100%;
+        height: 150px;
+        object-fit: cover;
+    }
+    
+    .preview-item .remove-btn {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background: rgba(220, 53, 69, 0.9);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .preview-item .remove-btn:hover {
+        background: #dc3545;
+        transform: scale(1.1);
+    }
+    
+    .tip-card {
+        background: #fff3cd;
+        border-left: 4px solid #ffc107;
+        padding: 15px;
+        margin-bottom: 15px;
+        border-radius: 4px;
+    }
+    
+    .success-card {
+        background: #d1e7dd;
+        border-left: 4px solid #198754;
+        padding: 20px;
+        margin-bottom: 15px;
+        border-radius: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="enrollment-container">
+    
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-camera me-2 text-primary"></i>Registro de Rostro</h2>
+            <p class="text-muted">Configura tu perfil facial para marcación biométrica</p>
+        </div>
+        <a href="{% url 'attendance:my_attendance' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Volver
+        </a>
+    </div>
+
+    {% if facial_profile and facial_profile.is_active %}
+        <!-- Perfil ya existe -->
+        <div class="success-card">
+            <h5><i class="fas fa-check-circle me-2"></i>✅ Tu perfil facial ya está registrado</h5>
+            <p class="mb-2">
+                <strong>Estado:</strong> <span class="badge bg-success">Activo</span><br>
+                <strong>Imágenes registradas:</strong> {{ facial_profile.get_image_count }}<br>
+                <strong>Reconocimientos exitosos:</strong> {{ facial_profile.successful_recognitions }}<br>
+                <strong>Última marcación:</strong> {{ facial_profile.last_recognition|default:"Nunca" }}
+            </p>
+            <hr>
+            <h6><i class="fas fa-sync-alt me-2"></i>¿Actualizar imágenes?</h6>
+            <p class="text-muted small">Si deseas actualizar tus fotos de referencia, sube nuevas imágenes abajo.</p>
+        </div>
+    {% else %}
+        <!-- Perfil no existe -->
+        <div class="alert alert-info">
+            <h5><i class="fas fa-info-circle me-2"></i>Primera vez aquí</h5>
+            <p class="mb-0">Sube entre 2 y 5 fotos de tu rostro para crear tu perfil facial. Esto te permitirá marcar asistencia usando reconocimiento facial.</p>
+        </div>
+    {% endif %}
+
+    <!-- Tips para mejores resultados -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <i class="fas fa-lightbulb me-2"></i>Consejos para mejores resultados
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6 class="text-success"><i class="fas fa-check-circle me-2"></i>Haz esto:</h6>
+                    <ul>
+                        <li>✅ Usa buena iluminación natural</li>
+                        <li>✅ Mira directamente a la cámara</li>
+                        <li>✅ Usa fondo neutro</li>
+                        <li>✅ Expresión neutral o sonrisa ligera</li>
+                        <li>✅ Toma 2-5 fotos desde ángulos similares</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="text-danger"><i class="fas fa-times-circle me-2"></i>Evita esto:</h6>
+                    <ul>
+                        <li>❌ Lentes oscuros o sombreros</li>
+                        <li>❌ Iluminación muy baja u oscura</li>
+                        <li>❌ Fotos borrosas o pixeladas</li>
+                        <li>❌ Obstrucciones en el rostro</li>
+                        <li>❌ Ángulos muy laterales</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario de Upload -->
+    <form id="enrollmentForm" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-cloud-upload-alt me-2"></i>Subir Fotos de Rostro
+            </div>
+            <div class="card-body">
+                
+                <!-- Upload Zone -->
+                <div class="upload-zone" id="uploadZone">
+                    <input type="file" 
+                           id="imageInput" 
+                           name="images" 
+                           accept="image/*" 
+                           multiple 
+                           style="display: none;">
+                    
+                    <i class="fas fa-camera fa-4x text-primary mb-3"></i>
+                    <h5>Arrastra fotos aquí o haz click para seleccionar</h5>
+                    <p class="text-muted">Sube entre 2 y 5 fotos de tu rostro (JPG, PNG)</p>
+                    <button type="button" class="btn btn-primary mt-2" onclick="document.getElementById('imageInput').click()">
+                        <i class="fas fa-folder-open me-2"></i>Seleccionar Fotos
+                    </button>
+                </div>
+
+                <!-- Preview Grid -->
+                <div id="previewGrid" class="preview-grid"></div>
+
+                <!-- Contador -->
+                <div class="mt-3">
+                    <p class="text-muted">
+                        <strong>Fotos seleccionadas:</strong> 
+                        <span id="imageCount">0</span> / 5
+                        <span id="minWarning" class="text-danger ms-2" style="display: none;">
+                            (Mínimo 2 fotos requeridas)
+                        </span>
+                    </p>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Botones -->
+        <div class="d-flex justify-content-between">
+            <a href="{% url 'attendance:my_attendance' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Cancelar
+            </a>
+            <button type="submit" id="submitBtn" class="btn btn-success btn-lg" disabled>
+                <i class="fas fa-save me-2"></i>Guardar Perfil Facial
+            </button>
+        </div>
+    </form>
+
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" data-bs-backdrop="static" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center py-5">
+                <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                    <span class="visually-hidden">Procesando...</span>
+                </div>
+                <h5>Procesando tu perfil facial...</h5>
+                <p class="text-muted">Por favor espera mientras guardamos tus fotos.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const uploadZone = document.getElementById('uploadZone');
+    const imageInput = document.getElementById('imageInput');
+    const previewGrid = document.getElementById('previewGrid');
+    const imageCount = document.getElementById('imageCount');
+    const submitBtn = document.getElementById('submitBtn');
+    const minWarning = document.getElementById('minWarning');
+    const enrollmentForm = document.getElementById('enrollmentForm');
+    const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+    
+    let selectedFiles = [];
+    const MAX_FILES = 5;
+    const MIN_FILES = 2;
+
+    // Click en zona de upload
+    uploadZone.addEventListener('click', (e) => {
+        if (e.target !== imageInput && e.target.tagName !== 'BUTTON') {
+            imageInput.click();
+        }
+    });
+
+    // Selección de archivos
+    imageInput.addEventListener('change', (e) => {
+        handleFiles(e.target.files);
+    });
+
+    // Drag & Drop
+    uploadZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadZone.classList.add('dragover');
+    });
+
+    uploadZone.addEventListener('dragleave', () => {
+        uploadZone.classList.remove('dragover');
+    });
+
+    uploadZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadZone.classList.remove('dragover');
+        handleFiles(e.dataTransfer.files);
+    });
+
+    function handleFiles(files) {
+        // Filtrar solo imágenes
+        const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+        
+        // Limitar a MAX_FILES
+        const availableSlots = MAX_FILES - selectedFiles.length;
+        const filesToAdd = imageFiles.slice(0, availableSlots);
+        
+        filesToAdd.forEach(file => {
+            selectedFiles.push(file);
+            addPreview(file);
+        });
+        
+        updateUI();
+    }
+
+    function addPreview(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const div = document.createElement('div');
+            div.className = 'preview-item';
+            div.innerHTML = `
+                <img src="${e.target.result}" alt="Preview">
+                <button type="button" class="remove-btn" onclick="removeImage(${selectedFiles.length - 1})">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            previewGrid.appendChild(div);
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function removeImage(index) {
+        selectedFiles.splice(index, 1);
+        previewGrid.children[index].remove();
+        updateUI();
+    }
+
+    function updateUI() {
+        imageCount.textContent = selectedFiles.length;
+        
+        // Habilitar/deshabilitar botón submit
+        if (selectedFiles.length >= MIN_FILES && selectedFiles.length <= MAX_FILES) {
+            submitBtn.disabled = false;
+            minWarning.style.display = 'none';
+        } else {
+            submitBtn.disabled = true;
+            if (selectedFiles.length > 0 && selectedFiles.length < MIN_FILES) {
+                minWarning.style.display = 'inline';
+            } else {
+                minWarning.style.display = 'none';
+            }
+        }
+        
+        // Resetear input
+        imageInput.value = '';
+    }
+
+    // Submit form
+    enrollmentForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        if (selectedFiles.length < MIN_FILES) {
+            alert('❌ Por favor sube al menos 2 fotos de tu rostro.');
+            return;
+        }
+        
+        // Mostrar loading
+        loadingModal.show();
+        
+        // Crear FormData con las imágenes
+        const formData = new FormData();
+        selectedFiles.forEach((file, index) => {
+            formData.append('images', file);
+        });
+        
+        // Agregar CSRF token
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        
+        try {
+            const response = await fetch('{% url "attendance:facial_enrollment" %}', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (response.ok) {
+                loadingModal.hide();
+                alert('✅ ¡Perfil facial creado exitosamente!\n\nYa puedes usar el reconocimiento facial para marcar asistencia.');
+                window.location.href = '{% url "attendance:my_attendance" %}';
+            } else {
+                const data = await response.json();
+                loadingModal.hide();
+                alert('❌ Error: ' + (data.error || 'No se pudo crear el perfil facial.'));
+            }
+        } catch (error) {
+            loadingModal.hide();
+            alert('❌ Error de conexión: ' + error.message);
+        }
+    });
+</script>
+{% endblock %}
