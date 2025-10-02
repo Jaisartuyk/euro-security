@@ -1,0 +1,345 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Completar: {{ template.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header con Letterhead -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);">
+                    <img src="{% static 'images/branding/letterhead.jpg' %}" 
+                         alt="Euro Security" 
+                         class="img-fluid mb-3" 
+                         style="max-height: 100px;">
+                    <h2 class="text-white mb-0">{{ template.title }}</h2>
+                    <p class="text-white-50 mb-0">{{ template.code }} - Versión {{ template.version }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" id="dynamicForm">
+        {% csrf_token %}
+        
+        <div class="row">
+            <div class="col-lg-9">
+                <!-- Campos del Formulario -->
+                {% regroup template.fields.all by section as field_sections %}
+                
+                {% for section in field_sections %}
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-folder-open me-2"></i>
+                            {{ section.grouper|default:"Información General" }}
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for field in section.list %}
+                            <div class="col-md-6 mb-3">
+                                <label for="field_{{ field.name }}" class="form-label fw-bold">
+                                    {{ field.label }}
+                                    {% if field.is_required %}
+                                        <span class="text-danger">*</span>
+                                    {% endif %}
+                                </label>
+                                
+                                {% if field.field_type == 'text' %}
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="field_{{ field.name }}"
+                                           name="field_{{ field.name }}"
+                                           placeholder="{{ field.placeholder }}"
+                                           {% if field.is_required %}required{% endif %}
+                                           {% if field.max_length %}maxlength="{{ field.max_length }}"{% endif %}>
+                                
+                                {% elif field.field_type == 'textarea' %}
+                                    <textarea class="form-control" 
+                                              id="field_{{ field.name }}"
+                                              name="field_{{ field.name }}"
+                                              rows="4"
+                                              placeholder="{{ field.placeholder }}"
+                                              {% if field.is_required %}required{% endif %}></textarea>
+                                
+                                {% elif field.field_type == 'email' %}
+                                    <input type="email" 
+                                           class="form-control" 
+                                           id="field_{{ field.name }}"
+                                           name="field_{{ field.name }}"
+                                           placeholder="{{ field.placeholder }}"
+                                           {% if field.is_required %}required{% endif %}>
+                                
+                                {% elif field.field_type == 'number' %}
+                                    <input type="number" 
+                                           class="form-control" 
+                                           id="field_{{ field.name }}"
+                                           name="field_{{ field.name }}"
+                                           placeholder="{{ field.placeholder }}"
+                                           {% if field.is_required %}required{% endif %}>
+                                
+                                {% elif field.field_type == 'date' %}
+                                    <input type="date" 
+                                           class="form-control" 
+                                           id="field_{{ field.name }}"
+                                           name="field_{{ field.name }}"
+                                           {% if field.is_required %}required{% endif %}>
+                                
+                                {% elif field.field_type == 'select' %}
+                                    <select class="form-select" 
+                                            id="field_{{ field.name }}"
+                                            name="field_{{ field.name }}"
+                                            {% if field.is_required %}required{% endif %}>
+                                        <option value="">Seleccione una opción...</option>
+                                        {% for choice in field.choices %}
+                                            <option value="{{ choice }}">{{ choice }}</option>
+                                        {% endfor %}
+                                    </select>
+                                
+                                {% elif field.field_type == 'radio' %}
+                                    {% for choice in field.choices %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" 
+                                               type="radio" 
+                                               id="field_{{ field.name }}_{{ forloop.counter }}"
+                                               name="field_{{ field.name }}"
+                                               value="{{ choice }}"
+                                               {% if field.is_required and forloop.first %}required{% endif %}>
+                                        <label class="form-check-label" for="field_{{ field.name }}_{{ forloop.counter }}">
+                                            {{ choice }}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                
+                                {% elif field.field_type == 'checkbox' %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" 
+                                               type="checkbox" 
+                                               id="field_{{ field.name }}"
+                                               name="field_{{ field.name }}"
+                                               value="true">
+                                        <label class="form-check-label" for="field_{{ field.name }}">
+                                            {{ field.label }}
+                                        </label>
+                                    </div>
+                                
+                                {% elif field.field_type == 'file' %}
+                                    <input type="file" 
+                                           class="form-control" 
+                                           id="field_{{ field.name }}"
+                                           name="field_{{ field.name }}"
+                                           {% if field.is_required %}required{% endif %}>
+                                
+                                {% elif field.field_type == 'signature' %}
+                                    <div class="border rounded p-3 bg-light">
+                                        <canvas id="signature_{{ field.name }}" 
+                                                class="signature-pad border bg-white" 
+                                                width="400" 
+                                                height="150"></canvas>
+                                        <div class="mt-2">
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-secondary" 
+                                                    onclick="clearSignature('signature_{{ field.name }}')">
+                                                <i class="fas fa-eraser me-1"></i>
+                                                Limpiar
+                                            </button>
+                                        </div>
+                                        <input type="hidden" 
+                                               id="field_{{ field.name }}"
+                                               name="field_{{ field.name }}">
+                                    </div>
+                                {% endif %}
+                                
+                                {% if field.help_text %}
+                                    <small class="form-text text-muted d-block mt-1">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        {{ field.help_text }}
+                                    </small>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Sidebar con Información y Acciones -->
+            <div class="col-lg-3">
+                <div class="card mb-3 sticky-top" style="top: 20px;">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Información
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="small mb-2">
+                            <strong>Formulario:</strong><br>
+                            {{ template.title }}
+                        </p>
+                        <p class="small mb-2">
+                            <strong>Código:</strong><br>
+                            {{ template.code }}
+                        </p>
+                        <p class="small mb-2">
+                            <strong>Campos Totales:</strong><br>
+                            <span class="badge bg-info">{{ template.fields.count }}</span>
+                        </p>
+                        {% if assignment %}
+                        <p class="small mb-2">
+                            <strong>Asignado por:</strong><br>
+                            {{ assignment.assigned_by.get_full_name }}
+                        </p>
+                        {% if assignment.due_date %}
+                        <p class="small mb-2">
+                            <strong>Fecha Límite:</strong><br>
+                            <span class="badge bg-warning text-dark">
+                                {{ assignment.due_date|date:"d/m/Y" }}
+                            </span>
+                        </p>
+                        {% endif %}
+                        {% if assignment.instructions %}
+                        <p class="small mb-2">
+                            <strong>Instrucciones:</strong><br>
+                            {{ assignment.instructions }}
+                        </p>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h6 class="mb-0">
+                            <i class="fas fa-save me-2"></i>
+                            Guardar
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            {% if template.allow_draft %}
+                            <button type="submit" 
+                                    name="action" 
+                                    value="save_draft" 
+                                    class="btn btn-secondary">
+                                <i class="fas fa-save me-2"></i>
+                                Guardar Borrador
+                            </button>
+                            {% endif %}
+                            <button type="submit" 
+                                    name="action" 
+                                    value="submit" 
+                                    class="btn btn-success">
+                                <i class="fas fa-paper-plane me-2"></i>
+                                Enviar Formulario
+                            </button>
+                            <a href="{% url 'forms:dashboard' %}" 
+                               class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>
+                                Cancelar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <div class="alert alert-info mb-0 small">
+                            <i class="fas fa-lightbulb me-2"></i>
+                            <strong>Consejo:</strong> Puedes guardar un borrador y continuar más tarde.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+// Inicializar signature pads
+document.addEventListener('DOMContentLoaded', function() {
+    const signaturePads = document.querySelectorAll('.signature-pad');
+    
+    signaturePads.forEach(canvas => {
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+
+        function startDrawing(e) {
+            isDrawing = true;
+            [lastX, lastY] = [e.offsetX, e.offsetY];
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(e.offsetX, e.offsetY);
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+            
+            [lastX, lastY] = [e.offsetX, e.offsetY];
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+            // Guardar firma como base64
+            const hiddenInput = document.getElementById(canvas.id.replace('signature_', 'field_'));
+            if (hiddenInput) {
+                hiddenInput.value = canvas.toDataURL();
+            }
+        }
+    });
+});
+
+function clearSignature(canvasId) {
+    const canvas = document.getElementById(canvasId);
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Limpiar campo oculto
+    const hiddenInput = document.getElementById(canvasId.replace('signature_', 'field_'));
+    if (hiddenInput) {
+        hiddenInput.value = '';
+    }
+}
+
+// Validación del formulario
+document.getElementById('dynamicForm').addEventListener('submit', function(e) {
+    const action = e.submitter.value;
+    
+    if (action === 'submit') {
+        if (!confirm('¿Estás seguro de enviar este formulario? No podrás editarlo después.')) {
+            e.preventDefault();
+            return false;
+        }
+    }
+});
+</script>
+
+<style>
+.signature-pad {
+    cursor: crosshair;
+    display: block;
+    width: 100%;
+}
+
+.sticky-top {
+    position: sticky;
+    z-index: 1020;
+}
+</style>
+{% endblock %}

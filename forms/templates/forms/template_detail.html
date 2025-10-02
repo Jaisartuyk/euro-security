@@ -1,0 +1,274 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ template.title }} - Vista Previa{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header con Letterhead -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);">
+                    <img src="{% static 'images/branding/letterhead.jpg' %}" 
+                         alt="Euro Security" 
+                         class="img-fluid mb-3" 
+                         style="max-height: 100px;">
+                    <h2 class="text-white mb-0">{{ template.title }}</h2>
+                    <p class="text-white-50 mb-0">{{ template.code }} - Versión {{ template.version }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información del Formulario -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Información del Formulario
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <strong>Categoría:</strong>
+                            <span class="badge bg-{{ template.category.color }} ms-2">
+                                {{ template.category.name }}
+                            </span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>Código:</strong>
+                            <span class="text-muted ms-2">{{ template.code }}</span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>Versión:</strong>
+                            <span class="badge bg-secondary ms-2">{{ template.version }}</span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>Total de Campos:</strong>
+                            <span class="badge bg-info ms-2">{{ template.fields.count }}</span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>Envíos Totales:</strong>
+                            <span class="badge bg-success ms-2">{{ template.submission_count }}</span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>Estado:</strong>
+                            {% if template.is_active %}
+                                <span class="badge bg-success ms-2">Activo</span>
+                            {% else %}
+                                <span class="badge bg-danger ms-2">Inactivo</span>
+                            {% endif %}
+                        </div>
+                        <div class="col-12 mb-3">
+                            <strong>Descripción:</strong>
+                            <p class="text-muted mt-2">{{ template.description }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>Requiere Aprobación:</strong>
+                            {% if template.requires_approval %}
+                                <span class="badge bg-warning text-dark ms-2">Sí</span>
+                            {% else %}
+                                <span class="badge bg-secondary ms-2">No</span>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>Permite Borradores:</strong>
+                            {% if template.allow_draft %}
+                                <span class="badge bg-info ms-2">Sí</span>
+                            {% else %}
+                                <span class="badge bg-secondary ms-2">No</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cogs me-2"></i>
+                        Acciones
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% if is_hr %}
+                        <a href="{% url 'admin:forms_formtemplate_change' template.id %}" 
+                           class="btn btn-warning">
+                            <i class="fas fa-edit me-2"></i>
+                            Editar Plantilla
+                        </a>
+                        <a href="{% url 'forms:assign_form' template.id %}" 
+                           class="btn btn-success">
+                            <i class="fas fa-share me-2"></i>
+                            Asignar a Empleados
+                        </a>
+                        <button class="btn btn-info" onclick="exportTemplate()">
+                            <i class="fas fa-file-export me-2"></i>
+                            Exportar Plantilla
+                        </button>
+                        {% else %}
+                        <a href="{% url 'forms:fill_form' template.id %}" 
+                           class="btn btn-primary">
+                            <i class="fas fa-pencil-alt me-2"></i>
+                            Completar Formulario
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'forms:dashboard' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Volver al Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Estadísticas -->
+            <div class="card mt-3">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        Estadísticas
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Envíos Totales:</span>
+                        <strong>{{ template.submission_count }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Campos Totales:</span>
+                        <strong>{{ template.fields.count }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Creado:</span>
+                        <strong>{{ template.created_at|date:"d/m/Y" }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vista Previa de Campos -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-eye me-2"></i>
+                        Vista Previa del Formulario
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% regroup template.fields.all by section as field_sections %}
+                    
+                    {% for section in field_sections %}
+                        <div class="mb-4">
+                            <h4 class="border-bottom pb-2 mb-3">
+                                <i class="fas fa-folder-open text-primary me-2"></i>
+                                {{ section.grouper|default:"Sin Sección" }}
+                            </h4>
+                            
+                            <div class="row">
+                                {% for field in section.list %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card border-start border-primary border-3">
+                                        <div class="card-body">
+                                            <label class="form-label fw-bold">
+                                                {{ field.label }}
+                                                {% if field.is_required %}
+                                                    <span class="text-danger">*</span>
+                                                {% endif %}
+                                            </label>
+                                            
+                                            {% if field.field_type == 'text' %}
+                                                <input type="text" class="form-control" placeholder="{{ field.placeholder }}" disabled>
+                                            {% elif field.field_type == 'textarea' %}
+                                                <textarea class="form-control" rows="3" placeholder="{{ field.placeholder }}" disabled></textarea>
+                                            {% elif field.field_type == 'email' %}
+                                                <input type="email" class="form-control" placeholder="{{ field.placeholder }}" disabled>
+                                            {% elif field.field_type == 'number' %}
+                                                <input type="number" class="form-control" placeholder="{{ field.placeholder }}" disabled>
+                                            {% elif field.field_type == 'date' %}
+                                                <input type="date" class="form-control" disabled>
+                                            {% elif field.field_type == 'select' %}
+                                                <select class="form-select" disabled>
+                                                    <option>Seleccione una opción...</option>
+                                                    {% for choice in field.choices %}
+                                                        <option>{{ choice }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            {% elif field.field_type == 'radio' %}
+                                                {% for choice in field.choices %}
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" disabled>
+                                                    <label class="form-check-label">{{ choice }}</label>
+                                                </div>
+                                                {% endfor %}
+                                            {% elif field.field_type == 'checkbox' %}
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" disabled>
+                                                    <label class="form-check-label">{{ field.label }}</label>
+                                                </div>
+                                            {% elif field.field_type == 'file' %}
+                                                <input type="file" class="form-control" disabled>
+                                            {% elif field.field_type == 'signature' %}
+                                                <div class="border rounded p-3 text-center bg-light">
+                                                    <i class="fas fa-signature fa-2x text-muted"></i>
+                                                    <p class="text-muted mb-0 mt-2">Área de Firma Digital</p>
+                                                </div>
+                                            {% endif %}
+                                            
+                                            {% if field.help_text %}
+                                                <small class="form-text text-muted d-block mt-1">
+                                                    <i class="fas fa-info-circle me-1"></i>
+                                                    {{ field.help_text }}
+                                                </small>
+                                            {% endif %}
+                                            
+                                            <div class="mt-2">
+                                                <span class="badge bg-secondary">{{ field.field_type }}</span>
+                                                {% if field.is_required %}
+                                                    <span class="badge bg-danger">Requerido</span>
+                                                {% endif %}
+                                                <span class="badge bg-info">Orden: {{ field.order }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="alert alert-warning text-center">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Este formulario no tiene campos definidos aún.
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function exportTemplate() {
+    alert('Funcionalidad de exportación en desarrollo');
+    // TODO: Implementar exportación de plantilla
+}
+</script>
+
+<style>
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.border-start {
+    border-left-width: 3px !important;
+}
+</style>
+{% endblock %}
