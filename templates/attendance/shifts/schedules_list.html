@@ -222,16 +222,18 @@
                             <i class="fas fa-ellipsis-v"></i>
                         </button>
                         <ul class="dropdown-menu">
+                            {% comment %}
                             <li>
-                                <a class="dropdown-item" href="{% url 'attendance:schedule_detail' schedule.id %}">
+                                <a class="dropdown-item" href="#">
                                     <i class="fas fa-eye me-2"></i>Ver Detalles
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item" href="{% url 'attendance:edit_schedule' schedule.id %}">
+                                <a class="dropdown-item" href="#">
                                     <i class="fas fa-edit me-2"></i>Editar
                                 </a>
                             </li>
+                            {% endcomment %}
                             <li>
                                 <a class="dropdown-item" href="#" 
                                    onclick="event.preventDefault(); openAssignModal({{ schedule.id }}, '{{ schedule.name|escapejs }}');">
