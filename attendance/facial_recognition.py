@@ -660,14 +660,26 @@ def _intelligent_fallback_verification(captured_image, employee):
         # Generar hash de imagen capturada
         captured_hash = hashlib.sha256(clean_captured.encode()).hexdigest()
         
-        # Verificar si hay imágenes de referencia
-        has_reference_images = any([
-            facial_profile.image_1,
-            facial_profile.image_2,
-            facial_profile.image_3,
-            facial_profile.image_4,
-            facial_profile.image_5
-        ])
+        # Verificar si hay imágenes de referencia (nuevo método: JSON en reference_images)
+        has_reference_images = False
+        reference_images_data = []
+        
+        if facial_profile.reference_images:
+            try:
+                reference_images_data = json.loads(facial_profile.reference_images)
+                has_reference_images = len(reference_images_data) > 0
+            except:
+                pass
+        
+        # Fallback: verificar campos de imagen antiguos
+        if not has_reference_images:
+            has_reference_images = any([
+                facial_profile.image_1,
+                facial_profile.image_2,
+                facial_profile.image_3,
+                facial_profile.image_4,
+                facial_profile.image_5
+            ])
         
         if not has_reference_images:
             return {

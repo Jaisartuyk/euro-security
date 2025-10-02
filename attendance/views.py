@@ -577,13 +577,26 @@ def facial_enrollment(request):
                     is_active=True
                 )
             
-            # Guardar imágenes en los campos del perfil
-            image_fields = ['image_1', 'image_2', 'image_3', 'image_4', 'image_5']
-            for i, uploaded_file in enumerate(uploaded_files[:5]):
-                if i < len(image_fields):
-                    setattr(facial_profile, image_fields[i], uploaded_file)
-                    logger.info(f"  ✅ Imagen {i+1} guardada: {uploaded_file.name}")
+            # Convertir imágenes a base64 y guardar en reference_images (JSON)
+            import base64
+            import json
             
+            images_data = []
+            for i, uploaded_file in enumerate(uploaded_files[:5]):
+                # Leer archivo y convertir a base64
+                image_bytes = uploaded_file.read()
+                image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+                
+                images_data.append({
+                    'index': i + 1,
+                    'filename': uploaded_file.name,
+                    'size': len(image_bytes),
+                    'data': image_base64
+                })
+                logger.info(f"  ✅ Imagen {i+1} convertida a base64: {uploaded_file.name} ({len(image_bytes)} bytes)")
+            
+            # Guardar en campo reference_images como JSON
+            facial_profile.reference_images = json.dumps(images_data)
             facial_profile.save()
             
             logger.info(f"✅ Perfil facial guardado exitosamente para {employee.employee_id}")

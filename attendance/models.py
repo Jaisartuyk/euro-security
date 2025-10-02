@@ -236,6 +236,17 @@ class FacialRecognitionProfile(models.Model):
     
     def get_image_count(self):
         """Cuenta cuántas imágenes de referencia tiene el perfil"""
+        import json
+        
+        # Primero intentar contar desde reference_images (JSON - nuevo método)
+        if self.reference_images:
+            try:
+                images_data = json.loads(self.reference_images)
+                return len(images_data)
+            except:
+                pass
+        
+        # Fallback: contar desde campos de imagen (método antiguo)
         count = 0
         if self.image_1:
             count += 1
