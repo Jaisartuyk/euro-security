@@ -130,7 +130,7 @@
                     </div>
                     
                     <!-- Acciones de Supervisor -->
-                    {% if permission_level in 'supervisor,management,full' %}
+                    {% if permission_level == 'supervisor' or permission_level == 'management' or permission_level == 'full' %}
                         <div class="col-md-6 mb-3">
                             <div class="card border-success h-100">
                                 <div class="card-body text-center">
