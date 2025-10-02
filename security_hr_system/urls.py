@@ -28,6 +28,7 @@ urlpatterns = [
     path('puestos/', include('positions.urls')),
     path('reportes/', include('reports.urls')),
     path('asistencia/', include('attendance.urls')),
+    path('formularios/', include('forms.urls')),
     
     # Autenticación
     path('login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
