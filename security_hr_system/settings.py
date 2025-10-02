@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     'attendance',
     'reports',
     'forms',
+    'quality_control',
 ]
 
 MIDDLEWARE = [
