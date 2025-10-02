@@ -772,6 +772,13 @@
     // Función para confirmar eliminación de horario
     function confirmDelete(scheduleId, scheduleName) {
         if (confirm(`¿Estás seguro de que deseas eliminar el horario "${scheduleName}"?\n\nEsta acción no se puede deshacer.`)) {
+            // Validar que el token CSRF existe
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (!csrfToken) {
+                alert('❌ Error: No se encontró el token de seguridad. Por favor recarga la página.');
+                return;
+            }
+            
             // Deshabilitar todos los botones de eliminación temporalmente
             document.querySelectorAll('.btn-outline-danger').forEach(btn => {
                 btn.disabled = true;
@@ -782,7 +789,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    'X-CSRFToken': csrfToken.value
                 }
             })
             .then(response => response.json())
