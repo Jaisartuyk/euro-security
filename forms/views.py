@@ -361,4 +361,42 @@ def assign_form(request, template_id):
         return redirect('forms:dashboard')
     
     template = get_object_or_404(FormTemplate, id=template_id, is_active=True)
-    return render(request, 'forms/assign_form.html', {'template': template})
+    
+    # Obtener empleados activos
+    from employees.models import Employee
+    employees = Employee.objects.filter(is_active=True).select_related('user').order_by('employee_code')
+    
+    context = {
+        'template': template,
+        'employees': employees,
+        'is_hr': has_form_access(request.user, 'hr')
+    }
+    
+    return render(request, 'forms/assign_form.html', context)
+
+
+@login_required
+def export_submission_pdf(request, submission_id):
+    """Exportar formulario completado a PDF con letterhead"""
+    from .pdf_export import generate_submission_pdf
+    
+    submission = get_object_or_404(FormSubmission, id=submission_id)
+    
+    # Verificar permisos
+    if not (submission.submitted_by == request.user or has_form_access(request.user, 'hr')):
+        messages.error(request, 'No tienes permisos para descargar este formulario.')
+        return redirect('forms:dashboard')
+    
+    # Generar PDF
+    try:
+        pdf_buffer = generate_submission_pdf(submission)
+        
+        # Preparar respuesta
+        response = HttpResponse(pdf_buffer, content_type='application/pdf')
+        filename = f"{submission.template.code}_{submission.id}_{submission.submitted_by.username}.pdf"
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        return response
+    except Exception as e:
+        messages.error(request, f'Error al generar el PDF: {str(e)}')
+        return redirect('forms:submission_detail', submission_id=submission_id)

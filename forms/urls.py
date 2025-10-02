@@ -38,4 +38,5 @@ urlpatterns = [
     # Envíos
     path('envio/<int:submission_id>/', views.submission_detail, name='submission_detail'),
     path('envio/<int:submission_id>/revisar/', views.review_submission, name='review_submission'),
+    path('envio/<int:submission_id>/pdf/', views.export_submission_pdf, name='export_submission_pdf'),
 ]
