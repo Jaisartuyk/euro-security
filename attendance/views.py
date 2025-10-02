@@ -541,35 +541,62 @@ def facial_enrollment(request):
     employee = get_employee_from_user(request.user)
     
     # Verificar si ya tiene perfil facial
-    has_profile = hasattr(employee, 'facial_profile') and employee.facial_profile.is_active
+    try:
+        facial_profile = employee.facial_profile
+        has_profile = facial_profile.is_active
+    except:
+        facial_profile = None
+        has_profile = False
     
     if request.method == 'POST':
         try:
-            data = json.loads(request.body)
-            reference_images = data.get('reference_images', [])
+            # Obtener archivos desde request.FILES
+            uploaded_files = request.FILES.getlist('images')
             
-            if len(reference_images) < 3:
+            logger.info(f"📸 Registro facial para {employee.employee_id}: {len(uploaded_files)} fotos recibidas")
+            
+            if len(uploaded_files) < 2:
                 return JsonResponse({
                     'success': False,
-                    'error': 'Se requieren al menos 3 imágenes de referencia'
+                    'error': 'Se requieren al menos 2 imágenes de referencia'
                 })
             
-            # Registrar perfil facial
-            result = enroll_employee_facial_profile(employee, reference_images)
-            
-            if result['success']:
+            if len(uploaded_files) > 5:
                 return JsonResponse({
-                    'success': True,
-                    'message': result['message'],
-                    'redirect_url': '/asistencia/marcar/'
+                    'success': False,
+                    'error': 'Máximo 5 imágenes permitidas'
                 })
+            
+            # Crear o actualizar perfil facial
+            if facial_profile:
+                logger.info(f"🔄 Actualizando perfil facial existente para {employee.employee_id}")
             else:
-                return JsonResponse({
-                    'success': False,
-                    'error': result['error']
-                })
+                logger.info(f"✨ Creando nuevo perfil facial para {employee.employee_id}")
+                facial_profile = FacialRecognitionProfile.objects.create(
+                    employee=employee,
+                    is_active=True
+                )
+            
+            # Guardar imágenes en los campos del perfil
+            image_fields = ['image_1', 'image_2', 'image_3', 'image_4', 'image_5']
+            for i, uploaded_file in enumerate(uploaded_files[:5]):
+                if i < len(image_fields):
+                    setattr(facial_profile, image_fields[i], uploaded_file)
+                    logger.info(f"  ✅ Imagen {i+1} guardada: {uploaded_file.name}")
+            
+            facial_profile.save()
+            
+            logger.info(f"✅ Perfil facial guardado exitosamente para {employee.employee_id}")
+            
+            return JsonResponse({
+                'success': True,
+                'message': '¡Perfil facial registrado exitosamente! Ahora puedes usar reconocimiento facial.',
+            })
                 
         except Exception as e:
+            logger.error(f"❌ Error en registro facial: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
             return JsonResponse({
                 'success': False,
                 'error': f'Error interno: {str(e)}'
@@ -578,6 +605,7 @@ def facial_enrollment(request):
     context = {
         'employee': employee,
         'has_profile': has_profile,
+        'facial_profile': facial_profile,
     }
     
     return render(request, 'attendance/facial_enrollment.html', context)
