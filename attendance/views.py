@@ -45,7 +45,7 @@ def update_daily_summary(employee, attendance_record):
     if attendance_record.attendance_type == 'IN':
         summary.entries_count += 1
         if not summary.first_entry:
-            summary.first_entry = attendance_record.timestamp
+            summary.first_entry = attendance_record.timestamp.time()  # Extraer solo la hora
             summary.is_present = True
             
             # Verificar si llegó tarde (después de las 8:00 AM)
@@ -54,7 +54,7 @@ def update_daily_summary(employee, attendance_record):
     
     elif attendance_record.attendance_type == 'OUT':
         summary.exits_count += 1
-        summary.last_exit = attendance_record.timestamp
+        summary.last_exit = attendance_record.timestamp.time()  # Extraer solo la hora
         
         # Verificar salida temprana (antes de las 5:00 PM)
         if attendance_record.timestamp.hour < 17:
@@ -65,7 +65,13 @@ def update_daily_summary(employee, attendance_record):
     
     # Calcular horas trabajadas
     if summary.first_entry and summary.last_exit:
-        work_duration = summary.last_exit - summary.first_entry
+        # Convertir time a datetime para poder restar
+        from datetime import datetime, time as dt_time
+        today = date
+        first_entry_dt = datetime.combine(today, summary.first_entry)
+        last_exit_dt = datetime.combine(today, summary.last_exit)
+        
+        work_duration = last_exit_dt - first_entry_dt
         # Limitar a máximo 8 horas por día
         max_hours = timedelta(hours=8)
         summary.total_work_hours = min(work_duration, max_hours)
