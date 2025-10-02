@@ -153,6 +153,7 @@ class Employee(BaseModel):
         level_permissions = {
             'EXECUTIVE': 'full',  # Nivel ejecutivo (CEO, CFO, etc.)
             'DIRECTOR': 'full',
+            'COORDINACION': 'management',  # Coordinadores tienen permisos de gestión
             'MANAGER': 'management',
             'LEAD': 'supervisor',
             'SENIOR': 'advanced',
