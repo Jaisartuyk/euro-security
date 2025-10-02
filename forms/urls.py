@@ -19,4 +19,23 @@ urlpatterns = [
     
     # Estadísticas (solo admin)
     path('estadisticas/', views.forms_stats, name='stats'),
+    
+    # ============================================================================
+    # URLs PARA FORMULARIOS DINÁMICOS
+    # ============================================================================
+    
+    # Dashboard dinámico
+    path('dinamicos/', views.dynamic_forms_dashboard, name='dynamic_dashboard'),
+    
+    # Plantillas
+    path('plantilla/<int:template_id>/', views.template_detail, name='template_detail'),
+    path('plantilla/<int:template_id>/asignar/', views.assign_form, name='assign_form'),
+    
+    # Completar formularios
+    path('completar/<int:template_id>/', views.fill_form, name='fill_form'),
+    path('completar/<int:template_id>/asignacion/<int:assignment_id>/', views.fill_form, name='fill_assigned_form'),
+    
+    # Envíos
+    path('envio/<int:submission_id>/', views.submission_detail, name='submission_detail'),
+    path('envio/<int:submission_id>/revisar/', views.review_submission, name='review_submission'),
 ]

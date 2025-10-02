@@ -50,7 +50,7 @@ def has_form_access(user, required_permission):
 
 @login_required
 def forms_dashboard(request):
-    """Dashboard principal de formularios"""
+    """Dashboard principal de formularios (estáticos y dinámicos)"""
     # Verificar permisos básicos (HR o admin)
     if not has_form_access(request.user, 'hr'):
         messages.error(request, 'No tienes permisos para acceder a los formularios.')
@@ -59,25 +59,58 @@ def forms_dashboard(request):
     # Obtener categorías activas
     categories = FormCategory.objects.filter(is_active=True)
     
-    # Obtener formularios recientes
+    # Obtener formularios estáticos recientes
     recent_forms = FormDocument.objects.filter(
         is_active=True
-    ).select_related('category', 'created_by')[:10]
+    ).select_related('category', 'created_by')[:5]
     
-    # Estadísticas
+    # Obtener plantillas dinámicas activas
+    dynamic_templates = FormTemplate.objects.filter(
+        is_active=True
+    ).select_related('category', 'created_by')[:5]
+    
+    # Obtener asignaciones pendientes para el usuario
+    pending_assignments = FormAssignment.objects.filter(
+        assigned_to=request.user,
+        is_completed=False
+    ).select_related('template', 'assigned_by')[:5]
+    
+    # Obtener envíos recientes del usuario
+    recent_submissions = FormSubmission.objects.filter(
+        submitted_by=request.user
+    ).select_related('template').order_by('-created_at')[:5]
+    
+    # Estadísticas combinadas
     stats = {
-        'total_forms': FormDocument.objects.filter(is_active=True).count(),
+        'total_static_forms': FormDocument.objects.filter(is_active=True).count(),
+        'total_dynamic_templates': FormTemplate.objects.filter(is_active=True).count(),
         'total_categories': categories.count(),
         'total_downloads': FormDownloadLog.objects.count(),
+        'pending_assignments': pending_assignments.count(),
+        'total_submissions': FormSubmission.objects.count(),
         'recent_downloads': FormDownloadLog.objects.select_related(
             'form', 'user'
         ).order_by('-downloaded_at')[:5]
     }
     
+    # Estadísticas adicionales para RRHH
+    if has_form_access(request.user, 'hr'):
+        stats.update({
+            'pending_reviews': FormSubmission.objects.filter(status='submitted').count(),
+            'completed_today': FormSubmission.objects.filter(
+                status='completed',
+                updated_at__date=timezone.now().date()
+            ).count()
+        })
+    
     context = {
         'categories': categories,
         'recent_forms': recent_forms,
+        'dynamic_templates': dynamic_templates,
+        'pending_assignments': pending_assignments,
+        'recent_submissions': recent_submissions,
         'stats': stats,
+        'is_hr': has_form_access(request.user, 'hr'),
         'user_permission': Employee.objects.get(user=request.user).get_permission_level() if hasattr(request.user, 'employee') else 'basic'
     }
     
@@ -269,3 +302,60 @@ def forms_stats(request):
         'top_downloads': list(top_downloads),
         'recent_activity': recent_data
     })
+
+
+# ============================================================================
+# VISTAS PARA FORMULARIOS DINÁMICOS
+# ============================================================================
+
+@login_required
+def dynamic_forms_dashboard(request):
+    """Dashboard para formularios dinámicos"""
+    if not has_form_access(request.user, 'hr'):
+        messages.error(request, 'No tienes permisos para acceder a los formularios dinámicos.')
+        return redirect('attendance:dashboard')
+    
+    return render(request, 'forms/dashboard.html', {'dynamic_mode': True})
+
+
+@login_required
+def template_detail(request, template_id):
+    """Ver detalles de una plantilla de formulario"""
+    template = get_object_or_404(FormTemplate, id=template_id, is_active=True)
+    return render(request, 'forms/template_detail.html', {'template': template})
+
+
+@login_required
+def fill_form(request, template_id, assignment_id=None):
+    """Completar un formulario dinámico"""
+    template = get_object_or_404(FormTemplate, id=template_id, is_active=True)
+    return render(request, 'forms/fill_form.html', {'template': template})
+
+
+@login_required
+def submission_detail(request, submission_id):
+    """Ver detalles de un envío de formulario"""
+    submission = get_object_or_404(FormSubmission, id=submission_id)
+    return render(request, 'forms/submission_detail.html', {'submission': submission})
+
+
+@login_required
+@require_http_methods(["POST"])
+def review_submission(request, submission_id):
+    """Revisar y aprobar/rechazar un envío"""
+    if not has_form_access(request.user, 'hr'):
+        return JsonResponse({'error': 'Sin permisos'}, status=403)
+    
+    submission = get_object_or_404(FormSubmission, id=submission_id)
+    return redirect('forms:submission_detail', submission_id=submission_id)
+
+
+@login_required
+def assign_form(request, template_id):
+    """Asignar formulario a empleados"""
+    if not has_form_access(request.user, 'hr'):
+        messages.error(request, 'No tienes permisos para asignar formularios.')
+        return redirect('forms:dashboard')
+    
+    template = get_object_or_404(FormTemplate, id=template_id, is_active=True)
+    return render(request, 'forms/assign_form.html', {'template': template})
