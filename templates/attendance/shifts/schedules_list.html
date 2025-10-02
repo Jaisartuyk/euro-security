@@ -663,14 +663,25 @@
             return;
         }
         
-        const startDate = document.getElementById('assignStartDate').value;
+        // Validar que los elementos existen
+        const startDateEl = document.getElementById('assignStartDate');
+        const endDateEl = document.getElementById('assignEndDate');
+        const notesEl = document.getElementById('assignNotes');
+        
+        if (!startDateEl || !endDateEl || !notesEl) {
+            console.error('Error: No se encontraron los elementos del formulario');
+            alert('Error: El formulario no está disponible. Por favor recarga la página.');
+            return;
+        }
+        
+        const startDate = startDateEl.value;
         if (!startDate) {
             alert('Por favor selecciona una fecha de inicio');
             return;
         }
         
-        const endDate = document.getElementById('assignEndDate').value;
-        const notes = document.getElementById('assignNotes').value;
+        const endDate = endDateEl.value;
+        const notes = notesEl.value;
         
         // Deshabilitar botón y mostrar loading
         const assignBtn = document.getElementById('assignBtn');
