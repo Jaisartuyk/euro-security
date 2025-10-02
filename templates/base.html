@@ -633,10 +633,13 @@
         </div>
     </div>
     
-    <!-- GPS Status Indicator -->
+    <!-- GPS Status Indicator (Draggable) -->
     {% if user.is_authenticated %}
-    <div class="position-fixed top-0 end-0 m-3" style="z-index: 1050;">
+    <div id="gps-widget" class="position-fixed" style="z-index: 1050; cursor: move; top: 1rem; right: 1rem;">
         <div class="d-flex align-items-center bg-white rounded shadow-sm p-2">
+            <span class="badge bg-info me-2" style="font-size: 0.7rem;" title="Arrastra para mover">
+                <i class="fas fa-arrows-alt"></i>
+            </span>
             <span id="gps-status" class="badge bg-secondary me-2">GPS Inactivo</span>
             <button id="gps-toggle-btn" class="btn btn-sm btn-outline-primary" title="Toggle GPS">
                 <i class="fas fa-satellite-dish"></i>
@@ -684,6 +687,94 @@
             // Cerrar con overlay
             if (sidebarOverlay) {
                 sidebarOverlay.addEventListener('click', closeSidebar);
+            }
+            
+            // Hacer GPS Widget draggable
+            const gpsWidget = document.getElementById('gps-widget');
+            if (gpsWidget) {
+                let isDragging = false;
+                let currentX;
+                let currentY;
+                let initialX;
+                let initialY;
+                let xOffset = 0;
+                let yOffset = 0;
+                
+                // Restaurar posición guardada
+                const savedPosition = localStorage.getItem('gps-widget-position');
+                if (savedPosition) {
+                    const {x, y} = JSON.parse(savedPosition);
+                    gpsWidget.style.left = x + 'px';
+                    gpsWidget.style.top = y + 'px';
+                    gpsWidget.style.right = 'auto';
+                    xOffset = x;
+                    yOffset = y;
+                }
+                
+                gpsWidget.addEventListener('mousedown', dragStart);
+                document.addEventListener('mousemove', drag);
+                document.addEventListener('mouseup', dragEnd);
+                
+                // Touch events para móviles
+                gpsWidget.addEventListener('touchstart', dragStart);
+                document.addEventListener('touchmove', drag);
+                document.addEventListener('touchend', dragEnd);
+                
+                function dragStart(e) {
+                    // No arrastrar si se hace click en el botón
+                    if (e.target.closest('#gps-toggle-btn')) return;
+                    
+                    if (e.type === 'touchstart') {
+                        initialX = e.touches[0].clientX - xOffset;
+                        initialY = e.touches[0].clientY - yOffset;
+                    } else {
+                        initialX = e.clientX - xOffset;
+                        initialY = e.clientY - yOffset;
+                    }
+                    
+                    isDragging = true;
+                    gpsWidget.style.cursor = 'grabbing';
+                }
+                
+                function drag(e) {
+                    if (isDragging) {
+                        e.preventDefault();
+                        
+                        if (e.type === 'touchmove') {
+                            currentX = e.touches[0].clientX - initialX;
+                            currentY = e.touches[0].clientY - initialY;
+                        } else {
+                            currentX = e.clientX - initialX;
+                            currentY = e.clientY - initialY;
+                        }
+                        
+                        xOffset = currentX;
+                        yOffset = currentY;
+                        
+                        setTranslate(currentX, currentY, gpsWidget);
+                    }
+                }
+                
+                function dragEnd(e) {
+                    if (isDragging) {
+                        initialX = currentX;
+                        initialY = currentY;
+                        isDragging = false;
+                        gpsWidget.style.cursor = 'move';
+                        
+                        // Guardar posición en localStorage
+                        localStorage.setItem('gps-widget-position', JSON.stringify({
+                            x: currentX,
+                            y: currentY
+                        }));
+                    }
+                }
+                
+                function setTranslate(xPos, yPos, el) {
+                    el.style.left = xPos + 'px';
+                    el.style.top = yPos + 'px';
+                    el.style.right = 'auto';
+                }
             }
             
             // Cerrar con tecla Escape
