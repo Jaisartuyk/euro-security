@@ -230,13 +230,19 @@ def attendance_locations_api(request):
     # Formatear para el mapa
     locations = []
     for record in records:
+        # Convertir a hora local de Ecuador
+        from django.utils import timezone as tz
+        import pytz
+        ecuador_tz = pytz.timezone('America/Guayaquil')
+        local_time = record.timestamp.astimezone(ecuador_tz)
+        
         locations.append({
             'id': record.id,
             'employee_name': record.employee.get_full_name(),
             'employee_id': record.employee.id,
             'department': record.employee.department.name if record.employee.department else 'Sin departamento',
             'attendance_type': record.get_attendance_type_display(),
-            'timestamp': record.timestamp.strftime('%H:%M:%S'),
+            'timestamp': local_time.strftime('%H:%M:%S'),
             'latitude': float(record.latitude),
             'longitude': float(record.longitude),
             'accuracy': record.location_accuracy,

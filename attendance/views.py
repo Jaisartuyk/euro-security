@@ -45,19 +45,21 @@ def update_daily_summary(employee, attendance_record):
     if attendance_record.attendance_type == 'IN':
         summary.entries_count += 1
         if not summary.first_entry:
-            summary.first_entry = attendance_record.timestamp.time()  # Extraer solo la hora
+            summary.first_entry = attendance_record.timestamp  # Guardar datetime completo
             summary.is_present = True
             
-            # Verificar si llegó tarde (después de las 8:00 AM)
-            if attendance_record.timestamp.hour > 8:
+            # Verificar si llegó tarde (después de las 8:00 AM en hora local)
+            local_time = attendance_record.timestamp.astimezone()
+            if local_time.hour > 8:
                 summary.is_late = True
     
     elif attendance_record.attendance_type == 'OUT':
         summary.exits_count += 1
-        summary.last_exit = attendance_record.timestamp.time()  # Extraer solo la hora
+        summary.last_exit = attendance_record.timestamp  # Guardar datetime completo
         
-        # Verificar salida temprana (antes de las 5:00 PM)
-        if attendance_record.timestamp.hour < 17:
+        # Verificar salida temprana (antes de las 5:00 PM en hora local)
+        local_time = attendance_record.timestamp.astimezone()
+        if local_time.hour < 17:
             summary.is_early_exit = True
     
     elif attendance_record.attendance_type in ['BREAK_OUT', 'BREAK_IN']:
@@ -65,15 +67,9 @@ def update_daily_summary(employee, attendance_record):
     
     # Calcular horas trabajadas
     if summary.first_entry and summary.last_exit:
-        # Convertir time a datetime para poder restar
-        from datetime import datetime, time as dt_time
-        today = date
-        first_entry_dt = datetime.combine(today, summary.first_entry)
-        last_exit_dt = datetime.combine(today, summary.last_exit)
-        
-        work_duration = last_exit_dt - first_entry_dt
-        # Limitar a máximo 8 horas por día
-        max_hours = timedelta(hours=8)
+        work_duration = summary.last_exit - summary.first_entry
+        # Limitar a máximo 24 horas por día (en caso de turnos nocturnos)
+        max_hours = timedelta(hours=24)
         summary.total_work_hours = min(work_duration, max_hours)
     
     summary.save()

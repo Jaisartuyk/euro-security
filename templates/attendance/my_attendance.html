@@ -92,15 +92,20 @@
                                         <small class="text-muted">{{ summary.date|date:"l" }}</small>
                                     </td>
                                     <td>
+                                        {% load tz %}
                                         {% if summary.first_entry %}
-                                            {{ summary.first_entry|time:"H:i" }}
+                                            {% timezone "America/Guayaquil" %}
+                                                {{ summary.first_entry|date:"H:i" }}
+                                            {% endtimezone %}
                                         {% else %}
                                             <span class="text-muted">-</span>
                                         {% endif %}
                                     </td>
                                     <td>
                                         {% if summary.last_exit %}
-                                            {{ summary.last_exit|time:"H:i" }}
+                                            {% timezone "America/Guayaquil" %}
+                                                {{ summary.last_exit|date:"H:i" }}
+                                            {% endtimezone %}
                                         {% else %}
                                             <span class="text-muted">-</span>
                                         {% endif %}

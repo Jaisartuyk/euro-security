@@ -180,7 +180,12 @@
                                     {{ record.get_tracking_type_display|default:record.tracking_type }}
                                 </span>
                             </td>
-                            <td>{{ record.timestamp|time:'H:i:s' }}</td>
+                            <td>
+                                {% load tz %}
+                                {% timezone "America/Guayaquil" %}
+                                    {{ record.timestamp|date:'H:i:s' }}
+                                {% endtimezone %}
+                            </td>
                             <td>
                                 <small class="text-muted">
                                     {% if record.latitude and record.longitude %}
@@ -281,7 +286,7 @@
                             <div class="marker-info">
                                 <strong>Departamento:</strong> ${location.department}<br>
                                 <strong>Tipo:</strong> ${location.attendance_type}<br>
-                                <strong>Hora:</strong> ${location.timestamp}<br>
+                                <strong>Hora:</strong> ${location.timestamp} (ECT)<br>
                                 <strong>Confianza:</strong> ${location.confidence}%<br>
                                 <strong>Método:</strong> ${location.verification_method}<br>
                                 <strong>Precisión:</strong> ±${location.accuracy || 'N/A'}m<br>
