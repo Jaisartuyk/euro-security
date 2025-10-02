@@ -84,6 +84,70 @@
     </div>
 </div>
 
+<!-- Estadísticas de Ausencias y Permisos -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0">{{ total_medical_leaves|default:"0" }}</h4>
+                        <p class="mb-0">Ausencias Médicas</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-notes-medical fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0">{{ total_leave_requests|default:"0" }}</h4>
+                        <p class="mb-0">Permisos Laborales</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-calendar-times fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0">{{ pending_approvals|default:"0" }}</h4>
+                        <p class="mb-0">Pendientes Aprobación</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-clock fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0">{{ claude_interactions|default:"0" }}</h4>
+                        <p class="mb-0">Consultas Dr. Claude</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-robot fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Tipos de Reportes -->
 <div class="row">
     <div class="col-lg-8">
@@ -259,6 +323,51 @@
                                 <td>
                                     <a href="{% url 'reports:payroll' %}" class="btn btn-sm btn-outline-primary">
                                         <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <i class="fas fa-notes-medical text-danger me-2"></i>
+                                    Reporte de Ausencias Médicas
+                                </td>
+                                <td>{{ "now"|date:"d/m/Y H:i" }}</td>
+                                <td>{{ user.get_full_name|default:user.username }}</td>
+                                <td>{{ total_medical_leaves|default:"0" }}</td>
+                                <td><span class="badge bg-success">Completado</span></td>
+                                <td>
+                                    <a href="{% url 'attendance:hr_medical_dashboard' %}" class="btn btn-sm btn-outline-danger">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <i class="fas fa-calendar-times text-warning me-2"></i>
+                                    Reporte de Permisos Laborales
+                                </td>
+                                <td>{{ "now"|date:"d/m/Y H:i" }}</td>
+                                <td>{{ user.get_full_name|default:user.username }}</td>
+                                <td>{{ total_leave_requests|default:"0" }}</td>
+                                <td><span class="badge bg-success">Completado</span></td>
+                                <td>
+                                    <a href="{% url 'attendance:hr_leave_dashboard' %}" class="btn btn-sm btn-outline-warning">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <i class="fas fa-robot text-primary me-2"></i>
+                                    Análisis Dr. Claude IA
+                                </td>
+                                <td>{{ "now"|date:"d/m/Y H:i" }}</td>
+                                <td>Dr. Claude AI</td>
+                                <td>{{ total_claude_analyses|default:"0" }}</td>
+                                <td><span class="badge bg-info">Activo</span></td>
+                                <td>
+                                    <a href="{% url 'attendance:chat_with_claude' %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-comments"></i>
                                     </a>
                                 </td>
                             </tr>
