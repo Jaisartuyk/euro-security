@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Lista de Riesgos - Control de Calidad{% endblock %}
+
+{% block extra_css %}
+<style>
+    .risk-badge {
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-weight: bold;
+        color: white;
+    }
+    .risk-alto { background-color: #dc3545; }
+    .risk-medio { background-color: #ffc107; color: #000; }
+    .risk-bajo { background-color: #28a745; }
+    .filter-card {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1><i class="fas fa-list"></i> Lista de Riesgos</h1>
+                    <p class="text-muted">Gestión y seguimiento de riesgos identificados</p>
+                </div>
+                <div>
+                    <a href="{% url 'quality_control:dashboard' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Dashboard
+                    </a>
+                    <a href="{% url 'quality_control:risk_matrix' %}" class="btn btn-primary">
+                        <i class="fas fa-th"></i> Ver Matriz
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filter-card">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label"><i class="fas fa-tag"></i> Categoría</label>
+                <select name="category" class="form-select">
+                    <option value="">Todas las categorías</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}" {% if category_filter == cat.id|stringformat:"s" %}selected{% endif %}>
+                        {{ cat.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label"><i class="fas fa-signal"></i> Nivel de Riesgo</label>
+                <select name="level" class="form-select">
+                    <option value="">Todos los niveles</option>
+                    <option value="ALTO" {% if level_filter == "ALTO" %}selected{% endif %}>Alto</option>
+                    <option value="MEDIO" {% if level_filter == "MEDIO" %}selected{% endif %}>Medio</option>
+                    <option value="BAJO" {% if level_filter == "BAJO" %}selected{% endif %}>Bajo</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label"><i class="fas fa-toggle-on"></i> Estado</label>
+                <select name="status" class="form-select">
+                    <option value="active" {% if status_filter == "active" %}selected{% endif %}>Activos</option>
+                    <option value="mitigated" {% if status_filter == "mitigated" %}selected{% endif %}>Mitigados</option>
+                    <option value="all" {% if status_filter == "all" %}selected{% endif %}>Todos</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-filter"></i> Filtrar
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tabla de Riesgos -->
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5><i class="fas fa-table"></i> Riesgos ({{ risks|length }})</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Riesgo</th>
+                            <th>Categoría</th>
+                            <th>P</th>
+                            <th>I</th>
+                            <th>Nivel</th>
+                            <th>Responsable</th>
+                            <th>Departamento</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for risk in risks %}
+                        <tr>
+                            <td><strong>{{ risk.code }}</strong></td>
+                            <td>
+                                <div>{{ risk.title }}</div>
+                                <small class="text-muted">{{ risk.description|truncatewords:10 }}</small>
+                            </td>
+                            <td>
+                                <span class="badge" style="background-color: {{ risk.category.color }};">
+                                    {{ risk.category.name }}
+                                </span>
+                            </td>
+                            <td class="text-center">{{ risk.probability }}</td>
+                            <td class="text-center">{{ risk.impact }}</td>
+                            <td>
+                                <span class="risk-badge risk-{{ risk.risk_level|lower }}">
+                                    {{ risk.risk_score }} - {{ risk.get_risk_level_display }}
+                                </span>
+                            </td>
+                            <td>{{ risk.responsible|default:"Sin asignar" }}</td>
+                            <td>{{ risk.department|default:"-" }}</td>
+                            <td>
+                                {% if risk.is_mitigated %}
+                                    <span class="badge bg-success">Mitigado</span>
+                                {% elif risk.is_active %}
+                                    <span class="badge bg-primary">Activo</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactivo</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'quality_control:risk_detail' risk.id %}" class="btn btn-sm btn-primary" title="Ver Detalle">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="10" class="text-center text-muted">
+                                <i class="fas fa-info-circle"></i> No se encontraron riesgos con los filtros aplicados
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Incidentes - Control de Calidad{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1><i class="fas fa-bell"></i> Incidentes de Riesgos</h1>
+                    <p class="text-muted">Registro y seguimiento de incidentes</p>
+                </div>
+                <a href="{% url 'quality_control:dashboard' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Severidad</label>
+                    <select name="severity" class="form-select">
+                        <option value="">Todas</option>
+                        <option value="CRITICO" {% if severity_filter == "CRITICO" %}selected{% endif %}>Crítico</option>
+                        <option value="GRAVE" {% if severity_filter == "GRAVE" %}selected{% endif %}>Grave</option>
+                        <option value="MODERADO" {% if severity_filter == "MODERADO" %}selected{% endif %}>Moderado</option>
+                        <option value="MENOR" {% if severity_filter == "MENOR" %}selected{% endif %}>Menor</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Estado</label>
+                    <select name="status" class="form-select">
+                        <option value="unresolved" {% if status_filter == "unresolved" %}selected{% endif %}>Sin Resolver</option>
+                        <option value="resolved" {% if status_filter == "resolved" %}selected{% endif %}>Resueltos</option>
+                        <option value="all" {% if status_filter == "all" %}selected{% endif %}>Todos</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter"></i> Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla -->
+    <div class="card">
+        <div class="card-header bg-danger text-white">
+            <h5><i class="fas fa-table"></i> Incidentes ({{ incidents|length }})</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Número</th>
+                            <th>Título</th>
+                            <th>Riesgo</th>
+                            <th>Severidad</th>
+                            <th>Fecha</th>
+                            <th>Ubicación</th>
+                            <th>Reportado por</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for incident in incidents %}
+                        <tr>
+                            <td><strong>{{ incident.incident_number }}</strong></td>
+                            <td>
+                                <div>{{ incident.title }}</div>
+                                <small class="text-muted">{{ incident.description|truncatewords:10 }}</small>
+                            </td>
+                            <td>
+                                <a href="{% url 'quality_control:risk_detail' incident.risk.id %}">
+                                    {{ incident.risk.code }}
+                                </a>
+                            </td>
+                            <td>
+                                {% if incident.severity == 'CRITICO' %}
+                                    <span class="badge bg-danger">{{ incident.get_severity_display }}</span>
+                                {% elif incident.severity == 'GRAVE' %}
+                                    <span class="badge bg-warning">{{ incident.get_severity_display }}</span>
+                                {% elif incident.severity == 'MODERADO' %}
+                                    <span class="badge bg-info">{{ incident.get_severity_display }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ incident.get_severity_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ incident.incident_date|date:"d/m/Y H:i" }}</td>
+                            <td>{{ incident.location|default:"-" }}</td>
+                            <td>{{ incident.reported_by|default:"N/A" }}</td>
+                            <td>
+                                {% if incident.is_resolved %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check"></i> Resuelto
+                                    </span>
+                                    {% if incident.resolution_date %}
+                                        <br><small>{{ incident.resolution_date|date:"d/m/Y" }}</small>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="badge bg-warning">
+                                        <i class="fas fa-clock"></i> Pendiente
+                                    </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted">
+                                No hay incidentes registrados
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

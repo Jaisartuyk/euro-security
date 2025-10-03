@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Reportes - Control de Calidad{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1><i class="fas fa-chart-bar"></i> Reportes y Estadísticas</h1>
+                    <p class="text-muted">Generación de reportes personalizados</p>
+                </div>
+                <a href="{% url 'quality_control:dashboard' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reportes Disponibles -->
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5><i class="fas fa-file-pdf"></i> Reporte de Riesgos</h5>
+                </div>
+                <div class="card-body">
+                    <p>Genera un reporte completo de todos los riesgos identificados, incluyendo matriz, categorías y niveles.</p>
+                    <button class="btn btn-primary w-100" disabled>
+                        <i class="fas fa-download"></i> Generar PDF
+                    </button>
+                    <small class="text-muted d-block mt-2">Próximamente disponible</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <h5><i class="fas fa-file-excel"></i> Exportar a Excel</h5>
+                </div>
+                <div class="card-body">
+                    <p>Exporta la lista completa de riesgos, medidas de control e incidentes a formato Excel.</p>
+                    <button class="btn btn-success w-100" disabled>
+                        <i class="fas fa-file-excel"></i> Exportar Excel
+                    </button>
+                    <small class="text-muted d-block mt-2">Próximamente disponible</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-warning text-dark">
+                    <h5><i class="fas fa-chart-pie"></i> Reporte Ejecutivo</h5>
+                </div>
+                <div class="card-body">
+                    <p>Genera un resumen ejecutivo con estadísticas clave y gráficos para la alta dirección.</p>
+                    <button class="btn btn-warning w-100" disabled>
+                        <i class="fas fa-download"></i> Generar Reporte
+                    </button>
+                    <small class="text-muted d-block mt-2">Próximamente disponible</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-info text-white">
+                    <h5><i class="fas fa-calendar-alt"></i> Reporte Mensual</h5>
+                </div>
+                <div class="card-body">
+                    <p>Reporte mensual de actividades, nuevos riesgos, medidas implementadas e incidentes.</p>
+                    <button class="btn btn-info w-100" disabled>
+                        <i class="fas fa-calendar"></i> Generar Mensual
+                    </button>
+                    <small class="text-muted d-block mt-2">Próximamente disponible</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-danger text-white">
+                    <h5><i class="fas fa-exclamation-triangle"></i> Riesgos Críticos</h5>
+                </div>
+                <div class="card-body">
+                    <p>Reporte específico de riesgos de nivel alto que requieren atención inmediata.</p>
+                    <button class="btn btn-danger w-100" disabled>
+                        <i class="fas fa-fire"></i> Ver Críticos
+                    </button>
+                    <small class="text-muted d-block mt-2">Próximamente disponible</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-secondary text-white">
+                    <h5><i class="fas fa-history"></i> Historial</h5>
+                </div>
+                <div class="card-body">
+                    <p>Consulta el historial completo de cambios, evaluaciones y actualizaciones de riesgos.</p>
+                    <button class="btn btn-secondary w-100" disabled>
+                        <i class="fas fa-clock"></i> Ver Historial
+                    </button>
+                    <small class="text-muted d-block mt-2">Próximamente disponible</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información -->
+    <div class="alert alert-info">
+        <h5><i class="fas fa-info-circle"></i> Información</h5>
+        <p class="mb-0">
+            Los reportes personalizados estarán disponibles próximamente. Por ahora, puedes acceder a las estadísticas
+            y visualizaciones desde el <a href="{% url 'quality_control:dashboard' %}">Dashboard Principal</a>.
+        </p>
+    </div>
+</div>
+{% endblock %}

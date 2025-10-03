@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Medidas de Control - Control de Calidad{% endblock %}
+
+{% block extra_css %}
+<style>
+    .priority-critica { color: #dc3545; }
+    .priority-alta { color: #fd7e14; }
+    .priority-media { color: #ffc107; }
+    .priority-baja { color: #28a745; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1><i class="fas fa-clipboard-check"></i> Medidas de Control</h1>
+                    <p class="text-muted">Gestión de medidas de control y acciones correctivas</p>
+                </div>
+                <a href="{% url 'quality_control:dashboard' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Estado</label>
+                    <select name="status" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="PENDIENTE" {% if status_filter == "PENDIENTE" %}selected{% endif %}>Pendiente</option>
+                        <option value="EN_PROGRESO" {% if status_filter == "EN_PROGRESO" %}selected{% endif %}>En Progreso</option>
+                        <option value="COMPLETADA" {% if status_filter == "COMPLETADA" %}selected{% endif %}>Completada</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Prioridad</label>
+                    <select name="priority" class="form-select">
+                        <option value="">Todas</option>
+                        <option value="CRITICA" {% if priority_filter == "CRITICA" %}selected{% endif %}>Crítica</option>
+                        <option value="ALTA" {% if priority_filter == "ALTA" %}selected{% endif %}>Alta</option>
+                        <option value="MEDIA" {% if priority_filter == "MEDIA" %}selected{% endif %}>Media</option>
+                        <option value="BAJA" {% if priority_filter == "BAJA" %}selected{% endif %}>Baja</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter"></i> Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla -->
+    <div class="card">
+        <div class="card-header bg-warning text-dark">
+            <h5><i class="fas fa-table"></i> Medidas ({{ measures|length }})</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Medida</th>
+                            <th>Riesgo</th>
+                            <th>Prioridad</th>
+                            <th>Estado</th>
+                            <th>Responsable</th>
+                            <th>Fecha Límite</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for measure in measures %}
+                        <tr>
+                            <td>{{ measure.title }}</td>
+                            <td>
+                                <a href="{% url 'quality_control:risk_detail' measure.risk.id %}">
+                                    {{ measure.risk.code }}
+                                </a>
+                            </td>
+                            <td>
+                                <span class="priority-{{ measure.priority|lower }}">
+                                    <i class="fas fa-circle"></i> {{ measure.get_priority_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if measure.status == 'COMPLETADA' %}
+                                    <span class="badge bg-success">{{ measure.get_status_display }}</span>
+                                {% elif measure.status == 'EN_PROGRESO' %}
+                                    <span class="badge bg-primary">{{ measure.get_status_display }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ measure.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ measure.responsible|default:"Sin asignar" }}</td>
+                            <td>
+                                {% if measure.due_date %}
+                                    {{ measure.due_date|date:"d/m/Y" }}
+                                    {% if measure.is_overdue %}
+                                        <span class="badge bg-danger">Vencida</span>
+                                    {% endif %}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'quality_control:risk_detail' measure.risk.id %}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted">
+                                No hay medidas de control registradas
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,227 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Matriz de Riesgos - Control de Calidad{% endblock %}
+
+{% block extra_css %}
+<style>
+    .matrix-container {
+        overflow-x: auto;
+        margin: 20px 0;
+    }
+    .risk-matrix {
+        border-collapse: collapse;
+        width: 100%;
+        min-width: 800px;
+    }
+    .risk-matrix th, .risk-matrix td {
+        border: 2px solid #dee2e6;
+        padding: 15px;
+        text-align: center;
+        vertical-align: top;
+        min-height: 100px;
+    }
+    .risk-matrix th {
+        background-color: #f8f9fa;
+        font-weight: bold;
+    }
+    .matrix-cell {
+        min-height: 120px;
+        position: relative;
+    }
+    .matrix-cell-low {
+        background-color: #d4edda;
+    }
+    .matrix-cell-medium {
+        background-color: #fff3cd;
+    }
+    .matrix-cell-high {
+        background-color: #f8d7da;
+    }
+    .risk-item {
+        background: white;
+        border-radius: 5px;
+        padding: 8px;
+        margin: 5px 0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        font-size: 0.85rem;
+        text-align: left;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+    .risk-item:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    .risk-code {
+        font-weight: bold;
+        color: #495057;
+    }
+    .axis-label {
+        font-weight: bold;
+        font-size: 1.1rem;
+        background-color: #007bff !important;
+        color: white !important;
+    }
+    .legend {
+        margin: 20px 0;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 5px;
+    }
+    .legend-item {
+        display: inline-block;
+        margin-right: 20px;
+        padding: 5px 15px;
+        border-radius: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1><i class="fas fa-th"></i> Matriz de Riesgos</h1>
+                    <p class="text-muted">Matriz de Probabilidad × Impacto (5×5)</p>
+                </div>
+                <div>
+                    <a href="{% url 'quality_control:dashboard' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Volver al Dashboard
+                    </a>
+                    <a href="{% url 'quality_control:risk_list' %}" class="btn btn-primary">
+                        <i class="fas fa-list"></i> Ver Lista
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leyenda -->
+    <div class="legend">
+        <h5><i class="fas fa-info-circle"></i> Leyenda de Niveles de Riesgo:</h5>
+        <div class="mt-2">
+            <span class="legend-item matrix-cell-low">
+                <i class="fas fa-circle text-success"></i> <strong>Bajo (1-6)</strong>
+            </span>
+            <span class="legend-item matrix-cell-medium">
+                <i class="fas fa-circle text-warning"></i> <strong>Medio (7-14)</strong>
+            </span>
+            <span class="legend-item matrix-cell-high">
+                <i class="fas fa-circle text-danger"></i> <strong>Alto (15-25)</strong>
+            </span>
+        </div>
+        <p class="mt-2 mb-0 text-muted">
+            <small>
+                <i class="fas fa-lightbulb"></i> 
+                <strong>Nivel de Riesgo = Probabilidad × Impacto</strong> | 
+                Haz clic en un riesgo para ver más detalles
+            </small>
+        </p>
+    </div>
+
+    <!-- Matriz -->
+    <div class="matrix-container">
+        <table class="risk-matrix">
+            <thead>
+                <tr>
+                    <th class="axis-label" rowspan="2">PROBABILIDAD ↓<br>IMPACTO →</th>
+                    <th>1<br><small>Muy Bajo</small></th>
+                    <th>2<br><small>Bajo</small></th>
+                    <th>3<br><small>Medio</small></th>
+                    <th>4<br><small>Alto</small></th>
+                    <th>5<br><small>Muy Alto</small></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for prob in "54321" %}
+                <tr>
+                    <th>{{ prob }}<br><small>
+                        {% if prob == "5" %}Muy Alto
+                        {% elif prob == "4" %}Alto
+                        {% elif prob == "3" %}Medio
+                        {% elif prob == "2" %}Bajo
+                        {% else %}Muy Bajo{% endif %}
+                    </small></th>
+                    {% for imp in "12345" %}
+                        {% with prob_int=prob|add:"0" imp_int=imp|add:"0" %}
+                        {% with score=prob_int|mul:imp_int %}
+                        <td class="matrix-cell 
+                            {% if score <= 6 %}matrix-cell-low
+                            {% elif score <= 14 %}matrix-cell-medium
+                            {% else %}matrix-cell-high{% endif %}">
+                            <div class="text-muted mb-2">
+                                <small><strong>{{ prob }} × {{ imp }} = {{ score }}</strong></small>
+                            </div>
+                            {% for risk in matrix|get_item:prob_int|get_item:imp_int %}
+                            <div class="risk-item" onclick="window.location.href='{% url 'quality_control:risk_detail' risk.id %}'">
+                                <div class="risk-code">{{ risk.code }}</div>
+                                <div class="text-truncate" title="{{ risk.title }}">
+                                    {{ risk.title|truncatewords:5 }}
+                                </div>
+                                <small>
+                                    <span class="badge" style="background-color: {{ risk.category.color }};">
+                                        {{ risk.category.name|truncatewords:2 }}
+                                    </span>
+                                </small>
+                            </div>
+                            {% endfor %}
+                        </td>
+                        {% endwith %}
+                        {% endwith %}
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5><i class="fas fa-chart-bar"></i> Distribución de Riesgos</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <h3 class="text-success">{{ risks|length }}</h3>
+                            <p>Total de Riesgos Activos</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h3 class="text-danger">
+                                {{ risks|filter_by_level:"ALTO"|length }}
+                            </h3>
+                            <p>Riesgos de Nivel Alto</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h3 class="text-warning">
+                                {{ risks|filter_by_level:"MEDIO"|length }}
+                            </h3>
+                            <p>Riesgos de Nivel Medio</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Tooltip para riesgos
+document.querySelectorAll('.risk-item').forEach(item => {
+    item.addEventListener('mouseenter', function() {
+        this.style.zIndex = '1000';
+    });
+    item.addEventListener('mouseleave', function() {
+        this.style.zIndex = 'auto';
+    });
+});
+</script>
+{% endblock %}
