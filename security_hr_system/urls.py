@@ -29,6 +29,7 @@ urlpatterns = [
     path('reportes/', include('reports.urls')),
     path('asistencia/', include('attendance.urls')),
     path('formularios/', include('forms.urls')),
+    path('control-calidad/', include('quality_control.urls')),
     
     # Autenticación
     path('login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),

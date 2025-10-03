@@ -1,0 +1,458 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Control de Calidad - Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: transform 0.2s;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    .stat-icon {
+        font-size: 2.5rem;
+        opacity: 0.8;
+    }
+    .stat-value {
+        font-size: 2rem;
+        font-weight: bold;
+        margin: 10px 0;
+    }
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    .chart-container {
+        position: relative;
+        height: 300px;
+        margin-bottom: 20px;
+    }
+    .risk-badge {
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-weight: bold;
+        color: white;
+    }
+    .risk-alto { background-color: #dc3545; }
+    .risk-medio { background-color: #ffc107; color: #000; }
+    .risk-bajo { background-color: #28a745; }
+    .priority-critica { color: #dc3545; }
+    .priority-alta { color: #fd7e14; }
+    .priority-media { color: #ffc107; }
+    .priority-baja { color: #28a745; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1><i class="fas fa-shield-alt"></i> Control de Calidad</h1>
+            <p class="text-muted">Dashboard de Gestión de Riesgos y Calidad</p>
+        </div>
+    </div>
+
+    <!-- Estadísticas Principales -->
+    <div class="row">
+        <!-- Total Riesgos -->
+        <div class="col-md-3">
+            <div class="stat-card bg-primary text-white">
+                <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                <div class="stat-value">{{ total_risks }}</div>
+                <div class="stat-label">Riesgos Activos</div>
+            </div>
+        </div>
+
+        <!-- Riesgos Altos -->
+        <div class="col-md-3">
+            <div class="stat-card bg-danger text-white">
+                <div class="stat-icon"><i class="fas fa-fire"></i></div>
+                <div class="stat-value">{{ high_risks }}</div>
+                <div class="stat-label">Riesgos Altos</div>
+            </div>
+        </div>
+
+        <!-- Medidas Pendientes -->
+        <div class="col-md-3">
+            <div class="stat-card bg-warning text-dark">
+                <div class="stat-icon"><i class="fas fa-tasks"></i></div>
+                <div class="stat-value">{{ pending_measures }}</div>
+                <div class="stat-label">Medidas Pendientes</div>
+            </div>
+        </div>
+
+        <!-- Incidentes Sin Resolver -->
+        <div class="col-md-3">
+            <div class="stat-card bg-info text-white">
+                <div class="stat-icon"><i class="fas fa-bell"></i></div>
+                <div class="stat-value">{{ unresolved_incidents }}</div>
+                <div class="stat-label">Incidentes Activos</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navegación Rápida -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="btn-group" role="group">
+                <a href="{% url 'quality_control:risk_matrix' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-th"></i> Matriz de Riesgos
+                </a>
+                <a href="{% url 'quality_control:risk_list' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-list"></i> Lista de Riesgos
+                </a>
+                <a href="{% url 'quality_control:control_measures' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-clipboard-check"></i> Medidas de Control
+                </a>
+                <a href="{% url 'quality_control:incidents' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-exclamation-circle"></i> Incidentes
+                </a>
+                <a href="{% url 'quality_control:reports' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-chart-bar"></i> Reportes
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="row">
+        <!-- Riesgos por Nivel -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5><i class="fas fa-chart-pie"></i> Riesgos por Nivel</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="riskLevelsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Riesgos por Categoría -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5><i class="fas fa-chart-bar"></i> Riesgos por Categoría</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="riskCategoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <!-- Medidas por Estado -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5><i class="fas fa-chart-pie"></i> Medidas de Control por Estado</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="measuresStatusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estadísticas Adicionales -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5><i class="fas fa-info-circle"></i> Resumen General</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Riesgos Medios:</strong></td>
+                            <td class="text-end"><span class="badge bg-warning">{{ medium_risks }}</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Riesgos Bajos:</strong></td>
+                            <td class="text-end"><span class="badge bg-success">{{ low_risks }}</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Riesgos Mitigados:</strong></td>
+                            <td class="text-end"><span class="badge bg-secondary">{{ mitigated_risks }}</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Medidas en Progreso:</strong></td>
+                            <td class="text-end"><span class="badge bg-primary">{{ in_progress_measures }}</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Medidas Completadas:</strong></td>
+                            <td class="text-end"><span class="badge bg-success">{{ completed_measures }}</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Medidas Vencidas:</strong></td>
+                            <td class="text-end"><span class="badge bg-danger">{{ overdue_measures }}</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Incidentes Críticos:</strong></td>
+                            <td class="text-end"><span class="badge bg-danger">{{ critical_incidents }}</span></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Riesgos -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5><i class="fas fa-fire"></i> Top 10 Riesgos Más Críticos</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Riesgo</th>
+                                    <th>Categoría</th>
+                                    <th>P</th>
+                                    <th>I</th>
+                                    <th>Nivel</th>
+                                    <th>Responsable</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for risk in top_risks %}
+                                <tr>
+                                    <td><strong>{{ risk.code }}</strong></td>
+                                    <td>{{ risk.title }}</td>
+                                    <td><span class="badge" style="background-color: {{ risk.category.color }};">{{ risk.category.name }}</span></td>
+                                    <td>{{ risk.probability }}</td>
+                                    <td>{{ risk.impact }}</td>
+                                    <td>
+                                        <span class="risk-badge risk-{{ risk.risk_level|lower }}">
+                                            {{ risk.risk_score }} - {{ risk.get_risk_level_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ risk.responsible|default:"Sin asignar" }}</td>
+                                    <td>
+                                        <a href="{% url 'quality_control:risk_detail' risk.id %}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted">No hay riesgos registrados</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Medidas Próximas a Vencer -->
+    {% if upcoming_due %}
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5><i class="fas fa-clock"></i> Medidas Próximas a Vencer (7 días)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Medida</th>
+                                    <th>Riesgo</th>
+                                    <th>Prioridad</th>
+                                    <th>Responsable</th>
+                                    <th>Fecha Límite</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for measure in upcoming_due %}
+                                <tr>
+                                    <td>{{ measure.title }}</td>
+                                    <td>{{ measure.risk.code }}</td>
+                                    <td><span class="priority-{{ measure.priority|lower }}"><i class="fas fa-circle"></i> {{ measure.get_priority_display }}</span></td>
+                                    <td>{{ measure.responsible|default:"Sin asignar" }}</td>
+                                    <td>{{ measure.due_date|date:"d/m/Y" }}</td>
+                                    <td><span class="badge bg-primary">{{ measure.get_status_display }}</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Incidentes Recientes -->
+    {% if recent_incidents %}
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5><i class="fas fa-bell"></i> Incidentes Recientes</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Número</th>
+                                    <th>Título</th>
+                                    <th>Riesgo</th>
+                                    <th>Severidad</th>
+                                    <th>Fecha</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for incident in recent_incidents %}
+                                <tr>
+                                    <td><strong>{{ incident.incident_number }}</strong></td>
+                                    <td>{{ incident.title }}</td>
+                                    <td>{{ incident.risk.code }}</td>
+                                    <td>
+                                        {% if incident.severity == 'CRITICO' %}
+                                            <span class="badge bg-danger">{{ incident.get_severity_display }}</span>
+                                        {% elif incident.severity == 'GRAVE' %}
+                                            <span class="badge bg-warning">{{ incident.get_severity_display }}</span>
+                                        {% else %}
+                                            <span class="badge bg-info">{{ incident.get_severity_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ incident.incident_date|date:"d/m/Y H:i" }}</td>
+                                    <td>
+                                        {% if incident.is_resolved %}
+                                            <span class="badge bg-success">Resuelto</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">Pendiente</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+<script>
+// Parsear datos JSON desde Django
+const riskLevelsData = JSON.parse('{{ risk_levels_data|escapejs }}');
+const categoryLabels = JSON.parse('{{ category_labels|escapejs }}');
+const categoryData = JSON.parse('{{ category_data|escapejs }}');
+const categoryColors = JSON.parse('{{ category_colors|escapejs }}');
+const measuresStatusData = JSON.parse('{{ measures_status_data|escapejs }}');
+
+// Gráfico de Riesgos por Nivel
+const riskLevelsCtx = document.getElementById('riskLevelsChart').getContext('2d');
+new Chart(riskLevelsCtx, {
+    type: 'doughnut',
+    data: {
+        labels: riskLevelsData.labels,
+        datasets: [{
+            data: riskLevelsData.data,
+            backgroundColor: riskLevelsData.colors,
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Gráfico de Riesgos por Categoría
+const riskCategoryCtx = document.getElementById('riskCategoryChart').getContext('2d');
+new Chart(riskCategoryCtx, {
+    type: 'bar',
+    data: {
+        labels: categoryLabels,
+        datasets: [{
+            label: 'Número de Riesgos',
+            data: categoryData,
+            backgroundColor: categoryColors,
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+
+// Gráfico de Medidas por Estado
+const measuresStatusCtx = document.getElementById('measuresStatusChart').getContext('2d');
+new Chart(measuresStatusCtx, {
+    type: 'doughnut',
+    data: {
+        labels: measuresStatusData.labels,
+        datasets: [{
+            data: measuresStatusData.data,
+            backgroundColor: measuresStatusData.colors,
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+</script>
+{% endblock %}
