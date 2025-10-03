@@ -83,79 +83,239 @@ class Command(BaseCommand):
                 self.stdout.write(f'  ⏭️  Ya existe: {category.name}')
 
     def create_sample_risks(self):
-        """Crear riesgos de ejemplo basados en las imágenes proporcionadas"""
-        self.stdout.write('\n📊 Creando riesgos de ejemplo...')
+        """Crear riesgos reales basados en la matriz proporcionada"""
+        self.stdout.write('\n📊 Creando riesgos identificados...')
         
         # Obtener categorías
         operativo = RiskCategory.objects.get(category_type='OPERATIVO')
         tecnologico = RiskCategory.objects.get(category_type='TECNOLOGICO')
         capital_humano = RiskCategory.objects.get(category_type='CAPITAL_HUMANO')
+        entorno = RiskCategory.objects.get(category_type='ENTORNO')
         reputacional = RiskCategory.objects.get(category_type='REPUTACIONAL')
         
         risks = [
+            # RIESGOS OPERATIVOS
             {
-                'code': 'RSG-001',
-                'title': 'Incumplimiento de protocolos por el personal',
-                'description': 'El personal de seguridad no sigue los protocolos establecidos de control de acceso, '
-                              'lo que puede resultar en brechas de seguridad.',
+                'code': 'ROP-001',
+                'title': 'Errores en los procedimientos de control de acceso',
+                'description': 'Dejar pasar sin autorización. Errores en los procedimientos de control de acceso que pueden comprometer la seguridad.',
                 'category': operativo,
                 'probability': 4,
                 'impact': 4,
             },
             {
-                'code': 'RSG-002',
-                'title': 'Fallo en cámaras de vigilancia',
-                'description': 'Las cámaras de vigilancia presentan fallas técnicas o no están operativas, '
-                              'dejando áreas sin monitoreo.',
-                'category': tecnologico,
+                'code': 'ROP-002',
+                'title': 'Fallas en la coordinación de rondas de seguridad',
+                'description': 'Fallas en la coordinación de rondas de seguridad que dejan áreas desprotegidas.',
+                'category': operativo,
                 'probability': 3,
-                'impact': 4,
+                'impact': 3,
             },
             {
-                'code': 'RSG-003',
-                'title': 'Rotación alta de guardias',
-                'description': 'Alta rotación del personal de seguridad que afecta la continuidad del servicio '
-                              'y aumenta los errores.',
-                'category': capital_humano,
+                'code': 'ROP-003',
+                'title': 'Comunicación ineficaz entre turnos o áreas',
+                'description': 'Información incompleta de novedades. Comunicación ineficaz que genera falta de información crítica.',
+                'category': operativo,
                 'probability': 4,
                 'impact': 3,
             },
             {
-                'code': 'RSG-004',
-                'title': 'Incumplimiento de normativas de seguridad',
-                'description': 'No cumplimiento de normas informativas de seguridad que puede resultar en '
-                              'sanciones legales.',
+                'code': 'ROP-004',
+                'title': 'Incumplimientos de normas legales y regulatorias',
+                'description': 'Incumplimientos de normas legales y regulatorias que pueden resultar en sanciones.',
                 'category': operativo,
                 'probability': 2,
                 'impact': 5,
             },
             {
-                'code': 'RSG-005',
-                'title': 'Quejas frecuentes de clientes',
-                'description': 'Clientes insatisfechos con el servicio presentan quejas frecuentes que afectan '
-                              'la reputación de la empresa.',
+                'code': 'ROP-005',
+                'title': 'Errores en los procedimientos operativos',
+                'description': 'Errores sistemáticos en los procedimientos operativos que afectan la calidad del servicio.',
+                'category': operativo,
+                'probability': 3,
+                'impact': 3,
+            },
+            
+            # RIESGOS TECNOLÓGICOS
+            {
+                'code': 'TEC-001',
+                'title': 'Fallas en sistemas de CCTV',
+                'description': 'Cámaras apagadas o con poca cobertura. Fallas en sistemas de CCTV que dejan áreas sin vigilancia.',
+                'category': tecnologico,
+                'probability': 3,
+                'impact': 4,
+            },
+            {
+                'code': 'TEC-002',
+                'title': 'Problemas en sistemas de alarmas',
+                'description': 'Fallas alarmas, falta de mantenimiento. Problemas que impiden la detección oportuna de incidentes.',
+                'category': tecnologico,
+                'probability': 3,
+                'impact': 4,
+            },
+            {
+                'code': 'TEC-003',
+                'title': 'Obsolescencia de base de datos de clientes',
+                'description': 'Obsolescencia de base de datos de clientes que afecta la gestión de información.',
+                'category': tecnologico,
+                'probability': 2,
+                'impact': 3,
+            },
+            {
+                'code': 'TEC-004',
+                'title': 'Dependencia de tecnología no actualizada',
+                'description': 'Dependencia de tecnología no actualizada o en desreparo que compromete operaciones.',
+                'category': tecnologico,
+                'probability': 3,
+                'impact': 4,
+            },
+            {
+                'code': 'TEC-005',
+                'title': 'Fallas en sistemas de comunicación',
+                'description': 'Radios. Fallas en sistemas de comunicación que impiden coordinación efectiva.',
+                'category': tecnologico,
+                'probability': 3,
+                'impact': 3,
+            },
+            {
+                'code': 'TEC-006',
+                'title': 'Insuficiencia de equipos técnicos y tecnológicos',
+                'description': 'Insuficiencia de equipos técnicos y tecnológicos para cubrir necesidades operativas.',
+                'category': tecnologico,
+                'probability': 3,
+                'impact': 3,
+            },
+            
+            # RIESGOS DE CAPITAL HUMANO
+            {
+                'code': 'CAP-001',
+                'title': 'Falta de capacitación del personal de seguridad',
+                'description': 'Manejo de crisis, primeros auxilios, protocolos. Falta de capacitación que afecta la respuesta ante emergencias.',
+                'category': capital_humano,
+                'probability': 4,
+                'impact': 4,
+            },
+            {
+                'code': 'CAP-002',
+                'title': 'Alta rotación de personal',
+                'description': 'Lo que afecta la continuidad del servicio. Alta rotación que genera pérdida de conocimiento y experiencia.',
+                'category': capital_humano,
+                'probability': 4,
+                'impact': 3,
+            },
+            {
+                'code': 'CAP-003',
+                'title': 'Fatiga laboral y exceso de horas extras',
+                'description': 'Que disminuye la atención y aumenta los errores. Fatiga que compromete el desempeño del personal.',
+                'category': capital_humano,
+                'probability': 4,
+                'impact': 3,
+            },
+            {
+                'code': 'CAP-004',
+                'title': 'Conductas inadecuadas',
+                'description': 'Corrupción, abuso de autoridad, incumplimiento de normas. Conductas que afectan la integridad del servicio.',
+                'category': capital_humano,
+                'probability': 2,
+                'impact': 5,
+            },
+            {
+                'code': 'CAP-005',
+                'title': 'Accidentes laborales',
+                'description': 'Lesiones, enfermedades laborales. Accidentes que afectan al personal y operaciones.',
+                'category': capital_humano,
+                'probability': 3,
+                'impact': 4,
+            },
+            {
+                'code': 'CAP-006',
+                'title': 'Carencias cognitivas del personal',
+                'description': 'Falta de conocimientos o habilidades necesarias para el desempeño efectivo.',
+                'category': capital_humano,
+                'probability': 3,
+                'impact': 3,
+            },
+            
+            # RIESGOS DEL ENTORNO Y EXTERNOS
+            {
+                'code': 'ENT-001',
+                'title': 'Amenazas delictivas externas',
+                'description': 'Robos, asaltos, vandalismo. Amenazas externas que ponen en riesgo instalaciones y personas.',
+                'category': entorno,
+                'probability': 3,
+                'impact': 5,
+            },
+            {
+                'code': 'ENT-002',
+                'title': 'Conflictos sociales en zonas de servicio',
+                'description': 'Manifestaciones, disturbios. Conflictos que afectan la operación normal del servicio.',
+                'category': entorno,
+                'probability': 2,
+                'impact': 4,
+            },
+            {
+                'code': 'ENT-003',
+                'title': 'Clima o desastres naturales',
+                'description': 'Inundaciones, terremotos. Desastres naturales que afectan la operación.',
+                'category': entorno,
+                'probability': 2,
+                'impact': 4,
+            },
+            {
+                'code': 'ENT-004',
+                'title': 'Competencia desleal',
+                'description': 'Empresas que ofrecen servicios a menor costo sin cumplir normativas. Competencia que afecta el mercado.',
+                'category': entorno,
+                'probability': 3,
+                'impact': 3,
+            },
+            
+            # RIESGOS REPUTACIONALES
+            {
+                'code': 'REP-001',
+                'title': 'Mala atención al cliente o incumplimiento de contratos',
+                'description': 'Mala atención que genera insatisfacción y pérdida de clientes.',
+                'category': reputacional,
+                'probability': 3,
+                'impact': 4,
+            },
+            {
+                'code': 'REP-002',
+                'title': 'Incidentes públicos con guardias de seguridad',
+                'description': 'Uso excesivo de fuerza, denuncias. Incidentes que dañan la imagen de la empresa.',
+                'category': reputacional,
+                'probability': 2,
+                'impact': 5,
+            },
+            {
+                'code': 'REP-003',
+                'title': 'Pérdida de confianza del cliente por fallas en la protección',
+                'description': 'Pérdida de confianza que afecta la retención y captación de clientes.',
                 'category': reputacional,
                 'probability': 3,
                 'impact': 4,
             },
         ]
         
+        created_count = 0
         for risk_data in risks:
             risk, created = Risk.objects.get_or_create(
                 code=risk_data['code'],
                 defaults=risk_data
             )
             if created:
+                created_count += 1
                 self.stdout.write(f'  ✓ Creado: [{risk.code}] {risk.title} - Nivel: {risk.get_risk_level_display()}')
                 
                 # Crear medida de control de ejemplo
                 ControlMeasure.objects.create(
                     risk=risk,
-                    title=f'Capacitación constante, supervisión de turnos',
-                    description=f'Implementar programa de capacitación continua y supervisión activa para mitigar el riesgo.',
-                    priority='ALTA',
-                    status='EN_PROGRESO'
+                    title=f'Medida de control para {risk.code}',
+                    description=f'Implementar controles y procedimientos para mitigar el riesgo identificado.',
+                    priority='ALTA' if risk.risk_level == 'ALTO' else 'MEDIA',
+                    status='PENDIENTE'
                 )
-                self.stdout.write(f'    → Medida de control creada')
             else:
                 self.stdout.write(f'  ⏭️  Ya existe: [{risk.code}] {risk.title}')
+        
+        self.stdout.write(f'\n✅ Total de riesgos creados: {created_count}')
