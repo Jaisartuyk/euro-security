@@ -542,14 +542,22 @@ def edit_shift_template(request, template_id):
             template.color = request.POST.get('color', '#007bff')
             template.save()
             
-            # Actualizar todos los turnos asociados a esta plantilla
-            shifts = Shift.objects.filter(template=template)
-            for shift in shifts:
-                shift.start_time = template.start_time
-                shift.end_time = template.end_time
-                shift.save()
+            # Actualizar todos los turnos asociados a horarios que usan esta plantilla
+            work_schedules = WorkSchedule.objects.filter(template=template, is_active=True)
+            shifts_updated = 0
+            for schedule in work_schedules:
+                shifts = schedule.shifts.all()
+                for shift in shifts:
+                    shift.start_time = template.start_time
+                    shift.end_time = template.end_time
+                    shift.is_overnight = template.is_overnight
+                    shift.save()
+                    shifts_updated += 1
             
-            messages.success(request, f'Plantilla "{template.name}" y {shifts.count()} turno(s) actualizados exitosamente.')
+            if shifts_updated > 0:
+                messages.success(request, f'Plantilla "{template.name}" y {shifts_updated} turno(s) en {work_schedules.count()} horario(s) actualizados exitosamente.')
+            else:
+                messages.success(request, f'Plantilla "{template.name}" actualizada exitosamente.')
             return redirect('attendance:shift_template_detail', template_id=template.id)
         except Exception as e:
             messages.error(request, f'Error al actualizar la plantilla: {str(e)}')
