@@ -44,10 +44,12 @@ env/
 .env.local
 .env.production
 .env.staging
+.env.railway
 
 # Archivos de configuración sensibles
 settings_production.py
 secrets.json
+firebase-credentials.json
 
 # Archivos de base de datos
 *.db

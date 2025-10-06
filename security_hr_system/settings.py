@@ -266,6 +266,36 @@ CLAUDE_MAX_TOKENS = 1024
 CLAUDE_TEMPERATURE = 0.7
 CLAUDE_API_VERSION = '2023-06-01'
 
+# Face++ Configuration (Reconocimiento Facial Avanzado)
+FACEPP_API_KEY = os.environ.get('FACEPP_API_KEY', '')
+FACEPP_API_SECRET = os.environ.get('FACEPP_API_SECRET', '')
+FACEPP_API_URL = 'https://api-us.faceplusplus.com/facepp/v3'
+
+# Roboflow Configuration (Detección de Objetos con IA)
+ROBOFLOW_API_KEY = os.environ.get('ROBOFLOW_API_KEY', '')
+ROBOFLOW_API_URL = 'https://serverless.roboflow.com'
+ROBOFLOW_MODELS = {
+    'weapon_detection': 'weapon-detection-pgqnr/7',
+    'vehicle_detection': 'vehicle-detection-byizq/2',
+    'ppe_detection': 'ppe-detection-kfpqi/1',
+    'person_detection': 'person-detection-j44uo/1',
+}
+
+# Firebase Configuration (Notificaciones Push)
+FIREBASE_PROJECT_ID = os.environ.get('FIREBASE_PROJECT_ID', 'euro-security')
+FIREBASE_CREDENTIALS_JSON = os.environ.get('FIREBASE_CREDENTIALS_JSON', '{}')
+FIREBASE_VAPID_KEY = os.environ.get('FIREBASE_VAPID_KEY', '')
+try:
+    import json
+    FIREBASE_CREDENTIALS = json.loads(FIREBASE_CREDENTIALS_JSON)
+except json.JSONDecodeError:
+    FIREBASE_CREDENTIALS = {}
+    print("⚠️ Warning: FIREBASE_CREDENTIALS_JSON no es un JSON válido")
+
+# Agora Configuration (Video Streaming)
+AGORA_APP_ID = os.environ.get('AGORA_APP_ID', '')
+AGORA_APP_CERTIFICATE = os.environ.get('AGORA_APP_CERTIFICATE', '')
+
 # Configuración de asistencias
 ATTENDANCE_SETTINGS = {
     'ENABLE_GEOLOCATION': True,
