@@ -542,7 +542,14 @@ def edit_shift_template(request, template_id):
             template.color = request.POST.get('color', '#007bff')
             template.save()
             
-            messages.success(request, f'Plantilla "{template.name}" actualizada exitosamente.')
+            # Actualizar todos los turnos asociados a esta plantilla
+            shifts = Shift.objects.filter(template=template)
+            for shift in shifts:
+                shift.start_time = template.start_time
+                shift.end_time = template.end_time
+                shift.save()
+            
+            messages.success(request, f'Plantilla "{template.name}" y {shifts.count()} turno(s) actualizados exitosamente.')
             return redirect('attendance:shift_template_detail', template_id=template.id)
         except Exception as e:
             messages.error(request, f'Error al actualizar la plantilla: {str(e)}')
