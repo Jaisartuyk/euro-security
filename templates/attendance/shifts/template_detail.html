@@ -232,6 +232,14 @@
                            class="btn btn-primary w-100 mb-2">
                             <i class="fas fa-plus me-2"></i>Crear Horario
                         </a>
+                        <a href="{% url 'attendance:edit_shift_template' template.id %}" 
+                           class="btn btn-warning w-100 mb-2">
+                            <i class="fas fa-edit me-2"></i>Editar Plantilla
+                        </a>
+                        <a href="{% url 'attendance:delete_shift_template' template.id %}" 
+                           class="btn btn-danger w-100 mb-2">
+                            <i class="fas fa-trash-alt me-2"></i>Eliminar Plantilla
+                        </a>
                         <a href="{% url 'attendance:shift_templates_list' %}" 
                            class="btn btn-outline-secondary w-100 mb-2">
                             <i class="fas fa-arrow-left me-2"></i>Volver a Lista

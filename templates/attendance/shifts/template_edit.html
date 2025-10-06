@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Editar Plantilla - {{ template.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1><i class="fas fa-edit"></i> Editar Plantilla de Turno</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'attendance:shift_management_dashboard' %}">Turnos</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'attendance:shift_templates_list' %}">Plantillas</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'attendance:shift_template_detail' template.id %}">{{ template.name }}</a></li>
+                    <li class="breadcrumb-item active">Editar</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5><i class="fas fa-clock"></i> Editar: {{ template.name }}</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Información Básica -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Nombre de la Plantilla *</label>
+                                <input type="text" name="name" class="form-control" value="{{ template.name }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Categoría *</label>
+                                <select name="category" class="form-select" required>
+                                    {% for value, label in categories %}
+                                    <option value="{{ value }}" {% if template.category == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Descripción</label>
+                            <textarea name="description" class="form-control" rows="3">{{ template.description }}</textarea>
+                        </div>
+
+                        <!-- Horarios -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Tipo de Turno *</label>
+                                <select name="shift_type" class="form-select" required>
+                                    {% for value, label in shift_types %}
+                                    <option value="{{ value }}" {% if template.shift_type == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Hora Inicio *</label>
+                                <input type="time" name="start_time" class="form-control" value="{{ template.start_time|time:'H:i' }}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Hora Fin *</label>
+                                <input type="time" name="end_time" class="form-control" value="{{ template.end_time|time:'H:i' }}" required>
+                            </div>
+                        </div>
+
+                        <!-- Días de la Semana -->
+                        <div class="mb-3">
+                            <label class="form-label">Días de Trabajo</label>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="monday" id="monday" {% if template.monday %}checked{% endif %}>
+                                        <label class="form-check-label" for="monday">Lunes</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="tuesday" id="tuesday" {% if template.tuesday %}checked{% endif %}>
+                                        <label class="form-check-label" for="tuesday">Martes</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="wednesday" id="wednesday" {% if template.wednesday %}checked{% endif %}>
+                                        <label class="form-check-label" for="wednesday">Miércoles</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="thursday" id="thursday" {% if template.thursday %}checked{% endif %}>
+                                        <label class="form-check-label" for="thursday">Jueves</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="friday" id="friday" {% if template.friday %}checked{% endif %}>
+                                        <label class="form-check-label" for="friday">Viernes</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="saturday" id="saturday" {% if template.saturday %}checked{% endif %}>
+                                        <label class="form-check-label" for="saturday">Sábado</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="sunday" id="sunday" {% if template.sunday %}checked{% endif %}>
+                                        <label class="form-check-label" for="sunday">Domingo</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Configuraciones Adicionales -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Duración de Descanso (minutos)</label>
+                                <input type="number" name="break_duration" class="form-control" value="{{ template.break_duration }}" min="0">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Color</label>
+                                <input type="color" name="color" class="form-control" value="{{ template.color }}">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="is_overnight" id="is_overnight" {% if template.is_overnight %}checked{% endif %}>
+                                <label class="form-check-label" for="is_overnight">
+                                    Turno nocturno (cruza medianoche)
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'attendance:shift_template_detail' template.id %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

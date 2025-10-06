@@ -514,3 +514,68 @@ def bulk_assign_employees(request):
             'success': False,
             'error': str(e)
         }, status=400)
+
+
+@login_required
+@permission_required('supervisor')
+def edit_shift_template(request, template_id):
+    template = get_object_or_404(ShiftTemplate, id=template_id)
+    
+    if request.method == 'POST':
+        try:
+            template.name = request.POST.get('name')
+            template.description = request.POST.get('description', '')
+            template.category = request.POST.get('category')
+            template.shift_type = request.POST.get('shift_type')
+            template.start_time = request.POST.get('start_time')
+            template.end_time = request.POST.get('end_time')
+            template.monday = 'monday' in request.POST
+            template.tuesday = 'tuesday' in request.POST
+            template.wednesday = 'wednesday' in request.POST
+            template.thursday = 'thursday' in request.POST
+            template.friday = 'friday' in request.POST
+            template.saturday = 'saturday' in request.POST
+            template.sunday = 'sunday' in request.POST
+            template.break_duration = request.POST.get('break_duration', 0)
+            template.is_overnight = 'is_overnight' in request.POST
+            template.color = request.POST.get('color', '#007bff')
+            template.save()
+            messages.success(request, f'Plantilla "{template.name}" actualizada exitosamente.')
+            return redirect('attendance:shift_template_detail', template_id=template.id)
+        except Exception as e:
+            messages.error(request, f'Error al actualizar la plantilla: {str(e)}')
+    
+    context = {
+        'template': template,
+        'categories': ShiftTemplate.TEMPLATE_CATEGORIES,
+        'shift_types': ShiftTemplate.SHIFT_TYPES,
+        'page_title': f'Editar Plantilla: {template.name}',
+    }
+    return render(request, 'attendance/shifts/template_edit.html', context)
+
+
+@login_required
+@permission_required('supervisor')
+def delete_shift_template(request, template_id):
+    template = get_object_or_404(ShiftTemplate, id=template_id)
+    
+    if request.method == 'POST':
+        try:
+            schedules_count = WorkSchedule.objects.filter(template=template, is_active=True).count()
+            if schedules_count > 0:
+                messages.warning(request, f'No se puede eliminar la plantilla "{template.name}" porque está siendo utilizada en {schedules_count} horario(s) activo(s).')
+                return redirect('attendance:shift_template_detail', template_id=template.id)
+            template.is_active = False
+            template.save()
+            messages.success(request, f'Plantilla "{template.name}" eliminada exitosamente.')
+            return redirect('attendance:shift_templates_list')
+        except Exception as e:
+            messages.error(request, f'Error al eliminar la plantilla: {str(e)}')
+            return redirect('attendance:shift_template_detail', template_id=template.id)
+    
+    context = {
+        'template': template,
+        'schedules_count': WorkSchedule.objects.filter(template=template, is_active=True).count(),
+        'page_title': f'Eliminar Plantilla: {template.name}',
+    }
+    return render(request, 'attendance/shifts/template_delete_confirm.html', context)

@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Eliminar Plantilla - {{ template.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1><i class="fas fa-trash-alt text-danger"></i> Eliminar Plantilla de Turno</h1>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5><i class="fas fa-exclamation-triangle"></i> Confirmar Eliminación</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h5><i class="fas fa-exclamation-circle"></i> ¿Estás seguro?</h5>
+                        <p class="mb-0">Esta acción desactivará la plantilla "<strong>{{ template.name }}</strong>".</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <h6>Información de la Plantilla:</h6>
+                        <ul>
+                            <li><strong>Nombre:</strong> {{ template.name }}</li>
+                            <li><strong>Categoría:</strong> {{ template.get_category_display }}</li>
+                            <li><strong>Tipo:</strong> {{ template.get_shift_type_display }}</li>
+                            <li><strong>Horario:</strong> {{ template.start_time|time:"H:i" }} - {{ template.end_time|time:"H:i" }}</li>
+                        </ul>
+                    </div>
+
+                    {% if schedules_count > 0 %}
+                    <div class="alert alert-danger">
+                        <h6><i class="fas fa-ban"></i> No se puede eliminar</h6>
+                        <p class="mb-0">Esta plantilla está siendo utilizada en <strong>{{ schedules_count }}</strong> horario(s) activo(s). Primero debes desactivar o eliminar esos horarios.</p>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'attendance:shift_template_detail' template.id %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Volver
+                        </a>
+                    </div>
+                    {% else %}
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'attendance:shift_template_detail' template.id %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash-alt"></i> Sí, Eliminar
+                            </button>
+                        </div>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
