@@ -231,26 +231,28 @@ def attendance_locations_api(request):
         end_datetime = start_datetime + timedelta(days=1)
         print(f"🔍 API UBICACIONES - Rango UTC: {start_datetime} a {end_datetime}")
         
-        # Obtener registros GPS
-        from .models_gps import GPSTracking
-        
-        total_gps = GPSTracking.objects.count()
-        print(f"🔍 API UBICACIONES - Total GPS en BD: {total_gps}")
+        # Obtener registros de asistencia (marcaciones)
+        total_records = AttendanceRecord.objects.count()
+        print(f"🔍 API UBICACIONES - Total marcaciones en BD: {total_records}")
         
         if request.user.is_superuser or request.user.is_staff:
             # Superusuarios ven todos los registros
-            records = GPSTracking.objects.filter(
+            records = AttendanceRecord.objects.filter(
                 timestamp__gte=start_datetime,
-                timestamp__lt=end_datetime
+                timestamp__lt=end_datetime,
+                latitude__isnull=False,
+                longitude__isnull=False
             ).select_related('employee').order_by('-timestamp')
-            print(f"🔍 API UBICACIONES - Registros encontrados (superuser): {records.count()}")
+            print(f"🔍 API UBICACIONES - Marcaciones encontradas (superuser): {records.count()}")
         else:
-            # Usuarios normales solo ven GPS de empleados que pueden ver
+            # Usuarios normales solo ven marcaciones de empleados que pueden ver
             viewable_employees = AttendancePermissions.get_viewable_employees(request.user)
-            records = GPSTracking.objects.filter(
+            records = AttendanceRecord.objects.filter(
                 employee__in=viewable_employees,
                 timestamp__gte=start_datetime,
-                timestamp__lt=end_datetime
+                timestamp__lt=end_datetime,
+                latitude__isnull=False,
+                longitude__isnull=False
             ).select_related('employee').order_by('-timestamp')
         
         # Formatear para el mapa
@@ -265,20 +267,31 @@ def attendance_locations_api(request):
             employee_name = record.employee.get_full_name() if record.employee else 'Sin empleado'
             department = record.employee.department.name if record.employee and record.employee.department else 'Sin departamento'
             
+            # Determinar color según tipo de marcación
+            marker_color = '#28a745'  # Verde por defecto (entrada)
+            if record.attendance_type == 'EXIT':
+                marker_color = '#dc3545'  # Rojo para salida
+            elif record.attendance_type == 'BREAK_START':
+                marker_color = '#ffc107'  # Amarillo para inicio de descanso
+            elif record.attendance_type == 'BREAK_END':
+                marker_color = '#17a2b8'  # Azul para fin de descanso
+            
             locations.append({
                 'id': record.id,
                 'employee_name': employee_name,
                 'employee_id': record.employee.id if record.employee else None,
                 'department': department,
+                'attendance_type': record.get_attendance_type_display(),
+                'attendance_type_code': record.attendance_type,
+                'marker_color': marker_color,
                 'timestamp': local_time.strftime('%H:%M:%S'),
                 'date': local_time.strftime('%Y-%m-%d'),
                 'latitude': float(record.latitude),
                 'longitude': float(record.longitude),
-                'accuracy': float(record.accuracy) if record.accuracy else 0,
-                'battery_level': record.battery_level if record.battery_level else 0,
-                'tracking_type': record.get_tracking_type_display(),
-                'work_area': record.work_area.name if record.work_area else 'Sin área',
-                'is_within_area': record.is_within_work_area,
+                'accuracy': float(record.location_accuracy) if record.location_accuracy else 0,
+                'address': record.address if record.address else 'No disponible',
+                'confidence': float(record.facial_confidence) if record.facial_confidence else 0,
+                'verification_method': record.get_verification_method_display(),
             })
         
         return JsonResponse({
