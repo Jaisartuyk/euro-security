@@ -6,7 +6,15 @@ from django.db import models
 from django.utils import timezone
 from employees.models import Employee
 from .models_gps import WorkArea
-from .models import BaseModel
+
+
+class BaseModel(models.Model):
+    """Modelo base abstracto"""
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        abstract = True
 
 
 class SecurityPhoto(BaseModel):

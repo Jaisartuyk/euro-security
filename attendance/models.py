@@ -9,6 +9,7 @@ from django.core.exceptions import ValidationError
 from datetime import datetime, time, timedelta
 import json
 from .models_gps import WorkArea, EmployeeWorkArea, GPSTracking, LocationAlert
+# Security photos models imported at end of file to avoid circular imports
 
 
 class AttendanceRecord(models.Model):

@@ -9,6 +9,9 @@ from .models import AttendanceRecord, AttendanceSummary, FacialRecognitionProfil
 from .models import LeaveRequest, LeaveType, LeaveStatus
 from .models_gps import GPSTracking, WorkArea, EmployeeWorkArea, LocationAlert
 
+# Importar admins de seguridad con IA
+from .admin_security import SecurityPhotoAdmin, SecurityAlertAdmin, VideoSessionAdmin
+
 
 @admin.register(AttendanceRecord)
 class AttendanceRecordAdmin(admin.ModelAdmin):
