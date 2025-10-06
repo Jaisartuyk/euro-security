@@ -8,6 +8,7 @@ from . import gps_views
 from . import shift_views
 from . import medical_views
 from . import leave_views
+from . import views_operations
 
 app_name = 'attendance'
 
@@ -131,4 +132,29 @@ urlpatterns = [
     path('medico/rrhh/generar-reporte/', medical_views.generate_medical_report, name='generate_medical_report'),
     path('medico/rrhh/exportar-datos/', medical_views.export_medical_data, name='export_medical_data'),
     path('medico/rrhh/configurar-ia/', medical_views.configure_claude_ai, name='configure_claude_ai'),
+    
+    # ============================================================================
+    # CENTRO DE OPERACIONES INTELIGENTE CON IA
+    # ============================================================================
+    
+    # Dashboard Principal
+    path('operaciones/', views_operations.operations_dashboard, name='operations_dashboard'),
+    
+    # Fotos de Seguridad
+    path('operaciones/fotos/', views_operations.security_photos_list, name='security_photos_list'),
+    path('operaciones/fotos/capturar/', views_operations.capture_security_photo, name='capture_security_photo'),
+    path('operaciones/fotos/<int:photo_id>/analizar/', views_operations.analyze_photo_ai, name='analyze_photo_ai'),
+    
+    # APIs en Tiempo Real
+    path('operaciones/api/ubicaciones/', views_operations.get_live_locations, name='get_live_locations'),
+    path('operaciones/api/alertas/', views_operations.get_active_alerts, name='get_active_alerts'),
+    
+    # Gestión de Alertas
+    path('operaciones/alertas/<int:alert_id>/reconocer/', views_operations.acknowledge_alert, name='acknowledge_alert'),
+    path('operaciones/alertas/<int:alert_id>/resolver/', views_operations.resolve_alert, name='resolve_alert'),
+    
+    # Video en Vivo
+    path('operaciones/video/solicitar/<int:employee_id>/', views_operations.request_video_session, name='request_video_session'),
+    path('operaciones/video/<int:session_id>/', views_operations.get_video_session, name='get_video_session'),
+    path('operaciones/video/<int:session_id>/finalizar/', views_operations.end_video_session, name='end_video_session'),
 ]

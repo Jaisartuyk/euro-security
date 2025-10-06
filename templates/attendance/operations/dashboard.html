@@ -1,0 +1,435 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Centro de Operaciones - Euro Security{% endblock %}
+
+{% block extra_css %}
+<style>
+    .operations-header {
+        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: transform 0.2s;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin: 0.5rem 0;
+    }
+    
+    .stat-label {
+        color: #6b7280;
+        font-size: 0.9rem;
+    }
+    
+    .alert-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .alert-critical { background: #dc2626; color: white; }
+    .alert-high { background: #ef4444; color: white; }
+    .alert-medium { background: #f97316; color: white; }
+    .alert-low { background: #fbbf24; color: white; }
+    
+    #map {
+        height: 600px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .employee-marker {
+        background: white;
+        border: 3px solid #3b82f6;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    
+    .employee-marker.alert {
+        border-color: #dc2626;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+    
+    .alert-item {
+        background: white;
+        border-left: 4px solid #3b82f6;
+        padding: 1rem;
+        margin-bottom: 0.5rem;
+        border-radius: 5px;
+        transition: all 0.2s;
+    }
+    
+    .alert-item:hover {
+        background: #f3f4f6;
+        transform: translateX(5px);
+    }
+    
+    .alert-item.critical {
+        border-left-color: #dc2626;
+    }
+    
+    .photo-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .photo-card {
+        position: relative;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+    
+    .photo-card:hover {
+        transform: scale(1.05);
+    }
+    
+    .photo-card img {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+    }
+    
+    .photo-alert-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: #dc2626;
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 5px;
+        font-size: 0.75rem;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="operations-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-2">
+                    <i class="fas fa-shield-alt"></i> Centro de Operaciones Inteligente
+                </h1>
+                <p class="mb-0">Monitoreo en tiempo real con IA · Euro Security</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <button class="btn btn-light" onclick="refreshData()">
+                    <i class="fas fa-sync-alt"></i> Actualizar
+                </button>
+                <button class="btn btn-success" onclick="capturePhoto()">
+                    <i class="fas fa-camera"></i> Capturar Foto
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Estadísticas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <i class="fas fa-camera text-primary" style="font-size: 2rem;"></i>
+                <div class="stat-number text-primary">{{ stats.total_photos_today }}</div>
+                <div class="stat-label">Fotos Hoy</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <i class="fas fa-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
+                <div class="stat-number text-warning">{{ stats.active_alerts }}</div>
+                <div class="stat-label">Alertas Activas</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <i class="fas fa-exclamation-circle text-danger" style="font-size: 2rem;"></i>
+                <div class="stat-number text-danger">{{ stats.critical_alerts }}</div>
+                <div class="stat-label">Alertas Críticas</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <i class="fas fa-users text-success" style="font-size: 2rem;"></i>
+                <div class="stat-number text-success">{{ stats.active_employees }}</div>
+                <div class="stat-label">Empleados Activos</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Mapa y Alertas -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-map-marked-alt"></i> Mapa en Tiempo Real
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div id="map"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bell"></i> Alertas Recientes
+                    </h5>
+                </div>
+                <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                    <div id="alerts-container">
+                        {% for alert in recent_alerts %}
+                        <div class="alert-item {% if alert.severity == 'CRITICAL' %}critical{% endif %}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <span class="alert-badge alert-{{ alert.severity|lower }}">
+                                        {{ alert.get_severity_display }}
+                                    </span>
+                                    <h6 class="mt-2 mb-1">{{ alert.employee.get_full_name }}</h6>
+                                    <p class="mb-1 small">{{ alert.message }}</p>
+                                    <small class="text-muted">{{ alert.created_at|timesince }} ago</small>
+                                </div>
+                                <div>
+                                    {% if alert.status == 'PENDING' %}
+                                    <button class="btn btn-sm btn-primary" onclick="acknowledgeAlert({{ alert.id }})">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-center text-muted">No hay alertas recientes</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Fotos Recientes con Alertas -->
+    <div class="card">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0">
+                <i class="fas fa-images"></i> Fotos con Alertas Recientes
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="photo-grid">
+                {% for photo in recent_photos %}
+                <div class="photo-card" onclick="viewPhoto({{ photo.id }})">
+                    {% if photo.thumbnail %}
+                    <img src="{{ photo.thumbnail.url }}" alt="Foto de {{ photo.employee.get_full_name }}">
+                    {% else %}
+                    <img src="{% static 'images/no-photo.png' %}" alt="Sin foto">
+                    {% endif %}
+                    <div class="photo-alert-badge">
+                        {{ photo.get_alert_level_display }}
+                    </div>
+                    <div class="p-2 bg-white">
+                        <small class="d-block font-weight-bold">{{ photo.employee.get_full_name }}</small>
+                        <small class="text-muted">{{ photo.timestamp|timesince }} ago</small>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-center text-muted col-12">No hay fotos con alertas</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Ver Foto -->
+<div class="modal fade" id="photoModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Detalles de Foto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="photoModalBody">
+                <!-- Contenido dinámico -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAtEPZgbPBwnJGrvIuwplRJDFbr0tmbnyQ"></script>
+<script>
+let map;
+let markers = [];
+
+// Inicializar mapa
+function initMap() {
+    map = new google.maps.Map(document.getElementById('map'), {
+        center: { lat: -2.1709979, lng: -79.9223592 }, // Guayaquil
+        zoom: 12,
+        styles: [
+            {
+                featureType: "poi",
+                elementType: "labels",
+                stylers: [{ visibility: "off" }]
+            }
+        ]
+    });
+    
+    // Cargar ubicaciones
+    loadLocations();
+    
+    // Actualizar cada 30 segundos
+    setInterval(loadLocations, 30000);
+}
+
+// Cargar ubicaciones en tiempo real
+function loadLocations() {
+    fetch('{% url "attendance:get_live_locations" %}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateMarkers(data.locations);
+            }
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+// Actualizar marcadores en el mapa
+function updateMarkers(locations) {
+    // Limpiar marcadores anteriores
+    markers.forEach(marker => marker.setMap(null));
+    markers = [];
+    
+    // Crear nuevos marcadores
+    locations.forEach(location => {
+        const marker = new google.maps.Marker({
+            position: { lat: location.latitude, lng: location.longitude },
+            map: map,
+            title: location.employee_name,
+            icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 10,
+                fillColor: location.has_alerts ? '#dc2626' : '#3b82f6',
+                fillOpacity: 1,
+                strokeColor: '#ffffff',
+                strokeWeight: 2
+            }
+        });
+        
+        // Info window
+        const infoWindow = new google.maps.InfoWindow({
+            content: `
+                <div style="padding: 10px;">
+                    <h6>${location.employee_name}</h6>
+                    <p class="mb-1"><small>Código: ${location.employee_code}</small></p>
+                    ${location.work_area ? `<p class="mb-1"><small>Área: ${location.work_area}</small></p>` : ''}
+                    ${location.has_alerts ? '<span class="badge bg-danger">¡ALERTA!</span>' : ''}
+                    ${location.has_photo ? '<br><button class="btn btn-sm btn-primary mt-2" onclick="requestVideo(' + location.employee_id + ')">📹 Video</button>' : ''}
+                </div>
+            `
+        });
+        
+        marker.addListener('click', () => {
+            infoWindow.open(map, marker);
+        });
+        
+        markers.push(marker);
+    });
+}
+
+// Reconocer alerta
+function acknowledgeAlert(alertId) {
+    if (!confirm('¿Reconocer esta alerta?')) return;
+    
+    fetch(`/asistencia/operaciones/alertas/${alertId}/reconocer/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Alerta reconocida');
+            location.reload();
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+// Solicitar video
+function requestVideo(employeeId) {
+    fetch(`/asistencia/operaciones/video/solicitar/${employeeId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Solicitud de video enviada');
+            // TODO: Abrir modal de video
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+// Ver foto
+function viewPhoto(photoId) {
+    // TODO: Cargar detalles de foto en modal
+    $('#photoModal').modal('show');
+}
+
+// Actualizar datos
+function refreshData() {
+    location.reload();
+}
+
+// Capturar foto
+function capturePhoto() {
+    alert('Función de captura de foto desde operaciones - Próximamente');
+}
+
+// Inicializar al cargar
+document.addEventListener('DOMContentLoaded', initMap);
+</script>
+{% endblock %}
