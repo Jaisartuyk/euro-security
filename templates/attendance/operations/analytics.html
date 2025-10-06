@@ -1,0 +1,366 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Analíticas - Centro de Operaciones{% endblock %}
+
+{% block extra_css %}
+<style>
+    .analytics-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 400px;
+    }
+    
+    .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-item {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        text-align: center;
+    }
+    
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin: 0.5rem 0;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+    
+    .heatmap-container {
+        height: 500px;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-chart-line"></i> Analíticas del Centro de Operaciones</h2>
+            <p class="text-muted">Estadísticas y análisis de seguridad</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <select class="form-select" id="time-range" onchange="updateAnalytics()">
+                <option value="today">Hoy</option>
+                <option value="week" selected>Última Semana</option>
+                <option value="month">Último Mes</option>
+                <option value="custom">Personalizado</option>
+            </select>
+        </div>
+    </div>
+    
+    <!-- Estadísticas Rápidas -->
+    <div class="stat-grid">
+        <div class="stat-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <i class="fas fa-camera fa-2x"></i>
+            <div class="stat-value" id="total-photos">0</div>
+            <div class="stat-label">Fotos Capturadas</div>
+        </div>
+        <div class="stat-item" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <i class="fas fa-exclamation-triangle fa-2x"></i>
+            <div class="stat-value" id="total-alerts">0</div>
+            <div class="stat-label">Alertas Generadas</div>
+        </div>
+        <div class="stat-item" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <i class="fas fa-robot fa-2x"></i>
+            <div class="stat-value" id="ai-accuracy">0%</div>
+            <div class="stat-label">Precisión IA</div>
+        </div>
+        <div class="stat-item" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+            <i class="fas fa-clock fa-2x"></i>
+            <div class="stat-value" id="avg-response">0s</div>
+            <div class="stat-label">Tiempo Respuesta</div>
+        </div>
+    </div>
+    
+    <!-- Gráficos -->
+    <div class="row">
+        <!-- Alertas por Día -->
+        <div class="col-md-6">
+            <div class="analytics-card">
+                <h5><i class="fas fa-chart-bar"></i> Alertas por Día</h5>
+                <div class="chart-container">
+                    <canvas id="alertsChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Alertas por Severidad -->
+        <div class="col-md-6">
+            <div class="analytics-card">
+                <h5><i class="fas fa-chart-pie"></i> Alertas por Severidad</h5>
+                <div class="chart-container">
+                    <canvas id="severityChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Detecciones IA -->
+        <div class="col-md-6">
+            <div class="analytics-card">
+                <h5><i class="fas fa-brain"></i> Detecciones IA</h5>
+                <div class="chart-container">
+                    <canvas id="aiDetectionsChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Actividad por Hora -->
+        <div class="col-md-6">
+            <div class="analytics-card">
+                <h5><i class="fas fa-clock"></i> Actividad por Hora</h5>
+                <div class="chart-container">
+                    <canvas id="hourlyChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Heatmap de Ubicaciones -->
+    <div class="row">
+        <div class="col-12">
+            <div class="analytics-card">
+                <h5><i class="fas fa-map-marked-alt"></i> Mapa de Calor - Ubicaciones de Alertas</h5>
+                <div class="heatmap-container" id="heatmap"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Top Empleados con Alertas -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="analytics-card">
+                <h5><i class="fas fa-users"></i> Top Empleados con Alertas</h5>
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Empleado</th>
+                            <th>Alertas</th>
+                            <th>Críticas</th>
+                        </tr>
+                    </thead>
+                    <tbody id="top-employees">
+                        <tr>
+                            <td colspan="3" class="text-center text-muted">Cargando...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Áreas con Más Alertas -->
+        <div class="col-md-6">
+            <div class="analytics-card">
+                <h5><i class="fas fa-map-marker-alt"></i> Áreas con Más Alertas</h5>
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Área</th>
+                            <th>Alertas</th>
+                            <th>Tendencia</th>
+                        </tr>
+                    </thead>
+                    <tbody id="top-areas">
+                        <tr>
+                            <td colspan="3" class="text-center text-muted">Cargando...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAtEPZgbPBwnJGrvIuwplRJDFbr0tmbnyQ&libraries=visualization"></script>
+<script>
+let charts = {};
+
+// Inicializar
+document.addEventListener('DOMContentLoaded', () => {
+    initializeCharts();
+    loadAnalytics();
+});
+
+// Inicializar gráficos
+function initializeCharts() {
+    // Gráfico de alertas por día
+    const alertsCtx = document.getElementById('alertsChart').getContext('2d');
+    charts.alerts = new Chart(alertsCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Alertas',
+                data: [],
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+    
+    // Gráfico de severidad
+    const severityCtx = document.getElementById('severityChart').getContext('2d');
+    charts.severity = new Chart(severityCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Crítica', 'Alta', 'Media', 'Baja'],
+            datasets: [{
+                data: [0, 0, 0, 0],
+                backgroundColor: ['#dc2626', '#ef4444', '#f97316', '#fbbf24']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+    
+    // Gráfico de detecciones IA
+    const aiCtx = document.getElementById('aiDetectionsChart').getContext('2d');
+    charts.ai = new Chart(aiCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Armas', 'EPP', 'Vehículos', 'Personas'],
+            datasets: [{
+                label: 'Detecciones',
+                data: [0, 0, 0, 0],
+                backgroundColor: ['#dc2626', '#f97316', '#3b82f6', '#10b981']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+    
+    // Gráfico por hora
+    const hourlyCtx = document.getElementById('hourlyChart').getContext('2d');
+    charts.hourly = new Chart(hourlyCtx, {
+        type: 'bar',
+        data: {
+            labels: Array.from({length: 24}, (_, i) => `${i}:00`),
+            datasets: [{
+                label: 'Actividad',
+                data: Array(24).fill(0),
+                backgroundColor: '#8b5cf6'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+}
+
+// Cargar analíticas
+async function loadAnalytics() {
+    try {
+        const timeRange = document.getElementById('time-range').value;
+        
+        // TODO: Implementar endpoint de analíticas
+        const response = await fetch(`/asistencia/operaciones/api/analytics/?range=${timeRange}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            updateDashboard(data);
+        }
+        
+    } catch (error) {
+        console.error('Error cargando analíticas:', error);
+        // Datos de ejemplo para demostración
+        loadSampleData();
+    }
+}
+
+// Cargar datos de ejemplo
+function loadSampleData() {
+    // Estadísticas
+    document.getElementById('total-photos').textContent = '1,234';
+    document.getElementById('total-alerts').textContent = '89';
+    document.getElementById('ai-accuracy').textContent = '94%';
+    document.getElementById('avg-response').textContent = '45s';
+    
+    // Alertas por día
+    charts.alerts.data.labels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+    charts.alerts.data.datasets[0].data = [12, 19, 15, 25, 22, 18, 20];
+    charts.alerts.update();
+    
+    // Severidad
+    charts.severity.data.datasets[0].data = [5, 15, 35, 34];
+    charts.severity.update();
+    
+    // Detecciones IA
+    charts.ai.data.datasets[0].data = [8, 45, 23, 156];
+    charts.ai.update();
+    
+    // Por hora
+    const hourlyData = [2, 1, 0, 0, 1, 3, 8, 15, 22, 18, 16, 14, 12, 15, 18, 20, 22, 25, 20, 15, 10, 8, 5, 3];
+    charts.hourly.data.datasets[0].data = hourlyData;
+    charts.hourly.update();
+}
+
+// Actualizar analíticas
+function updateAnalytics() {
+    loadAnalytics();
+}
+
+// Inicializar heatmap
+function initHeatmap() {
+    const map = new google.maps.Map(document.getElementById('heatmap'), {
+        center: { lat: -2.1709979, lng: -79.9223592 },
+        zoom: 12
+    });
+    
+    // TODO: Cargar puntos de alertas
+    const heatmapData = [];
+    
+    const heatmap = new google.maps.visualization.HeatmapLayer({
+        data: heatmapData,
+        map: map
+    });
+}
+
+// Inicializar heatmap cuando esté listo
+setTimeout(initHeatmap, 1000);
+</script>
+{% endblock %}
