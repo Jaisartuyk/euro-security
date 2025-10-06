@@ -157,4 +157,7 @@ urlpatterns = [
     path('operaciones/video/solicitar/<int:employee_id>/', views_operations.request_video_session, name='request_video_session'),
     path('operaciones/video/<int:session_id>/', views_operations.get_video_session, name='get_video_session'),
     path('operaciones/video/<int:session_id>/finalizar/', views_operations.end_video_session, name='end_video_session'),
+    
+    # Analytics
+    path('operaciones/analytics/', views_operations.operations_analytics, name='operations_analytics'),
 ]

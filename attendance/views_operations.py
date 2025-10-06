@@ -452,3 +452,60 @@ def security_photos_list(request):
     }
     
     return render(request, 'attendance/operations/photos_list.html', context)
+
+
+@login_required
+def operations_analytics(request):
+    """Panel de estadísticas y analytics del Centro de Operaciones"""
+    
+    if not (request.user.is_staff or request.user.is_superuser):
+        return redirect('attendance:dashboard')
+    
+    # Rango de tiempo
+    time_range = request.GET.get('range', 'week')
+    
+    if time_range == 'today':
+        start_date = timezone.now().replace(hour=0, minute=0, second=0)
+    elif time_range == 'week':
+        start_date = timezone.now() - timedelta(days=7)
+    elif time_range == 'month':
+        start_date = timezone.now() - timedelta(days=30)
+    else:
+        start_date = timezone.now() - timedelta(days=7)
+    
+    # Estadísticas básicas
+    total_photos = SecurityPhoto.objects.filter(timestamp__gte=start_date).count()
+    total_alerts = SecurityAlert.objects.filter(created_at__gte=start_date).count()
+    
+    # Precisión IA (fotos analizadas vs total)
+    analyzed_photos = SecurityPhoto.objects.filter(
+        timestamp__gte=start_date,
+        ai_analyzed=True
+    ).count()
+    ai_accuracy = int((analyzed_photos / total_photos * 100)) if total_photos > 0 else 0
+    
+    # Tiempo promedio de respuesta (alertas reconocidas)
+    from django.db.models import Avg, F, ExpressionWrapper, DurationField
+    avg_response = SecurityAlert.objects.filter(
+        created_at__gte=start_date,
+        acknowledged_at__isnull=False
+    ).annotate(
+        response_time=ExpressionWrapper(
+            F('acknowledged_at') - F('created_at'),
+            output_field=DurationField()
+        )
+    ).aggregate(avg=Avg('response_time'))
+    
+    avg_response_seconds = int(avg_response['avg'].total_seconds()) if avg_response['avg'] else 0
+    
+    context = {
+        'time_range': time_range,
+        'stats': {
+            'total_photos': total_photos,
+            'total_alerts': total_alerts,
+            'ai_accuracy': ai_accuracy,
+            'avg_response_seconds': avg_response_seconds,
+        }
+    }
+    
+    return render(request, 'attendance/operations/analytics.html', context)
