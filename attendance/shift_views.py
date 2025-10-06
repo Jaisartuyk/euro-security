@@ -543,7 +543,7 @@ def edit_shift_template(request, template_id):
             template.save()
             
             # Actualizar todos los turnos asociados a horarios que usan esta plantilla
-            work_schedules = WorkSchedule.objects.filter(template=template, is_active=True)
+            work_schedules = WorkSchedule.objects.filter(shift_template=template, is_active=True)
             shifts_updated = 0
             for schedule in work_schedules:
                 shifts = schedule.shifts.all()
