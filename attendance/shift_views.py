@@ -519,6 +519,7 @@ def bulk_assign_employees(request):
 @login_required
 @permission_required('supervisor')
 def edit_shift_template(request, template_id):
+    """Editar una plantilla de turno existente"""
     template = get_object_or_404(ShiftTemplate, id=template_id)
     
     if request.method == 'POST':
@@ -540,6 +541,7 @@ def edit_shift_template(request, template_id):
             template.is_overnight = 'is_overnight' in request.POST
             template.color = request.POST.get('color', '#007bff')
             template.save()
+            
             messages.success(request, f'Plantilla "{template.name}" actualizada exitosamente.')
             return redirect('attendance:shift_template_detail', template_id=template.id)
         except Exception as e:
@@ -557,14 +559,16 @@ def edit_shift_template(request, template_id):
 @login_required
 @permission_required('supervisor')
 def delete_shift_template(request, template_id):
+    """Eliminar (desactivar) una plantilla de turno"""
     template = get_object_or_404(ShiftTemplate, id=template_id)
     
     if request.method == 'POST':
         try:
             schedules_count = WorkSchedule.objects.filter(template=template, is_active=True).count()
             if schedules_count > 0:
-                messages.warning(request, f'No se puede eliminar la plantilla "{template.name}" porque est· siendo utilizada en {schedules_count} horario(s) activo(s).')
+                messages.warning(request, f'No se puede eliminar la plantilla "{template.name}" porque est√° siendo utilizada en {schedules_count} horario(s) activo(s).')
                 return redirect('attendance:shift_template_detail', template_id=template.id)
+            
             template.is_active = False
             template.save()
             messages.success(request, f'Plantilla "{template.name}" eliminada exitosamente.')
