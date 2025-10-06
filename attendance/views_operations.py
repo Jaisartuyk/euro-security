@@ -55,9 +55,23 @@ def operations_dashboard(request):
     
     # Empleados activos con última ubicación
     active_employees = []
-    latest_gps = GPSTracking.objects.filter(
+    
+    # Obtener última ubicación por empleado (compatible con PostgreSQL)
+    from django.db.models import Max
+    latest_timestamps = GPSTracking.objects.filter(
         timestamp__gte=last_24h
-    ).select_related('employee', 'work_area').order_by('employee', '-timestamp').distinct('employee')
+    ).values('employee').annotate(
+        latest_time=Max('timestamp')
+    )
+    
+    latest_gps = []
+    for item in latest_timestamps:
+        gps = GPSTracking.objects.filter(
+            employee_id=item['employee'],
+            timestamp=item['latest_time']
+        ).select_related('employee', 'work_area').first()
+        if gps:
+            latest_gps.append(gps)
     
     for gps in latest_gps:
         active_employees.append({
@@ -164,12 +178,24 @@ def get_live_locations(request):
         # Últimas ubicaciones (últimos 5 minutos)
         last_5min = timezone.now() - timedelta(minutes=5)
         
-        locations = []
-        latest_gps = GPSTracking.objects.filter(
+        # Obtener última ubicación por empleado (compatible con PostgreSQL)
+        from django.db.models import Max
+        latest_timestamps = GPSTracking.objects.filter(
             timestamp__gte=last_5min
-        ).select_related('employee', 'work_area').order_by('employee', '-timestamp').distinct('employee')
+        ).values('employee').annotate(
+            latest_time=Max('timestamp')
+        )
         
-        for gps in latest_gps:
+        locations = []
+        for item in latest_timestamps:
+            gps = GPSTracking.objects.filter(
+                employee_id=item['employee'],
+                timestamp=item['latest_time']
+            ).select_related('employee', 'work_area').first()
+            
+            if not gps:
+                continue
+            
             # Obtener última foto si existe
             last_photo = SecurityPhoto.objects.filter(
                 employee=gps.employee,
