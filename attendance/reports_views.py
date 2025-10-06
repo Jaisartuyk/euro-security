@@ -275,8 +275,10 @@ def attendance_locations_api(request):
                 'latitude': float(record.latitude),
                 'longitude': float(record.longitude),
                 'accuracy': float(record.accuracy) if record.accuracy else 0,
-                'battery_level': record.battery_level,
-                'is_moving': record.is_moving,
+                'battery_level': record.battery_level if record.battery_level else 0,
+                'tracking_type': record.get_tracking_type_display(),
+                'work_area': record.work_area.name if record.work_area else 'Sin área',
+                'is_within_area': record.is_within_work_area,
             })
         
         return JsonResponse({
