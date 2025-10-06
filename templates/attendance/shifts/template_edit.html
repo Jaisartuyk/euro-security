@@ -10,7 +10,7 @@
             <h1><i class="fas fa-edit"></i> Editar Plantilla de Turno</h1>
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard:home' %}">Inicio</a></li>
                     <li class="breadcrumb-item"><a href="{% url 'attendance:shift_management_dashboard' %}">Turnos</a></li>
                     <li class="breadcrumb-item"><a href="{% url 'attendance:shift_templates_list' %}">Plantillas</a></li>
                     <li class="breadcrumb-item"><a href="{% url 'attendance:shift_template_detail' template.id %}">{{ template.name }}</a></li>
