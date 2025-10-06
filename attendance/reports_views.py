@@ -206,56 +206,82 @@ def attendance_locations_map(request):
     return render(request, 'attendance/locations_map.html', context)
 
 @login_required
-@employee_required
 def attendance_locations_api(request):
     """API para obtener ubicaciones de asistencia en formato JSON"""
-    if not AttendancePermissions.can_view_location_maps(request.user):
-        return JsonResponse({'error': 'Sin permisos'}, status=403)
-    
-    viewable_employees = AttendancePermissions.get_viewable_employees(request.user)
-    
-    # Filtros
-    date_filter = request.GET.get('date', timezone.now().date())
-    if isinstance(date_filter, str):
-        date_filter = datetime.strptime(date_filter, '%Y-%m-%d').date()
-    
-    # Obtener registros con ubicación
-    records = AttendanceRecord.objects.filter(
-        employee__in=viewable_employees,
-        timestamp__date=date_filter,
-        latitude__isnull=False,
-        longitude__isnull=False
-    ).select_related('employee')
-    
-    # Formatear para el mapa
-    locations = []
-    for record in records:
-        # Convertir a hora local de Ecuador
-        from django.utils import timezone as tz
+    try:
+        # Verificar permisos
+        if not (request.user.is_superuser or request.user.is_staff):
+            if not AttendancePermissions.can_view_location_maps(request.user):
+                return JsonResponse({'error': 'Sin permisos'}, status=403)
+        
+        # Filtros de fecha
+        date_filter = request.GET.get('date', timezone.now().date())
+        if isinstance(date_filter, str):
+            date_filter = datetime.strptime(date_filter, '%Y-%m-%d').date()
+        
+        # Convertir fecha a rango UTC
+        start_datetime = timezone.make_aware(datetime.combine(date_filter, datetime.min.time()))
+        end_datetime = start_datetime + timedelta(days=1)
+        
+        # Obtener registros GPS
+        from .models_gps import GPSTracking
+        
+        if request.user.is_superuser or request.user.is_staff:
+            # Superusuarios ven todos los registros
+            records = GPSTracking.objects.filter(
+                timestamp__gte=start_datetime,
+                timestamp__lt=end_datetime
+            ).select_related('employee').order_by('-timestamp')
+        else:
+            # Usuarios normales solo ven GPS de empleados que pueden ver
+            viewable_employees = AttendancePermissions.get_viewable_employees(request.user)
+            records = GPSTracking.objects.filter(
+                employee__in=viewable_employees,
+                timestamp__gte=start_datetime,
+                timestamp__lt=end_datetime
+            ).select_related('employee').order_by('-timestamp')
+        
+        # Formatear para el mapa
+        locations = []
         import pytz
         ecuador_tz = pytz.timezone('America/Guayaquil')
-        local_time = record.timestamp.astimezone(ecuador_tz)
         
-        locations.append({
-            'id': record.id,
-            'employee_name': record.employee.get_full_name(),
-            'employee_id': record.employee.id,
-            'department': record.employee.department.name if record.employee.department else 'Sin departamento',
-            'attendance_type': record.get_attendance_type_display(),
-            'timestamp': local_time.strftime('%H:%M:%S'),
-            'latitude': float(record.latitude),
-            'longitude': float(record.longitude),
-            'accuracy': record.location_accuracy,
-            'address': record.address,
-            'confidence': record.facial_confidence,
-            'verification_method': record.get_verification_method_display(),
+        for record in records:
+            # Convertir a hora local de Ecuador
+            local_time = record.timestamp.astimezone(ecuador_tz)
+            
+            employee_name = record.employee.get_full_name() if record.employee else 'Sin empleado'
+            department = record.employee.department.name if record.employee and record.employee.department else 'Sin departamento'
+            
+            locations.append({
+                'id': record.id,
+                'employee_name': employee_name,
+                'employee_id': record.employee.id if record.employee else None,
+                'department': department,
+                'timestamp': local_time.strftime('%H:%M:%S'),
+                'date': local_time.strftime('%Y-%m-%d'),
+                'latitude': float(record.latitude),
+                'longitude': float(record.longitude),
+                'accuracy': float(record.accuracy) if record.accuracy else 0,
+                'battery_level': record.battery_level,
+                'is_moving': record.is_moving,
+            })
+        
+        return JsonResponse({
+            'locations': locations,
+            'total': len(locations),
+            'date': date_filter.isoformat()
         })
     
-    return JsonResponse({
-        'locations': locations,
-        'total': len(locations),
-        'date': date_filter.isoformat()
-    })
+    except Exception as e:
+        print(f"❌ Error en attendance_locations_api: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            'error': str(e),
+            'locations': [],
+            'total': 0
+        }, status=500)
 
 @login_required
 @employee_required
