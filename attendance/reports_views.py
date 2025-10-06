@@ -209,22 +209,33 @@ def attendance_locations_map(request):
 def attendance_locations_api(request):
     """API para obtener ubicaciones de asistencia en formato JSON"""
     try:
+        print(f"🔍 API UBICACIONES - Usuario: {request.user.username}")
+        print(f"🔍 API UBICACIONES - Superuser: {request.user.is_superuser}")
+        
         # Verificar permisos
         if not (request.user.is_superuser or request.user.is_staff):
+            print(f"🔍 API UBICACIONES - Verificando permisos para usuario normal")
             if not AttendancePermissions.can_view_location_maps(request.user):
+                print(f"❌ API UBICACIONES - Sin permisos")
                 return JsonResponse({'error': 'Sin permisos'}, status=403)
         
         # Filtros de fecha
         date_filter = request.GET.get('date', timezone.now().date())
+        print(f"🔍 API UBICACIONES - Fecha solicitada: {date_filter}")
+        
         if isinstance(date_filter, str):
             date_filter = datetime.strptime(date_filter, '%Y-%m-%d').date()
         
         # Convertir fecha a rango UTC
         start_datetime = timezone.make_aware(datetime.combine(date_filter, datetime.min.time()))
         end_datetime = start_datetime + timedelta(days=1)
+        print(f"🔍 API UBICACIONES - Rango UTC: {start_datetime} a {end_datetime}")
         
         # Obtener registros GPS
         from .models_gps import GPSTracking
+        
+        total_gps = GPSTracking.objects.count()
+        print(f"🔍 API UBICACIONES - Total GPS en BD: {total_gps}")
         
         if request.user.is_superuser or request.user.is_staff:
             # Superusuarios ven todos los registros
@@ -232,6 +243,7 @@ def attendance_locations_api(request):
                 timestamp__gte=start_datetime,
                 timestamp__lt=end_datetime
             ).select_related('employee').order_by('-timestamp')
+            print(f"🔍 API UBICACIONES - Registros encontrados (superuser): {records.count()}")
         else:
             # Usuarios normales solo ven GPS de empleados que pueden ver
             viewable_employees = AttendancePermissions.get_viewable_employees(request.user)
@@ -243,8 +255,8 @@ def attendance_locations_api(request):
         
         # Formatear para el mapa
         locations = []
-        import pytz
-        ecuador_tz = pytz.timezone('America/Guayaquil')
+        from zoneinfo import ZoneInfo
+        ecuador_tz = ZoneInfo('America/Guayaquil')
         
         for record in records:
             # Convertir a hora local de Ecuador
