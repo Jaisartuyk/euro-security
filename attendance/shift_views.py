@@ -524,6 +524,10 @@ def edit_shift_template(request, template_id):
     
     if request.method == 'POST':
         try:
+            print(f"🔧 Editando plantilla: {template.name}")
+            print(f"   Hora inicio anterior: {template.start_time}")
+            print(f"   Hora inicio nueva: {request.POST.get('start_time')}")
+            
             template.name = request.POST.get('name')
             template.description = request.POST.get('description', '')
             template.category = request.POST.get('category')
@@ -541,17 +545,23 @@ def edit_shift_template(request, template_id):
             template.is_overnight = 'is_overnight' in request.POST
             template.color = request.POST.get('color', '#007bff')
             template.save()
+            print(f"✅ Plantilla guardada con hora: {template.start_time}")
             
             # Actualizar todos los turnos asociados a horarios que usan esta plantilla
             work_schedules = WorkSchedule.objects.filter(shift_template=template, is_active=True)
             shifts_updated = 0
+            print(f"📋 Encontrados {work_schedules.count()} horarios usando esta plantilla")
+            
             for schedule in work_schedules:
                 shifts = schedule.shifts.all()
+                print(f"   Horario '{schedule.name}': {shifts.count()} turnos")
                 for shift in shifts:
+                    old_start = shift.start_time
                     shift.start_time = template.start_time
                     shift.end_time = template.end_time
                     shift.is_overnight = template.is_overnight
                     shift.save()
+                    print(f"      Turno {shift.id}: {old_start} → {shift.start_time}")
                     shifts_updated += 1
             
             if shifts_updated > 0:
