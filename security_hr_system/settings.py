@@ -203,11 +203,27 @@ MEDIA_ROOT = BASE_DIR / 'media'
 CLOUDINARY_URL = os.getenv('CLOUDINARY_URL', '')
 
 if CLOUDINARY_URL:
-    # Usar CLOUDINARY_URL (formato: cloudinary://api_key:api_secret@cloud_name)
-    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-    
-    print("✅ Cloudinary storage ACTIVADO (usando CLOUDINARY_URL)")
-    print(f"   - URL: {CLOUDINARY_URL[:30]}...")
+    # Parsear CLOUDINARY_URL (formato: cloudinary://api_key:api_secret@cloud_name)
+    import re
+    match = re.match(r'cloudinary://([^:]+):([^@]+)@(.+)', CLOUDINARY_URL)
+    if match:
+        api_key, api_secret, cloud_name = match.groups()
+        
+        DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+        
+        CLOUDINARY_STORAGE = {
+            'CLOUD_NAME': cloud_name,
+            'API_KEY': api_key,
+            'API_SECRET': api_secret,
+            'SECURE': True,
+        }
+        
+        print("✅ Cloudinary storage ACTIVADO (usando CLOUDINARY_URL)")
+        print(f"   - Cloud: {cloud_name}")
+        print(f"   - API Key: {api_key[:8]}...")
+    else:
+        print("❌ Error: CLOUDINARY_URL tiene formato inválido")
+        DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 else:
     # Fallback: intentar con variables separadas
     CLOUDINARY_CLOUD_NAME = os.getenv('CLOUDINARY_CLOUD_NAME', '')
