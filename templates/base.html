@@ -690,8 +690,27 @@
     
     <!-- JavaScript para Captura de Fotos de Seguridad -->
     <script>
+    // Función para obtener CSRF token de las cookies
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
     async function captureSecurityPhotoFromSidebar() {
         try {
+            // Mostrar mensaje de inicio
+            alert('📸 Preparando cámara...');
+            
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
             const video = document.createElement('video');
             video.srcObject = stream;
@@ -707,37 +726,62 @@
             stream.getTracks().forEach(track => track.stop());
             
             canvas.toBlob(async (blob) => {
-                const location = await getLocationForPhoto();
-                const formData = new FormData();
-                formData.append('photo', blob, `security_${Date.now()}.jpg`);
-                formData.append('capture_type', 'MANUAL');
-                formData.append('analyze_ai', 'true');
-                
-                if (location) {
-                    formData.append('latitude', location.latitude);
-                    formData.append('longitude', location.longitude);
-                }
-                
-                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
-                
-                const response = await fetch('/asistencia/operaciones/fotos/capturar/', {
-                    method: 'POST',
-                    headers: { 'X-CSRFToken': csrfToken },
-                    body: formData
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    alert('✅ Foto de seguridad capturada y enviada exitosamente!');
-                } else {
-                    alert('❌ Error: ' + (data.error || 'Error desconocido'));
+                try {
+                    const location = await getLocationForPhoto();
+                    const formData = new FormData();
+                    formData.append('photo', blob, `security_${Date.now()}.jpg`);
+                    formData.append('capture_type', 'MANUAL');
+                    formData.append('analyze_ai', 'true');
+                    
+                    if (location) {
+                        formData.append('latitude', location.latitude);
+                        formData.append('longitude', location.longitude);
+                    }
+                    
+                    // Obtener CSRF token de cookies o del DOM
+                    const csrfToken = getCookie('csrftoken') || document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+                    
+                    if (!csrfToken) {
+                        alert('❌ Error: No se pudo obtener el token CSRF. Recarga la página.');
+                        return;
+                    }
+                    
+                    const response = await fetch('/asistencia/operaciones/fotos/capturar/', {
+                        method: 'POST',
+                        headers: { 
+                            'X-CSRFToken': csrfToken
+                        },
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        alert('✅ Foto de seguridad capturada y enviada exitosamente!\n\n' + 
+                              'ID: ' + (data.photo_id || 'N/A') + '\n' +
+                              'Análisis IA: ' + (data.ai_analyzed ? 'Sí' : 'No'));
+                    } else {
+                        alert('❌ Error: ' + (data.error || 'Error desconocido'));
+                    }
+                } catch (error) {
+                    console.error('Error enviando foto:', error);
+                    alert('❌ Error al enviar foto: ' + error.message);
                 }
             }, 'image/jpeg', 0.85);
             
         } catch (error) {
             console.error('Error capturando foto:', error);
-            alert('❌ Error al capturar foto: ' + error.message);
+            if (error.name === 'NotAllowedError') {
+                alert('❌ Permiso de cámara denegado. Por favor, permite el acceso a la cámara.');
+            } else if (error.name === 'NotFoundError') {
+                alert('❌ No se encontró ninguna cámara en tu dispositivo.');
+            } else {
+                alert('❌ Error al capturar foto: ' + error.message);
+            }
         }
     }
 
