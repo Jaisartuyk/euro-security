@@ -419,8 +419,22 @@ async function requestVideo(employeeId) {
 
 // Ver foto
 function viewPhoto(photoId) {
-    // TODO: Cargar detalles de foto en modal
-    $('#photoModal').modal('show');
+    // Cargar detalles de foto en modal
+    const modal = new bootstrap.Modal(document.getElementById('photoModal'));
+    
+    // TODO: Cargar datos de la foto via AJAX
+    fetch(`/asistencia/operaciones/fotos/${photoId}/`)
+        .then(response => response.json())
+        .then(data => {
+            // Actualizar contenido del modal
+            document.getElementById('photoModalLabel').textContent = `Foto #${photoId}`;
+            // Aquí puedes agregar más detalles de la foto
+        })
+        .catch(error => {
+            console.error('Error cargando foto:', error);
+        });
+    
+    modal.show();
 }
 
 // Actualizar datos
