@@ -534,5 +534,46 @@ def operations_analytics(request):
             'avg_response_seconds': avg_response_seconds,
         }
     }
+
+
+@login_required
+def check_pending_video_request(request):
+    """Verificar si hay solicitudes de video pendientes para el empleado"""
+    
+    try:
+        employee = request.user.employee if hasattr(request.user, 'employee') else None
+        
+        if not employee:
+            return JsonResponse({'has_pending': False})
+        
+        # Buscar sesión pendiente para este empleado
+        pending_session = VideoSession.objects.filter(
+            employee=employee,
+            status='REQUESTED'
+        ).order_by('-created_at').first()
+        
+        if pending_session:
+            # Obtener datos de la sesión
+            session_data = agora_service.create_video_session(
+                pending_session.employee.id,
+                pending_session.requester.id
+            )
+            
+            return JsonResponse({
+                'has_pending': True,
+                'session': {
+                    'id': pending_session.id,
+                    'channel_name': pending_session.channel_name,
+                    'app_id': session_data['app_id'],
+                    'employee_token': pending_session.employee_token,
+                    'employee_uid': session_data['employee_uid'],
+                    'requester_name': pending_session.requester.get_full_name()
+                }
+            })
+        
+        return JsonResponse({'has_pending': False})
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e), 'has_pending': False}, status=500)
     
     return render(request, 'attendance/operations/analytics.html', context)
