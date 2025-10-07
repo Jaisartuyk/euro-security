@@ -63,11 +63,13 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Hora Inicio *</label>
-                                <input type="time" name="start_time" class="form-control" value="{{ template.start_time|time:'H:i' }}" required>
+                                <input type="time" name="start_time" class="form-control" 
+                                       value="{% if template.get_shifts_config_list %}{{ template.get_shifts_config_list.0.start_time }}{% else %}08:00{% endif %}" required>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Hora Fin *</label>
-                                <input type="time" name="end_time" class="form-control" value="{{ template.end_time|time:'H:i' }}" required>
+                                <input type="time" name="end_time" class="form-control" 
+                                       value="{% if template.get_shifts_config_list %}{{ template.get_shifts_config_list.0.end_time }}{% else %}17:00{% endif %}" required>
                             </div>
                         </div>
 

@@ -524,28 +524,44 @@ def edit_shift_template(request, template_id):
     
     if request.method == 'POST':
         try:
-            print(f"🔧 Editando plantilla: {template.name}")
-            print(f"   Hora inicio anterior: {template.start_time}")
-            print(f"   Hora inicio nueva: {request.POST.get('start_time')}")
+            import json
             
+            print(f"🔧 Editando plantilla: {template.name}")
+            
+            # Obtener nuevos horarios del formulario
+            new_start_time = request.POST.get('start_time')
+            new_end_time = request.POST.get('end_time')
+            
+            print(f"   Hora inicio nueva: {new_start_time}")
+            print(f"   Hora fin nueva: {new_end_time}")
+            
+            # Actualizar campos básicos
             template.name = request.POST.get('name')
             template.description = request.POST.get('description', '')
             template.category = request.POST.get('category')
             template.shift_type = request.POST.get('shift_type')
-            template.start_time = request.POST.get('start_time')
-            template.end_time = request.POST.get('end_time')
-            template.monday = 'monday' in request.POST
-            template.tuesday = 'tuesday' in request.POST
-            template.wednesday = 'wednesday' in request.POST
-            template.thursday = 'thursday' in request.POST
-            template.friday = 'friday' in request.POST
-            template.saturday = 'saturday' in request.POST
-            template.sunday = 'sunday' in request.POST
             template.break_duration = request.POST.get('break_duration', 0)
             template.is_overnight = 'is_overnight' in request.POST
-            template.color = request.POST.get('color', '#007bff')
+            template.color_primary = request.POST.get('color', '#007bff')
+            
+            # Actualizar shifts_config JSON con los nuevos horarios
+            try:
+                shifts_config = json.loads(template.shifts_config) if template.shifts_config else []
+                print(f"   Configuración actual: {shifts_config}")
+                
+                # Actualizar horarios en todos los turnos del JSON
+                for shift in shifts_config:
+                    shift['start_time'] = new_start_time
+                    shift['end_time'] = new_end_time
+                    shift['is_overnight'] = 'is_overnight' in request.POST
+                
+                template.shifts_config = json.dumps(shifts_config)
+                print(f"   Nueva configuración: {shifts_config}")
+            except (json.JSONDecodeError, KeyError) as e:
+                print(f"   ⚠️ Error actualizando shifts_config: {e}")
+            
             template.save()
-            print(f"✅ Plantilla guardada con hora: {template.start_time}")
+            print(f"✅ Plantilla guardada")
             
             # Actualizar todos los turnos asociados a horarios que usan esta plantilla
             work_schedules = WorkSchedule.objects.filter(shift_template=template, is_active=True)
@@ -556,10 +572,13 @@ def edit_shift_template(request, template_id):
                 shifts = schedule.shifts.all()
                 print(f"   Horario '{schedule.name}': {shifts.count()} turnos")
                 for shift in shifts:
+                    from datetime import datetime
                     old_start = shift.start_time
-                    shift.start_time = template.start_time
-                    shift.end_time = template.end_time
-                    shift.is_overnight = template.is_overnight
+                    
+                    # Convertir string a time object
+                    shift.start_time = datetime.strptime(new_start_time, '%H:%M').time()
+                    shift.end_time = datetime.strptime(new_end_time, '%H:%M').time()
+                    shift.is_overnight = 'is_overnight' in request.POST
                     shift.save()
                     print(f"      Turno {shift.id}: {old_start} → {shift.start_time}")
                     shifts_updated += 1
