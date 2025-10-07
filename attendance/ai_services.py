@@ -236,20 +236,21 @@ class AgoraService:
     def generate_rtc_token(self, channel_name, uid, role='publisher', expiration_time=3600):
         """Generar token RTC para video streaming"""
         try:
-            from agora_token_builder import RtcTokenBuilder, Role_Publisher, Role_Subscriber
+            from agora_token_builder import RtcTokenBuilder
             
-            # Determinar rol
+            # Determinar rol (1 = publisher, 2 = subscriber)
+            # En la nueva versión, los roles son números
             if role == 'publisher':
-                agora_role = Role_Publisher
+                agora_role = 1  # Role.PUBLISHER
             else:
-                agora_role = Role_Subscriber
+                agora_role = 2  # Role.SUBSCRIBER
             
             # Calcular tiempo de expiración
             import time
             current_timestamp = int(time.time())
             privilege_expired_ts = current_timestamp + expiration_time
             
-            # Generar token
+            # Generar token con la nueva API
             token = RtcTokenBuilder.buildTokenWithUid(
                 self.app_id,
                 self.app_certificate,
@@ -259,7 +260,7 @@ class AgoraService:
                 privilege_expired_ts
             )
             
-            logger.info(f"✅ Token Agora generado para canal: {channel_name}")
+            logger.info(f"✅ Token Agora generado para canal: {channel_name}, role: {role}")
             return token
             
         except Exception as e:
