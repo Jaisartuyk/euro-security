@@ -22,7 +22,7 @@ if CLOUDINARY_URL:
     if match:
         api_key, api_secret, cloud_name = match.groups()
         
-        DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+        DEFAULT_FILE_STORAGE = 'attendance.storage.CloudinaryStorage'
         
         CLOUDINARY_STORAGE = {
             'CLOUD_NAME': cloud_name,
@@ -45,7 +45,7 @@ else:
     
     if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
         # Usar Cloudinary con variables separadas
-        DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+        DEFAULT_FILE_STORAGE = 'attendance.storage.CloudinaryStorage'
         
         # Configuración de Cloudinary
         CLOUDINARY_STORAGE = {
