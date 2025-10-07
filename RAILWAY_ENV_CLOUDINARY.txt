@@ -1,0 +1,32 @@
+# ========================================
+# VARIABLES DE ENTORNO PARA RAILWAY
+# ========================================
+# Copia estas 3 variables en Railway → Variables
+
+CLOUDINARY_CLOUD_NAME=dv0qqu8bj
+CLOUDINARY_API_KEY=859535878887572
+CLOUDINARY_API_SECRET=ZYz9SnoRP1VkfB4Zbh_CmJ45gUM
+
+# ========================================
+# INSTRUCCIONES:
+# ========================================
+# 1. Ir a: https://railway.app/project/tu-proyecto
+# 2. Click en tu servicio
+# 3. Click en "Variables"
+# 4. Click en "+ New Variable"
+# 5. Copiar y pegar cada variable (nombre y valor)
+# 6. Click en "Deploy" para aplicar cambios
+#
+# ========================================
+# VERIFICAR QUE FUNCIONA:
+# ========================================
+# 1. Esperar 2-3 minutos (deploy)
+# 2. Ver logs de Railway
+# 3. Buscar: "✅ Cloudinary storage configured"
+# 4. Capturar nueva foto
+# 5. Verificar en admin que la URL es de Cloudinary
+#
+# Ejemplo de URL de Cloudinary:
+# https://res.cloudinary.com/dv0qqu8bj/image/upload/v123/security_photos/foto.jpg
+#
+# ========================================

@@ -57,6 +57,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
+    # Cloud Storage
+    'cloudinary_storage',
+    'cloudinary',
+    
     # Local apps
     'core',
     'employees',
@@ -206,12 +210,14 @@ try:
         secure=True
     )
     
-    # Use Cloudinary for file storage in production
-    if not DEBUG:
+    # Use Cloudinary for file storage if credentials are available
+    if os.getenv('CLOUDINARY_CLOUD_NAME') and os.getenv('CLOUDINARY_API_KEY'):
         DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+        print("✅ Cloudinary storage configured")
     else:
-        # Use local storage in development
+        # Use local storage if Cloudinary not configured
         DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+        print("⚠️ Using local file storage (Cloudinary not configured)")
 except ImportError:
     # Cloudinary not installed, use default storage
     DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
