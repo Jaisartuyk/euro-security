@@ -48,10 +48,10 @@ def operations_dashboard(request):
         'employee', 'photo', 'acknowledged_by'
     ).order_by('-created_at')[:10]
     
-    # Fotos recientes con alertas
-    recent_photos = SecurityPhoto.objects.filter(
-        has_alerts=True
-    ).select_related('employee', 'work_area').order_by('-timestamp')[:20]
+    # Fotos recientes (todas, no solo con alertas)
+    recent_photos = SecurityPhoto.objects.select_related(
+        'employee', 'work_area'
+    ).order_by('-timestamp')[:20]
     
     # Empleados activos con última ubicación
     active_employees = []
@@ -124,6 +124,21 @@ def capture_security_photo(request):
             device_info=request.META.get('HTTP_USER_AGENT', ''),
         )
         
+        # Crear registro GPS si hay ubicación
+        if latitude and longitude:
+            try:
+                GPSTracking.objects.create(
+                    employee=employee,
+                    latitude=latitude,
+                    longitude=longitude,
+                    timestamp=timezone.now(),
+                    accuracy=10.0,  # Valor por defecto
+                    source='SECURITY_PHOTO'
+                )
+            except Exception as gps_error:
+                # No fallar si no se puede crear GPS
+                print(f"Error creando GPS tracking: {gps_error}")
+        
         # Analizar con IA en segundo plano (opcional)
         if request.POST.get('analyze_ai') == 'true':
             security_photo.analyze_with_ai()
@@ -133,7 +148,8 @@ def capture_security_photo(request):
             'photo_id': security_photo.id,
             'message': 'Foto capturada exitosamente',
             'has_alerts': security_photo.has_alerts,
-            'alert_level': security_photo.alert_level
+            'alert_level': security_photo.alert_level,
+            'ai_analyzed': security_photo.ai_analyzed
         })
         
     except Exception as e:
