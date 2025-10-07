@@ -15,6 +15,7 @@ class CloudinaryStorage(Storage):
     """
     
     def __init__(self):
+        print("🔧 Inicializando CloudinaryStorage custom...")
         # Configurar cloudinary desde settings
         if hasattr(settings, 'CLOUDINARY_STORAGE'):
             cloudinary.config(
@@ -23,13 +24,18 @@ class CloudinaryStorage(Storage):
                 api_secret=settings.CLOUDINARY_STORAGE['API_SECRET'],
                 secure=settings.CLOUDINARY_STORAGE.get('SECURE', True)
             )
+            print(f"✅ CloudinaryStorage configurado: {settings.CLOUDINARY_STORAGE['CLOUD_NAME']}")
+        else:
+            print("❌ CLOUDINARY_STORAGE no encontrado en settings")
     
     def _save(self, name, content):
         """
         Guardar archivo en Cloudinary
         """
+        print(f"📤 CloudinaryStorage._save() llamado para: {name}")
         try:
             # Subir a Cloudinary
+            print(f"   Subiendo a Cloudinary...")
             upload_result = cloudinary.uploader.upload(
                 content,
                 folder=os.path.dirname(name),
@@ -37,6 +43,7 @@ class CloudinaryStorage(Storage):
                 resource_type='auto'
             )
             
+            print(f"✅ Subido exitosamente: {upload_result['secure_url']}")
             # Retornar la URL pública
             return upload_result['secure_url']
         except Exception as e:
