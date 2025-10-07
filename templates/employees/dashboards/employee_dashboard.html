@@ -111,6 +111,49 @@
                         </div>
                     </div>
                     
+                    <!-- Captura de Fotos de Seguridad (Todos los empleados) -->
+                    <div class="col-md-6 mb-3">
+                        <div class="card border-info h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-camera fa-3x text-info mb-3"></i>
+                                <h5 class="card-title">Fotos de Seguridad</h5>
+                                <p class="card-text">Captura fotos para el sistema de seguridad con IA.</p>
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-info" onclick="captureSecurityPhoto()">
+                                        <i class="fas fa-camera me-2"></i>Capturar Foto Ahora
+                                    </button>
+                                    <button class="btn btn-outline-info btn-sm" onclick="toggleAutoCapture()">
+                                        <i class="fas fa-sync me-2"></i><span id="auto-capture-text">Activar Automático</span>
+                                    </button>
+                                </div>
+                                <small class="text-muted mt-2 d-block" id="capture-status">
+                                    Estado: <span class="badge bg-secondary">Inactivo</span>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Centro de Operaciones (Solo Staff/Superuser) -->
+                    {% if user.is_staff or user.is_superuser %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-danger h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-shield-alt fa-3x text-danger mb-3"></i>
+                                    <h5 class="card-title">Centro de Operaciones</h5>
+                                    <p class="card-text">Monitoreo en tiempo real con IA y alertas de seguridad.</p>
+                                    <div class="d-grid gap-2">
+                                        <a href="{% url 'attendance:operations_dashboard' %}" class="btn btn-danger">
+                                            <i class="fas fa-eye me-2"></i>Dashboard Operaciones
+                                        </a>
+                                        <a href="{% url 'attendance:operations_analytics' %}" class="btn btn-outline-danger btn-sm">
+                                            <i class="fas fa-chart-line me-2"></i>Analytics
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
                     <!-- Acciones Adicionales según Permisos -->
                     {% if can_view_reports %}
                         <div class="col-md-6 mb-3">
@@ -320,11 +363,141 @@
 {% block extra_js %}
 <script>
     function showHelp() {
-        alert('Sistema de Gestión de Personal EURO SECURITY\n\n' +
-              'Para obtener ayuda adicional, contacta al administrador del sistema.\n\n' +
-              'Tu nivel de permisos: {{ permission_level|title }}\n' +
-              'Puesto: {{ employee.position.title }}\n' +
-              'Departamento: {{ employee.department.name }}');
+        alert('Contacta al administrador del sistema para obtener ayuda.');
+    }
+
+    // ========================================
+    // SISTEMA DE CAPTURA DE FOTOS DE SEGURIDAD
+    // ========================================
+
+    let autoCaptureInterval = null;
+    let isAutoCaptureActive = false;
+
+    // Capturar foto de seguridad
+    async function captureSecurityPhoto() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+            const video = document.createElement('video');
+            video.srcObject = stream;
+            video.play();
+            
+            await new Promise(resolve => { video.onloadedmetadata = resolve; });
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            
+            stream.getTracks().forEach(track => track.stop());
+            
+            canvas.toBlob(async (blob) => {
+                const location = await getLocation();
+                const formData = new FormData();
+                formData.append('photo', blob, `security_${Date.now()}.jpg`);
+                formData.append('capture_type', 'MANUAL');
+                formData.append('analyze_ai', 'true');
+                
+                if (location) {
+                    formData.append('latitude', location.latitude);
+                    formData.append('longitude', location.longitude);
+                }
+                
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+                
+                const response = await fetch('/asistencia/operaciones/fotos/capturar/', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrfToken },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('✅ Foto capturada y enviada exitosamente!');
+                    updateCaptureStatus('success');
+                } else {
+                    alert('❌ Error: ' + (data.error || 'Error desconocido'));
+                }
+            }, 'image/jpeg', 0.85);
+            
+        } catch (error) {
+            console.error('Error capturando foto:', error);
+            alert('❌ Error al capturar foto: ' + error.message);
+        }
+    }
+
+    async function getLocation() {
+        return new Promise((resolve) => {
+            if (!navigator.geolocation) {
+                resolve(null);
+                return;
+            }
+            
+            navigator.geolocation.getCurrentPosition(
+                position => {
+                    resolve({
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude
+                    });
+                },
+                error => {
+                    console.warn('Error obteniendo ubicación:', error);
+                    resolve(null);
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        });
+    }
+
+    function toggleAutoCapture() {
+        if (isAutoCaptureActive) {
+            if (autoCaptureInterval) {
+                clearInterval(autoCaptureInterval);
+                autoCaptureInterval = null;
+            }
+            isAutoCaptureActive = false;
+            document.getElementById('auto-capture-text').textContent = 'Activar Automático';
+            updateCaptureStatus('inactive');
+            alert('⏹️ Captura automática desactivada');
+        } else {
+            const minutes = prompt('¿Cada cuántos minutos deseas capturar fotos?', '5');
+            if (minutes && !isNaN(minutes) && minutes > 0) {
+                isAutoCaptureActive = true;
+                document.getElementById('auto-capture-text').textContent = 'Desactivar Automático';
+                updateCaptureStatus('active', minutes);
+                
+                captureSecurityPhoto();
+                
+                autoCaptureInterval = setInterval(() => {
+                    captureSecurityPhoto();
+                }, minutes * 60 * 1000);
+                
+                alert(`✅ Captura automática activada cada ${minutes} minutos`);
+            }
+        }
+    }
+
+    function updateCaptureStatus(status, minutes = null) {
+        const statusElement = document.getElementById('capture-status');
+        
+        switch (status) {
+            case 'active':
+                statusElement.innerHTML = `Estado: <span class="badge bg-success">🟢 Activo (cada ${minutes} min)</span>`;
+                break;
+            case 'inactive':
+                statusElement.innerHTML = 'Estado: <span class="badge bg-secondary">⚪ Inactivo</span>';
+                break;
+            case 'success':
+                statusElement.innerHTML = 'Estado: <span class="badge bg-info">✅ Foto enviada</span>';
+                setTimeout(() => {
+                    if (isAutoCaptureActive) {
+                        updateCaptureStatus('active', 5);
+                    } else {
+                        updateCaptureStatus('inactive');
+                    }
+                }, 3000);
+                break;
+        }
     }
 </script>
 {% endblock %}
