@@ -345,7 +345,14 @@ def request_video_session(request, employee_id):
             return JsonResponse({'error': 'Usuario no es empleado'}, status=403)
         
         # Crear sesión de video con Agora
-        session_data = agora_service.create_video_session(employee.id, requester.id)
+        try:
+            session_data = agora_service.create_video_session(employee.id, requester.id)
+        except ValueError as ve:
+            # Error de configuración de Agora
+            return JsonResponse({
+                'error': str(ve),
+                'details': 'Verifica que AGORA_APP_ID y AGORA_APP_CERTIFICATE estén configurados en Railway'
+            }, status=500)
         
         # Crear registro en BD
         video_session = VideoSession.objects.create(
@@ -370,6 +377,9 @@ def request_video_session(request, employee_id):
         })
         
     except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"❌ Error en request_video_session: {error_details}")
         return JsonResponse({'error': str(e)}, status=500)
 
 

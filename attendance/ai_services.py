@@ -268,21 +268,41 @@ class AgoraService:
     
     def create_video_session(self, employee_id, requester_id):
         """Crear sesión de video entre empleado y operador"""
-        channel_name = f"security_{employee_id}_{requester_id}"
-        
-        # Token para el empleado (publisher)
-        employee_token = self.generate_rtc_token(channel_name, employee_id, 'publisher')
-        
-        # Token para el operador (subscriber)
-        requester_token = self.generate_rtc_token(channel_name, requester_id, 'subscriber')
-        
-        return {
-            'channel_name': channel_name,
-            'app_id': self.app_id,
-            'employee_token': employee_token,
-            'requester_token': requester_token,
-            'expires_in': 3600  # 1 hora
-        }
+        try:
+            # Verificar que las credenciales estén configuradas
+            if not self.app_id or not self.app_certificate:
+                logger.error("❌ Credenciales de Agora no configuradas")
+                raise ValueError("Credenciales de Agora no configuradas. Configura AGORA_APP_ID y AGORA_APP_CERTIFICATE en Railway.")
+            
+            import time
+            channel_name = f"security_{employee_id}_{requester_id}_{int(time.time())}"
+            
+            logger.info(f"📹 Creando sesión de video: {channel_name}")
+            
+            # Token para el empleado (publisher)
+            employee_token = self.generate_rtc_token(channel_name, employee_id, 'publisher')
+            
+            if not employee_token:
+                raise ValueError("No se pudo generar token para empleado")
+            
+            # Token para el operador (publisher también, para video bidireccional)
+            requester_token = self.generate_rtc_token(channel_name, requester_id, 'publisher')
+            
+            if not requester_token:
+                raise ValueError("No se pudo generar token para operador")
+            
+            logger.info(f"✅ Sesión de video creada exitosamente: {channel_name}")
+            
+            return {
+                'channel_name': channel_name,
+                'app_id': self.app_id,
+                'employee_token': employee_token,
+                'requester_token': requester_token,
+                'expires_in': 3600  # 1 hora
+            }
+        except Exception as e:
+            logger.error(f"❌ Error creando sesión de video: {str(e)}")
+            raise
 
 
 # Instancias globales de servicios
