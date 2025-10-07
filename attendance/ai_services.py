@@ -298,29 +298,43 @@ class AgoraService:
                 raise ValueError("Credenciales de Agora no configuradas. Configura AGORA_APP_ID y AGORA_APP_CERTIFICATE en Railway.")
             
             import time
-            channel_name = f"security_{employee_id}_{requester_id}_{int(time.time())}"
+            import hashlib
             
-            logger.info(f"📹 Creando sesión de video: {channel_name}")
+            # Crear canal único
+            timestamp = int(time.time())
+            channel_name = f"security_{employee_id}_{requester_id}_{timestamp}"
+            
+            # Convertir IDs a UIDs válidos de Agora (0-4294967295)
+            # Usar hash para generar UIDs únicos pero consistentes
+            employee_uid = int(hashlib.md5(f"emp_{employee_id}".encode()).hexdigest()[:8], 16) % 4294967295
+            requester_uid = int(hashlib.md5(f"req_{requester_id}".encode()).hexdigest()[:8], 16) % 4294967295
+            
+            logger.info(f"📹 Creando sesión de video:")
+            logger.info(f"   - Canal: {channel_name}")
+            logger.info(f"   - Employee ID: {employee_id} → UID: {employee_uid}")
+            logger.info(f"   - Requester ID: {requester_id} → UID: {requester_uid}")
             
             # Token para el empleado (publisher)
-            employee_token = self.generate_rtc_token(channel_name, employee_id, 'publisher')
+            employee_token = self.generate_rtc_token(channel_name, employee_uid, 'publisher')
             
             if not employee_token:
                 raise ValueError("No se pudo generar token para empleado")
             
             # Token para el operador (publisher también, para video bidireccional)
-            requester_token = self.generate_rtc_token(channel_name, requester_id, 'publisher')
+            requester_token = self.generate_rtc_token(channel_name, requester_uid, 'publisher')
             
             if not requester_token:
                 raise ValueError("No se pudo generar token para operador")
             
-            logger.info(f"✅ Sesión de video creada exitosamente: {channel_name}")
+            logger.info(f"✅ Sesión de video creada exitosamente")
             
             return {
                 'channel_name': channel_name,
                 'app_id': self.app_id,
                 'employee_token': employee_token,
                 'requester_token': requester_token,
+                'employee_uid': employee_uid,
+                'requester_uid': requester_uid,
                 'expires_in': 3600  # 1 hora
             }
         except Exception as e:

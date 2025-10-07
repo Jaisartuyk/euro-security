@@ -372,6 +372,8 @@ def request_video_session(request, employee_id):
             'channel_name': video_session.channel_name,
             'app_id': session_data['app_id'],
             'requester_token': video_session.requester_token,
+            'requester_uid': session_data['requester_uid'],
+            'employee_uid': session_data['employee_uid'],
             'message': 'Solicitud de video enviada'
         })
         
