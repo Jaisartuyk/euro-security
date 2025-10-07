@@ -198,41 +198,32 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Cloudinary Configuration (only if installed)
-try:
-    import cloudinary
-    import cloudinary.uploader
-    import cloudinary.api
+# Cloudinary Configuration
+# Obtener credenciales de Cloudinary
+CLOUDINARY_CLOUD_NAME = os.getenv('CLOUDINARY_CLOUD_NAME', '')
+CLOUDINARY_API_KEY = os.getenv('CLOUDINARY_API_KEY', '')
+CLOUDINARY_API_SECRET = os.getenv('CLOUDINARY_API_SECRET', '')
+
+# Configurar storage backend
+if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
+    # Usar Cloudinary
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
     
-    # Obtener credenciales
-    cloud_name = os.getenv('CLOUDINARY_CLOUD_NAME', '')
-    api_key = os.getenv('CLOUDINARY_API_KEY', '')
-    api_secret = os.getenv('CLOUDINARY_API_SECRET', '')
+    # Configuración de Cloudinary
+    CLOUDINARY_STORAGE = {
+        'CLOUD_NAME': CLOUDINARY_CLOUD_NAME,
+        'API_KEY': CLOUDINARY_API_KEY,
+        'API_SECRET': CLOUDINARY_API_SECRET,
+        'SECURE': True,
+    }
     
-    print(f"🔧 Cloudinary Config:")
-    print(f"   - Cloud Name: {cloud_name[:8] if cloud_name else 'NONE'}...")
-    print(f"   - API Key: {api_key[:8] if api_key else 'NONE'}...")
-    print(f"   - API Secret: {'OK' if api_secret else 'NONE'}")
-    
-    cloudinary.config(
-        cloud_name=cloud_name,
-        api_key=api_key,
-        api_secret=api_secret,
-        secure=True
-    )
-    
-    # Use Cloudinary for file storage if credentials are available
-    if cloud_name and api_key and api_secret:
-        DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-        print("✅ Cloudinary storage ACTIVADO - Archivos se guardarán en la nube")
-    else:
-        # Use local storage if Cloudinary not configured
-        DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
-        print("⚠️ Cloudinary NO configurado - Usando almacenamiento local (archivos se perderán)")
-except ImportError as e:
-    # Cloudinary not installed, use default storage
+    print("✅ Cloudinary storage ACTIVADO")
+    print(f"   - Cloud: {CLOUDINARY_CLOUD_NAME[:8]}...")
+    print(f"   - API Key: {CLOUDINARY_API_KEY[:8]}...")
+else:
+    # Usar almacenamiento local
     DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
-    print(f"⚠️ Cloudinary no instalado: {e}")
+    print("⚠️ Cloudinary NO configurado - usando almacenamiento local")
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
