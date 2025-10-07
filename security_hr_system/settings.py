@@ -199,31 +199,39 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # Cloudinary Configuration
-# Obtener credenciales de Cloudinary
-CLOUDINARY_CLOUD_NAME = os.getenv('CLOUDINARY_CLOUD_NAME', '')
-CLOUDINARY_API_KEY = os.getenv('CLOUDINARY_API_KEY', '')
-CLOUDINARY_API_SECRET = os.getenv('CLOUDINARY_API_SECRET', '')
+# Cloudinary puede configurarse con CLOUDINARY_URL o variables separadas
+CLOUDINARY_URL = os.getenv('CLOUDINARY_URL', '')
 
-# Configurar storage backend
-if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
-    # Usar Cloudinary
+if CLOUDINARY_URL:
+    # Usar CLOUDINARY_URL (formato: cloudinary://api_key:api_secret@cloud_name)
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
     
-    # Configuración de Cloudinary
-    CLOUDINARY_STORAGE = {
-        'CLOUD_NAME': CLOUDINARY_CLOUD_NAME,
-        'API_KEY': CLOUDINARY_API_KEY,
-        'API_SECRET': CLOUDINARY_API_SECRET,
-        'SECURE': True,
-    }
-    
-    print("✅ Cloudinary storage ACTIVADO")
-    print(f"   - Cloud: {CLOUDINARY_CLOUD_NAME[:8]}...")
-    print(f"   - API Key: {CLOUDINARY_API_KEY[:8]}...")
+    print("✅ Cloudinary storage ACTIVADO (usando CLOUDINARY_URL)")
+    print(f"   - URL: {CLOUDINARY_URL[:30]}...")
 else:
-    # Usar almacenamiento local
-    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
-    print("⚠️ Cloudinary NO configurado - usando almacenamiento local")
+    # Fallback: intentar con variables separadas
+    CLOUDINARY_CLOUD_NAME = os.getenv('CLOUDINARY_CLOUD_NAME', '')
+    CLOUDINARY_API_KEY = os.getenv('CLOUDINARY_API_KEY', '')
+    CLOUDINARY_API_SECRET = os.getenv('CLOUDINARY_API_SECRET', '')
+    
+    if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
+        # Usar Cloudinary con variables separadas
+        DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+        
+        # Configuración de Cloudinary
+        CLOUDINARY_STORAGE = {
+            'CLOUD_NAME': CLOUDINARY_CLOUD_NAME,
+            'API_KEY': CLOUDINARY_API_KEY,
+            'API_SECRET': CLOUDINARY_API_SECRET,
+            'SECURE': True,
+        }
+        
+        print("✅ Cloudinary storage ACTIVADO (usando variables separadas)")
+        print(f"   - Cloud: {CLOUDINARY_CLOUD_NAME[:8]}...")
+    else:
+        # Usar almacenamiento local
+        DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+        print("⚠️ Cloudinary NO configurado - usando almacenamiento local")
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
