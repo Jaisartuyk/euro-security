@@ -407,6 +407,12 @@
                                     Control de Calidad
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'attendance:operations_dashboard' %}">
+                                    <i class="fas fa-eye me-2"></i>
+                                    Centro de Operaciones
+                                </a>
+                            </li>
                             
                         {% endif %}
                         
@@ -516,6 +522,12 @@
                                 <a class="nav-link" href="{% url 'attendance:facial_enrollment' %}">
                                     <i class="fas fa-camera me-2"></i>
                                     Registrar Rostro
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#" onclick="event.preventDefault(); captureSecurityPhotoFromSidebar();">
+                                    <i class="fas fa-shield-alt me-2"></i>
+                                    Foto de Seguridad
                                 </a>
                             </li>
                         {% endif %}
@@ -675,6 +687,83 @@
     {% endif %}
     
     {% block extra_js %}{% endblock %}
+    
+    <!-- JavaScript para Captura de Fotos de Seguridad -->
+    <script>
+    async function captureSecurityPhotoFromSidebar() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+            const video = document.createElement('video');
+            video.srcObject = stream;
+            video.play();
+            
+            await new Promise(resolve => { video.onloadedmetadata = resolve; });
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            
+            stream.getTracks().forEach(track => track.stop());
+            
+            canvas.toBlob(async (blob) => {
+                const location = await getLocationForPhoto();
+                const formData = new FormData();
+                formData.append('photo', blob, `security_${Date.now()}.jpg`);
+                formData.append('capture_type', 'MANUAL');
+                formData.append('analyze_ai', 'true');
+                
+                if (location) {
+                    formData.append('latitude', location.latitude);
+                    formData.append('longitude', location.longitude);
+                }
+                
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+                
+                const response = await fetch('/asistencia/operaciones/fotos/capturar/', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrfToken },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('✅ Foto de seguridad capturada y enviada exitosamente!');
+                } else {
+                    alert('❌ Error: ' + (data.error || 'Error desconocido'));
+                }
+            }, 'image/jpeg', 0.85);
+            
+        } catch (error) {
+            console.error('Error capturando foto:', error);
+            alert('❌ Error al capturar foto: ' + error.message);
+        }
+    }
+
+    async function getLocationForPhoto() {
+        return new Promise((resolve) => {
+            if (!navigator.geolocation) {
+                resolve(null);
+                return;
+            }
+            
+            navigator.geolocation.getCurrentPosition(
+                position => {
+                    resolve({
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude
+                    });
+                },
+                error => {
+                    console.warn('Error obteniendo ubicación:', error);
+                    resolve(null);
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        });
+    }
+    </script>
     
     <!-- JavaScript para Sidebar Responsive -->
     <script>
