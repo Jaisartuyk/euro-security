@@ -74,8 +74,12 @@ class VideoLiveSystem {
                 this.channelName = data.channel_name;
                 this.token = data.requester_token;
                 this.appId = data.app_id;
+                this.uid = data.requester_uid; // UID del operador
 
                 console.log('✅ Sesión de video creada:', data);
+                console.log(`   - App ID: ${this.appId}`);
+                console.log(`   - Canal: ${this.channelName}`);
+                console.log(`   - UID: ${this.uid}`);
 
                 // Mostrar modal de video
                 this.showVideoModal();
@@ -100,10 +104,10 @@ class VideoLiveSystem {
      */
     async joinChannel() {
         try {
-            console.log(`🔗 Uniéndose al canal: ${this.channelName}`);
+            console.log(`🔗 Uniéndose al canal: ${this.channelName} con UID: ${this.uid}`);
 
-            // Unirse al canal
-            await this.client.join(this.appId, this.channelName, this.token, null);
+            // Unirse al canal con el UID correcto
+            await this.client.join(this.appId, this.channelName, this.token, this.uid);
 
             // Crear tracks locales
             this.localTracks.audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
