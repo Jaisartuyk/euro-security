@@ -35,7 +35,7 @@ class SecurityPhoto(BaseModel):
     )
     
     # Foto
-    photo = models.ImageField('Foto', upload_to='security_photos/%Y/%m/%d/')
+    photo = models.ImageField('Foto', upload_to='security_photos/%Y/%m/%d/', storage=None)
     thumbnail = models.ImageField('Miniatura', upload_to='security_photos/thumbnails/%Y/%m/%d/', null=True, blank=True)
     
     # Ubicación

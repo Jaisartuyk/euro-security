@@ -5,9 +5,62 @@ Sistema de Gestión de Personal para TV Services
 
 from pathlib import Path
 import os
+import re
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# ============================================
+# CLOUDINARY CONFIGURATION (MUST BE EARLY)
+# ============================================
+# Configurar Cloudinary ANTES de INSTALLED_APPS para que los modelos lo usen
+CLOUDINARY_URL = os.getenv('CLOUDINARY_URL', '')
+
+if CLOUDINARY_URL:
+    # Parsear CLOUDINARY_URL (formato: cloudinary://api_key:api_secret@cloud_name)
+    match = re.match(r'cloudinary://([^:]+):([^@]+)@(.+)', CLOUDINARY_URL)
+    if match:
+        api_key, api_secret, cloud_name = match.groups()
+        
+        DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+        
+        CLOUDINARY_STORAGE = {
+            'CLOUD_NAME': cloud_name,
+            'API_KEY': api_key,
+            'API_SECRET': api_secret,
+            'SECURE': True,
+        }
+        
+        print("✅ Cloudinary storage ACTIVADO (usando CLOUDINARY_URL)")
+        print(f"   - Cloud: {cloud_name}")
+        print(f"   - API Key: {api_key[:8]}...")
+    else:
+        print("❌ Error: CLOUDINARY_URL tiene formato inválido")
+        DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+else:
+    # Fallback: intentar con variables separadas
+    CLOUDINARY_CLOUD_NAME = os.getenv('CLOUDINARY_CLOUD_NAME', '')
+    CLOUDINARY_API_KEY = os.getenv('CLOUDINARY_API_KEY', '')
+    CLOUDINARY_API_SECRET = os.getenv('CLOUDINARY_API_SECRET', '')
+    
+    if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
+        # Usar Cloudinary con variables separadas
+        DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+        
+        # Configuración de Cloudinary
+        CLOUDINARY_STORAGE = {
+            'CLOUD_NAME': CLOUDINARY_CLOUD_NAME,
+            'API_KEY': CLOUDINARY_API_KEY,
+            'API_SECRET': CLOUDINARY_API_SECRET,
+            'SECURE': True,
+        }
+        
+        print("✅ Cloudinary storage ACTIVADO (usando variables separadas)")
+        print(f"   - Cloud: {CLOUDINARY_CLOUD_NAME[:8]}...")
+    else:
+        # Usar almacenamiento local
+        DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+        print("⚠️ Cloudinary NO configurado - usando almacenamiento local")
 
 
 # Quick-start development settings - unsuitable for production
@@ -198,56 +251,7 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Cloudinary Configuration
-# Cloudinary puede configurarse con CLOUDINARY_URL o variables separadas
-CLOUDINARY_URL = os.getenv('CLOUDINARY_URL', '')
-
-if CLOUDINARY_URL:
-    # Parsear CLOUDINARY_URL (formato: cloudinary://api_key:api_secret@cloud_name)
-    import re
-    match = re.match(r'cloudinary://([^:]+):([^@]+)@(.+)', CLOUDINARY_URL)
-    if match:
-        api_key, api_secret, cloud_name = match.groups()
-        
-        DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-        
-        CLOUDINARY_STORAGE = {
-            'CLOUD_NAME': cloud_name,
-            'API_KEY': api_key,
-            'API_SECRET': api_secret,
-            'SECURE': True,
-        }
-        
-        print("✅ Cloudinary storage ACTIVADO (usando CLOUDINARY_URL)")
-        print(f"   - Cloud: {cloud_name}")
-        print(f"   - API Key: {api_key[:8]}...")
-    else:
-        print("❌ Error: CLOUDINARY_URL tiene formato inválido")
-        DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
-else:
-    # Fallback: intentar con variables separadas
-    CLOUDINARY_CLOUD_NAME = os.getenv('CLOUDINARY_CLOUD_NAME', '')
-    CLOUDINARY_API_KEY = os.getenv('CLOUDINARY_API_KEY', '')
-    CLOUDINARY_API_SECRET = os.getenv('CLOUDINARY_API_SECRET', '')
-    
-    if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
-        # Usar Cloudinary con variables separadas
-        DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-        
-        # Configuración de Cloudinary
-        CLOUDINARY_STORAGE = {
-            'CLOUD_NAME': CLOUDINARY_CLOUD_NAME,
-            'API_KEY': CLOUDINARY_API_KEY,
-            'API_SECRET': CLOUDINARY_API_SECRET,
-            'SECURE': True,
-        }
-        
-        print("✅ Cloudinary storage ACTIVADO (usando variables separadas)")
-        print(f"   - Cloud: {CLOUDINARY_CLOUD_NAME[:8]}...")
-    else:
-        # Usar almacenamiento local
-        DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
-        print("⚠️ Cloudinary NO configurado - usando almacenamiento local")
+# Cloudinary ya está configurado al inicio del archivo
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
