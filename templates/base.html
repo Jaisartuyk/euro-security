@@ -738,18 +738,30 @@
                         formData.append('longitude', location.longitude);
                     }
                     
-                    // Obtener CSRF token de cookies o del DOM
-                    const csrfToken = getCookie('csrftoken') || document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+                    // Obtener CSRF token - priorizar meta tag, luego cookies
+                    let csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
                     
-                    if (!csrfToken) {
-                        alert('❌ Error: No se pudo obtener el token CSRF. Recarga la página.');
+                    if (!csrfToken || csrfToken.length < 32) {
+                        csrfToken = getCookie('csrftoken');
+                    }
+                    
+                    if (!csrfToken || csrfToken.length < 32) {
+                        csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+                    }
+                    
+                    if (!csrfToken || csrfToken.length < 32) {
+                        alert('❌ Error: Token CSRF inválido. Por favor recarga la página (F5).');
+                        console.error('CSRF token inválido:', csrfToken);
                         return;
                     }
+                    
+                    console.log('✅ CSRF token válido:', csrfToken.substring(0, 10) + '...');
                     
                     const response = await fetch('/asistencia/operaciones/fotos/capturar/', {
                         method: 'POST',
                         headers: { 
                             'X-CSRFToken': csrfToken
+                            // NO incluir Content-Type - FormData lo maneja automáticamente
                         },
                         body: formData
                     });
