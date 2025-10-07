@@ -132,8 +132,7 @@ def capture_security_photo(request):
                     latitude=latitude,
                     longitude=longitude,
                     timestamp=timezone.now(),
-                    accuracy=10.0,  # Valor por defecto
-                    source='SECURITY_PHOTO'
+                    accuracy=10.0  # Valor por defecto
                 )
             except Exception as gps_error:
                 # No fallar si no se puede crear GPS
