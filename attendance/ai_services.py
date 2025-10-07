@@ -232,11 +232,29 @@ class AgoraService:
     def __init__(self):
         self.app_id = settings.AGORA_APP_ID
         self.app_certificate = settings.AGORA_APP_CERTIFICATE
+        
+        # Log de configuración (ocultar valores sensibles)
+        if self.app_id:
+            logger.info(f"🔧 Agora App ID configurado: {self.app_id[:8]}...")
+        else:
+            logger.warning("⚠️ Agora App ID NO configurado")
+            
+        if self.app_certificate:
+            logger.info(f"🔧 Agora Certificate configurado: {self.app_certificate[:8]}...")
+        else:
+            logger.warning("⚠️ Agora Certificate NO configurado")
     
     def generate_rtc_token(self, channel_name, uid, role='publisher', expiration_time=3600):
         """Generar token RTC para video streaming"""
         try:
             from agora_token_builder import RtcTokenBuilder
+            
+            logger.info(f"📹 Generando token Agora:")
+            logger.info(f"   - Canal: {channel_name}")
+            logger.info(f"   - UID: {uid}")
+            logger.info(f"   - Role: {role}")
+            logger.info(f"   - App ID: {self.app_id[:8] if self.app_id else 'NONE'}...")
+            logger.info(f"   - Certificate: {'OK' if self.app_certificate else 'NONE'}")
             
             # Determinar rol (1 = publisher, 2 = subscriber)
             # En la nueva versión, los roles son números
@@ -250,6 +268,8 @@ class AgoraService:
             current_timestamp = int(time.time())
             privilege_expired_ts = current_timestamp + expiration_time
             
+            logger.info(f"   - Expira en: {expiration_time} segundos")
+            
             # Generar token con la nueva API
             token = RtcTokenBuilder.buildTokenWithUid(
                 self.app_id,
@@ -260,11 +280,13 @@ class AgoraService:
                 privilege_expired_ts
             )
             
-            logger.info(f"✅ Token Agora generado para canal: {channel_name}, role: {role}")
+            logger.info(f"✅ Token generado exitosamente: {token[:20]}...")
             return token
             
         except Exception as e:
             logger.error(f"❌ Error generando token Agora: {str(e)}")
+            import traceback
+            logger.error(f"   Traceback: {traceback.format_exc()}")
             return None
     
     def create_video_session(self, employee_id, requester_id):
