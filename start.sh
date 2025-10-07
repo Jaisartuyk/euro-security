@@ -5,10 +5,6 @@
 
 echo "🚀 Iniciando Euro Security HR System..."
 
-# Instalar dependencias del sistema para OpenCV
-echo "📦 Instalando dependencias del sistema..."
-apt-get update && apt-get install -y libgl1-mesa-glx libglib2.0-0 || echo "⚠️ No se pudieron instalar dependencias del sistema (normal en algunos entornos)"
-
 # Aplicar migraciones
 echo "📦 Aplicando migraciones de base de datos..."
 python manage.py migrate --noinput
