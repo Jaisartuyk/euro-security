@@ -5,7 +5,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
-from .models import AttendanceRecord, AttendanceSummary, FacialRecognitionProfile, AttendanceSettings, Attendance
+from .models import AttendanceRecord, AttendanceSummary, FacialRecognitionProfile, AttendanceSettings
 from .models import LeaveRequest, LeaveType, LeaveStatus
 from .models_gps import GPSTracking, WorkArea, EmployeeWorkArea, LocationAlert
 from employees.models import Employee
@@ -129,7 +129,7 @@ class AttendanceSummaryAdmin(admin.ModelAdmin):
             employee = Employee.objects.get(id=employee_id)
             for date in dates:
                 # Obtener marcaciones del día
-                attendances = Attendance.objects.filter(
+                attendances = AttendanceRecord.objects.filter(
                     employee=employee,
                     timestamp__date=date
                 ).order_by('timestamp')
