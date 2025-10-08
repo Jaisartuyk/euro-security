@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .apps-portal {
+        padding: 2rem 0;
+    }
+    
+    .portal-header {
+        text-align: center;
+        margin-bottom: 3rem;
+    }
+    
+    .portal-header h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #1e3a8a;
+        margin-bottom: 0.5rem;
+    }
+    
+    .portal-header p {
+        font-size: 1.1rem;
+        color: #6b7280;
+    }
+    
+    .apps-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    .app-card {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .app-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 6px;
+        background: var(--app-color);
+        transition: height 0.3s ease;
+    }
+    
+    .app-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+        border-color: var(--app-color);
+    }
+    
+    .app-card:hover::before {
+        height: 100%;
+        opacity: 0.05;
+    }
+    
+    .app-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        display: block;
+    }
+    
+    .app-name {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+    }
+    
+    .app-description {
+        color: #6b7280;
+        font-size: 1rem;
+        margin-bottom: 1.5rem;
+        line-height: 1.6;
+    }
+    
+    .app-category {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        background: #f3f4f6;
+        color: #6b7280;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        margin-bottom: 1rem;
+    }
+    
+    .app-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        background: var(--app-color);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .app-button:hover {
+        background: var(--app-color-hover);
+        color: white;
+        transform: scale(1.02);
+    }
+    
+    .app-button i {
+        transition: transform 0.3s ease;
+    }
+    
+    .app-button:hover i {
+        transform: translateX(4px);
+    }
+    
+    .stats-bar {
+        background: #f9fafb;
+        padding: 1rem;
+        border-radius: 8px;
+        text-align: center;
+        margin-bottom: 2rem;
+        max-width: 1200px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    
+    .stats-bar span {
+        color: #6b7280;
+        font-weight: 600;
+    }
+    
+    @media (max-width: 768px) {
+        .apps-grid {
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+        
+        .portal-header h1 {
+            font-size: 2rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="apps-portal">
+    <div class="container">
+        <!-- Header -->
+        <div class="portal-header">
+            <h1>🚀 Mis Aplicaciones</h1>
+            <p>Acceso rápido a todos tus sistemas empresariales</p>
+        </div>
+        
+        <!-- Stats -->
+        <div class="stats-bar">
+            <span>📊 Total de aplicaciones: <strong>{{ total_apps }}</strong></span>
+        </div>
+        
+        <!-- Apps Grid -->
+        <div class="apps-grid">
+            {% for app in apps %}
+            <div class="app-card" style="--app-color: {{ app.color }}; --app-color-hover: {{ app.color_hover }};">
+                <span class="app-category">{{ app.categoria }}</span>
+                <div class="app-icon">{{ app.icono }}</div>
+                <h3 class="app-name">{{ app.nombre }}</h3>
+                <p class="app-description">{{ app.descripcion }}</p>
+                <a href="{{ app.url }}" target="_blank" class="app-button">
+                    Abrir Aplicación
+                    <i class="fas fa-external-link-alt"></i>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Animación de entrada
+    document.addEventListener('DOMContentLoaded', function() {
+        const cards = document.querySelectorAll('.app-card');
+        cards.forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                card.style.transition = 'all 0.5s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 100);
+        });
+    });
+</script>
+{% endblock %}

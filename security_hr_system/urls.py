@@ -30,6 +30,7 @@ urlpatterns = [
     path('asistencia/', include('attendance.urls')),
     path('formularios/', include('forms.urls')),
     path('control-calidad/', include('quality_control.urls')),
+    path('apps/', include('portal.urls')),  # Portal de Aplicaciones
     
     # Autenticación
     path('login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
