@@ -80,6 +80,15 @@ class AttendancePermissions:
             
         try:
             employee = Employee.objects.get(user=user)
+            
+            # EXCEPCIÓN: Jefa de Operaciones puede ver Control de Calidad
+            if employee.employee_id == 'EMP13807414':
+                # Mayra Alejandra Espinoza Ponce - Jefa de Operaciones
+                # Puede ver Operaciones + Control de Calidad
+                return Department.objects.filter(
+                    code__in=['OPE', 'CC']  # OPE = Operaciones, CC = Control de Calidad
+                )
+            
             level = employee.position.level
             
             # DIRECTOR - Ve todos los departamentos
