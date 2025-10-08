@@ -23,6 +23,12 @@ def user_has_quality_access(user):
     # Verificar si el usuario es empleado del departamento de Control de Calidad
     try:
         employee = Employee.objects.get(user=user)
+        
+        # Excepción: Jefa de Operaciones tiene acceso
+        if employee.employee_id == 'EMP13807414':
+            return True
+        
+        # Empleados del departamento de Control de Calidad
         if employee.department and employee.department.code == 'CC':
             return True
     except Employee.DoesNotExist:
@@ -38,7 +44,7 @@ def quality_dashboard(request):
     # Verificar permisos
     if not user_has_quality_access(request.user):
         messages.error(request, 'No tienes permisos para acceder al módulo de Control de Calidad.')
-        return redirect('core:dashboard')
+        return redirect('dashboard:home')
     
     # Estadísticas generales
     total_risks = Risk.objects.filter(is_active=True).count()
@@ -142,7 +148,7 @@ def risk_matrix(request):
     
     if not user_has_quality_access(request.user):
         messages.error(request, 'No tienes permisos para acceder a esta página.')
-        return redirect('core:dashboard')
+        return redirect('dashboard:home')
     
     # Obtener todos los riesgos activos
     risks = Risk.objects.filter(is_active=True).select_related('category', 'responsible')
@@ -171,7 +177,7 @@ def risk_list(request):
     
     if not user_has_quality_access(request.user):
         messages.error(request, 'No tienes permisos para acceder a esta página.')
-        return redirect('core:dashboard')
+        return redirect('dashboard:home')
     
     # Filtros
     category_filter = request.GET.get('category', '')
@@ -214,7 +220,7 @@ def risk_detail(request, risk_id):
     
     if not user_has_quality_access(request.user):
         messages.error(request, 'No tienes permisos para acceder a esta página.')
-        return redirect('core:dashboard')
+        return redirect('dashboard:home')
     
     risk = get_object_or_404(Risk, id=risk_id)
     
@@ -243,7 +249,7 @@ def control_measures_list(request):
     
     if not user_has_quality_access(request.user):
         messages.error(request, 'No tienes permisos para acceder a esta página.')
-        return redirect('core:dashboard')
+        return redirect('dashboard:home')
     
     # Filtros
     status_filter = request.GET.get('status', '')
@@ -274,7 +280,7 @@ def incidents_list(request):
     
     if not user_has_quality_access(request.user):
         messages.error(request, 'No tienes permisos para acceder a esta página.')
-        return redirect('core:dashboard')
+        return redirect('dashboard:home')
     
     # Filtros
     severity_filter = request.GET.get('severity', '')
@@ -307,7 +313,7 @@ def reports(request):
     
     if not user_has_quality_access(request.user):
         messages.error(request, 'No tienes permisos para acceder a esta página.')
-        return redirect('core:dashboard')
+        return redirect('dashboard:home')
     
     # Aquí se agregarán reportes personalizados
     context = {}
