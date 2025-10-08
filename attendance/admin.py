@@ -77,6 +77,7 @@ class AttendanceSummaryAdmin(admin.ModelAdmin):
     search_fields = ['employee__first_name', 'employee__last_name', 'employee__employee_id']
     readonly_fields = ['work_hours_display', 'created_at', 'updated_at']
     date_hierarchy = 'date'
+    actions = ['recalculate_summaries']
     
     fieldsets = (
         ('Información Básica', {
@@ -104,6 +105,79 @@ class AttendanceSummaryAdmin(admin.ModelAdmin):
     def work_hours_display(self, obj):
         return obj.get_work_hours_display()
     work_hours_display.short_description = "Horas Trabajadas"
+    
+    def recalculate_summaries(self, request, queryset):
+        """Recalcular resúmenes de asistencia basándose en las marcaciones actuales"""
+        from datetime import datetime, timedelta
+        from django.contrib import messages
+        
+        # Obtener empleados y fechas únicas de los resúmenes seleccionados
+        employees = set(queryset.values_list('employee', flat=True))
+        dates = set(queryset.values_list('date', flat=True))
+        
+        if not employees or not dates:
+            self.message_user(request, "No hay resúmenes seleccionados", level=messages.WARNING)
+            return
+        
+        total_updated = 0
+        total_created = 0
+        total_deleted = 0
+        
+        # Recalcular para cada combinación de empleado y fecha
+        for employee_id in employees:
+            employee = Employee.objects.get(id=employee_id)
+            for date in dates:
+                # Obtener marcaciones del día
+                attendances = Attendance.objects.filter(
+                    employee=employee,
+                    timestamp__date=date
+                ).order_by('timestamp')
+                
+                if attendances.exists():
+                    # Hay marcaciones: actualizar o crear resumen
+                    summary, created = AttendanceSummary.objects.get_or_create(
+                        employee=employee,
+                        date=date
+                    )
+                    
+                    # Calcular entrada y salida
+                    check_in = attendances.filter(entry_type='IN').first()
+                    check_out = attendances.filter(entry_type='OUT').last()
+                    
+                    summary.first_entry = check_in.timestamp if check_in else None
+                    summary.last_exit = check_out.timestamp if check_out else None
+                    summary.is_present = True
+                    
+                    # Calcular tardanza (simplificado - asume horario de 08:30)
+                    if check_in:
+                        from django.utils import timezone
+                        expected_time = timezone.datetime.combine(date, timezone.datetime.strptime('08:30', '%H:%M').time())
+                        expected_time = timezone.make_aware(expected_time)
+                        summary.is_late = check_in.timestamp > expected_time
+                    
+                    # Contar entradas y salidas
+                    summary.entries_count = attendances.filter(entry_type='IN').count()
+                    summary.exits_count = attendances.filter(entry_type='OUT').count()
+                    
+                    summary.save()
+                    
+                    if created:
+                        total_created += 1
+                    else:
+                        total_updated += 1
+                else:
+                    # No hay marcaciones: eliminar resumen si existe
+                    deleted_count, _ = AttendanceSummary.objects.filter(
+                        employee=employee,
+                        date=date
+                    ).delete()
+                    total_deleted += deleted_count
+        
+        # Mensaje de éxito
+        message = f"✅ Recalculación completada: {total_created} creados, {total_updated} actualizados, {total_deleted} eliminados"
+        self.message_user(request, message, level=messages.SUCCESS)
+    
+    recalculate_summaries.short_description = "🔄 Recalcular resúmenes seleccionados"
 
 
 @admin.register(FacialRecognitionProfile)
