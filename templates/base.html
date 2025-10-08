@@ -401,12 +401,19 @@
                                     Formularios
                                 </a>
                             </li>
+                        {% endif %}
+                        
+                        <!-- Control de Calidad - Visible para admins y Jefa de Operaciones -->
+                        {% if user.is_superuser or user.is_staff or user.employee.employee_id == 'EMP13807414' %}
                             <li class="nav-item">
                                 <a class="nav-link" href="{% url 'quality_control:dashboard' %}">
                                     <i class="fas fa-shield-alt me-2"></i>
                                     Control de Calidad
                                 </a>
                             </li>
+                        {% endif %}
+                        
+                        {% if user.is_superuser or user.is_staff %}
                             <li class="nav-item">
                                 <a class="nav-link" href="{% url 'attendance:operations_dashboard' %}">
                                     <i class="fas fa-eye me-2"></i>
