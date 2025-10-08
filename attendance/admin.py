@@ -5,9 +5,10 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
-from .models import AttendanceRecord, AttendanceSummary, FacialRecognitionProfile, AttendanceSettings
+from .models import AttendanceRecord, AttendanceSummary, FacialRecognitionProfile, AttendanceSettings, Attendance
 from .models import LeaveRequest, LeaveType, LeaveStatus
 from .models_gps import GPSTracking, WorkArea, EmployeeWorkArea, LocationAlert
+from employees.models import Employee
 
 # Importar admins de seguridad con IA
 from .admin_security import SecurityPhotoAdmin, SecurityAlertAdmin, VideoSessionAdmin
