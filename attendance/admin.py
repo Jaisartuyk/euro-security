@@ -142,8 +142,8 @@ class AttendanceSummaryAdmin(admin.ModelAdmin):
                     )
                     
                     # Calcular entrada y salida
-                    check_in = attendances.filter(entry_type='IN').first()
-                    check_out = attendances.filter(entry_type='OUT').last()
+                    check_in = attendances.filter(attendance_type='IN').first()
+                    check_out = attendances.filter(attendance_type='OUT').last()
                     
                     summary.first_entry = check_in.timestamp if check_in else None
                     summary.last_exit = check_out.timestamp if check_out else None
@@ -157,8 +157,8 @@ class AttendanceSummaryAdmin(admin.ModelAdmin):
                         summary.is_late = check_in.timestamp > expected_time
                     
                     # Contar entradas y salidas
-                    summary.entries_count = attendances.filter(entry_type='IN').count()
-                    summary.exits_count = attendances.filter(entry_type='OUT').count()
+                    summary.entries_count = attendances.filter(attendance_type='IN').count()
+                    summary.exits_count = attendances.filter(attendance_type='OUT').count()
                     
                     summary.save()
                     
