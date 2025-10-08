@@ -413,24 +413,6 @@
                             </li>
                         {% endif %}
                         
-                        <!-- Portal de Aplicaciones - Solo para ABRAHAM -->
-                        {% if user.username == 'ABRAHAM' %}
-                            <li class="nav-item">
-                                <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
-                                    <span>
-                                        <i class="fas fa-rocket me-2"></i>
-                                        MIS APLICACIONES
-                                    </span>
-                                </h6>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'portal:apps' %}">
-                                    <i class="fas fa-th-large me-2"></i>
-                                    Portal de Apps
-                                </a>
-                            </li>
-                        {% endif %}
-                        
                         {% if user.is_superuser or user.is_staff %}
                             <li class="nav-item">
                                 <a class="nav-link" href="{% url 'attendance:operations_dashboard' %}">
